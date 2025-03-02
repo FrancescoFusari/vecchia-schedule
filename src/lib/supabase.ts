@@ -1,10 +1,25 @@
-
 import { Employee, Shift, User, Role } from './types';
 import { supabase } from '@/integrations/supabase/client';
 
-// Authentication functions
-export const authService = {
-  signIn: async (email: string, password: string) => {
+class AuthService {
+  constructor() {}
+
+  async createUser(email: string, password: string, userData: {firstName: string, lastName: string, role: 'admin' | 'employee'}) {
+    try {
+      const { data, error } = await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: userData,
+      });
+      return { data, error };
+    } catch (error) {
+      console.error("Error creating user:", error);
+      return { data: null, error: error as any };
+    }
+  }
+
+  async signIn(email: string, password: string) {
     console.log("Attempting to sign in with:", email);
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -56,17 +71,17 @@ export const authService = {
       console.error("Auth service error:", error);
       return { data: null, error };
     }
-  },
-  
-  signOut: async () => {
-    return await supabase.auth.signOut();
-  },
-  
-  onAuthStateChange: (callback: (event: any, session: any) => void) => {
+  }
+
+  signOut() {
+    return supabase.auth.signOut();
+  }
+
+  onAuthStateChange(callback: (event: any, session: any) => void) {
     return supabase.auth.onAuthStateChange(callback);
-  },
-  
-  getCurrentUser: async () => {
+  }
+
+  async getCurrentUser() {
     const { data } = await supabase.auth.getUser();
     if (data?.user) {
       console.log("Current user found:", data.user);
@@ -103,9 +118,10 @@ export const authService = {
     }
     return null;
   }
-};
+}
 
-// Data service for employees
+export const authService = new AuthService();
+
 export const employeeService = {
   getAll: async (): Promise<Employee[]> => {
     const { data, error } = await supabase
@@ -189,7 +205,6 @@ export const employeeService = {
   }
 };
 
-// Data service for shifts
 export const shiftService = {
   getAll: async (): Promise<Shift[]> => {
     const { data, error } = await supabase
@@ -303,7 +318,6 @@ export const shiftService = {
   }
 };
 
-// Export mock data for fallback or development purposes
 export const mockData = {
   employees: [
     { id: "1", firstName: "Francesco", lastName: "R", email: "francesco.r@example.com", phone: "+39 123 456 7890", position: "Cameriere", createdAt: "2023-01-01" },
@@ -315,25 +329,18 @@ export const mockData = {
     { id: "7", firstName: "Wojtek", lastName: "K", email: "wojtek@example.com", phone: "+39 123 456 7896", position: "Cameriere", createdAt: "2023-01-06" }
   ],
   
-  // Generate some shifts for February 2024 based on the image
   shifts: [
-    // Feb 1 (Saturday)
     { id: "s1", employeeId: "1", date: "2024-02-01", startTime: "17:00", endTime: "23:30", duration: 6.5, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
     { id: "s2", employeeId: "2", date: "2024-02-01", startTime: "12:00", endTime: "23:30", duration: 11.5, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
     { id: "s3", employeeId: "3", date: "2024-02-01", startTime: "16:00", endTime: "23:30", duration: 7.5, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
     { id: "s4", employeeId: "4", date: "2024-02-01", startTime: "12:00", endTime: "23:30", duration: 11.5, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
     
-    // Feb 2 (Sunday)
     { id: "s5", employeeId: "2", date: "2024-02-02", startTime: "17:00", endTime: "23:00", duration: 6, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
     { id: "s6", employeeId: "3", date: "2024-02-02", startTime: "12:00", endTime: "23:00", duration: 11, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
     { id: "s7", employeeId: "6", date: "2024-02-02", startTime: "12:00", endTime: "20:00", duration: 8, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
     
-    // More shifts for week 1
     { id: "s8", employeeId: "1", date: "2024-02-03", startTime: "17:00", endTime: "23:00", duration: 6, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
     { id: "s9", employeeId: "2", date: "2024-02-03", startTime: "17:00", endTime: "23:00", duration: 6, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
-    { id: "s10", employeeId: "3", date: "2024-02-03", startTime: "12:00", endTime: "23:00", duration: 11, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
-    
-    // And many more shifts... (in a real app, these would come from Supabase)
-    // For now this is just sample data to demonstrate the UI
+    { id: "s10", employeeId: "3", date: "2024-02-03", startTime: "12:00", endTime: "23:00", duration: 11, createdAt: "2024-01-15", updatedAt: "2024-01-15" }
   ]
 };

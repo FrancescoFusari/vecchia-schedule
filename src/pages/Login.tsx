@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Check, Info, Loader2 } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
+import { authService } from "@/lib/supabase";
 
 export default function Login() {
   const { signIn, loading } = useAuth();
@@ -19,6 +20,52 @@ export default function Login() {
   const [password, setPassword] = useState("password");
   const [error, setError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [creatingDemoAccounts, setCreatingDemoAccounts] = useState(false);
+  
+  // Check if the demo accounts exist and create them if necessary
+  useEffect(() => {
+    const setupDemoAccounts = async () => {
+      try {
+        setCreatingDemoAccounts(true);
+        // Try to create demo admin account
+        const { error: adminError } = await authService.createUser(
+          "admin@example.com", 
+          "password", 
+          {
+            firstName: "Admin",
+            lastName: "User",
+            role: "admin"
+          }
+        );
+
+        // If there's an error but it's because the user already exists, that's fine
+        if (adminError && !adminError.message.includes("already exists")) {
+          console.error("Error creating admin demo account:", adminError);
+        }
+
+        // Try to create demo employee account
+        const { error: employeeError } = await authService.createUser(
+          "employee@example.com", 
+          "password", 
+          {
+            firstName: "Employee",
+            lastName: "User",
+            role: "employee"
+          }
+        );
+
+        if (employeeError && !employeeError.message.includes("already exists")) {
+          console.error("Error creating employee demo account:", employeeError);
+        }
+      } catch (err) {
+        console.error("Error setting up demo accounts:", err);
+      } finally {
+        setCreatingDemoAccounts(false);
+      }
+    };
+
+    setupDemoAccounts();
+  }, []);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,11 +129,16 @@ export default function Login() {
               </Alert>
             )}
             
-            <Button type="submit" className="w-full" disabled={isLoggingIn || loading}>
+            <Button type="submit" className="w-full" disabled={isLoggingIn || loading || creatingDemoAccounts}>
               {isLoggingIn ? (
                 <span className="flex items-center justify-center">
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Accesso in corso...
+                </span>
+              ) : creatingDemoAccounts ? (
+                <span className="flex items-center justify-center">
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Preparazione account demo...
                 </span>
               ) : (
                 "Accedi"
