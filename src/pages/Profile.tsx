@@ -174,40 +174,6 @@ const Profile = () => {
         </Button>
       </div>
       
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold mb-4">Informazioni Personali</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          <div>
-            <p className="text-sm text-gray-500">Nome</p>
-            <p className="font-medium">{user?.firstName || employee?.firstName || 'N/A'}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Cognome</p>
-            <p className="font-medium">{user?.lastName || employee?.lastName || 'N/A'}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Username</p>
-            <p className="font-medium">{user?.username || 'N/A'}</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Email</p>
-            <p className="font-medium">{user?.email || employee?.email || 'N/A'}</p>
-          </div>
-          {employee?.position && (
-            <div>
-              <p className="text-sm text-gray-500">Posizione</p>
-              <p className="font-medium">{employee.position}</p>
-            </div>
-          )}
-          {employee?.phone && (
-            <div>
-              <p className="text-sm text-gray-500">Telefono</p>
-              <p className="font-medium">{employee.phone}</p>
-            </div>
-          )}
-        </div>
-      </div>
-      
       {employee ? (
         <Tabs defaultValue="schedule" className="space-y-4">
           <TabsList className="grid w-full grid-cols-2">
