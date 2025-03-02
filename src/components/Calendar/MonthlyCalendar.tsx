@@ -5,58 +5,26 @@ import { CalendarDay } from "./CalendarDay";
 import { DAYS_OF_WEEK } from "@/lib/constants";
 import { getCalendarDays } from "@/lib/utils";
 import { Shift, Employee } from "@/lib/types";
-import { useAuth } from "@/hooks/useAuth";
-import { employeeService, shiftService } from "@/lib/supabase";
 import { ShiftModal } from "../Shifts/ShiftModal";
 import { HoursSummary } from "../Reports/HoursSummary";
 import { useToast } from "@/hooks/use-toast";
+import { shiftService } from "@/lib/supabase";
 
-export function MonthlyCalendar() {
-  const { isAdmin, user } = useAuth();
+interface MonthlyCalendarProps {
+  currentDate: Date;
+  shifts: Shift[];
+  employees: Employee[];
+  isAdmin: boolean;
+}
+
+export function MonthlyCalendar({ currentDate: initialDate, shifts: initialShifts, employees, isAdmin }: MonthlyCalendarProps) {
   const { toast } = useToast();
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [shifts, setShifts] = useState<Shift[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [currentDate, setCurrentDate] = useState(initialDate);
+  const [shifts, setShifts] = useState<Shift[]>(initialShifts);
   const [calendarDays, setCalendarDays] = useState<any[]>([]);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [isAddingShift, setIsAddingShift] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // Load data
-  useEffect(() => {
-    async function loadData() {
-      try {
-        setIsLoading(true);
-        
-        // Load employees
-        const employeeData = await employeeService.getAll();
-        setEmployees(employeeData);
-        
-        // Load shifts (all for admin, only user's for employees)
-        let shiftData: Shift[];
-        if (isAdmin()) {
-          shiftData = await shiftService.getAll();
-        } else if (user) {
-          shiftData = await shiftService.getEmployeeShifts(user.id);
-        } else {
-          shiftData = [];
-        }
-        setShifts(shiftData);
-      } catch (error) {
-        console.error("Error loading data:", error);
-        toast({
-          title: "Errore di caricamento",
-          description: "Si è verificato un errore durante il caricamento dei dati.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    
-    loadData();
-  }, [isAdmin, user, toast]);
   
   // Update calendar when month changes or when shifts change
   useEffect(() => {
@@ -65,6 +33,10 @@ export function MonthlyCalendar() {
     const days = getCalendarDays(year, month, shifts);
     setCalendarDays(days);
   }, [currentDate, shifts]);
+  
+  useEffect(() => {
+    setShifts(initialShifts);
+  }, [initialShifts]);
   
   const handlePrevMonth = () => {
     setCurrentDate(prev => {
@@ -153,14 +125,6 @@ export function MonthlyCalendar() {
     handleShiftModalClose();
   };
   
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-60">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-  
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Calendar header with navigation */}
@@ -189,8 +153,8 @@ export function MonthlyCalendar() {
               key={index}
               day={day}
               employees={employees}
-              onAddShift={isAdmin() ? handleAddShift : undefined}
-              onEditShift={isAdmin() ? handleEditShift : undefined}
+              onAddShift={isAdmin ? handleAddShift : undefined}
+              onEditShift={isAdmin ? handleEditShift : undefined}
             />
           ))}
         </div>

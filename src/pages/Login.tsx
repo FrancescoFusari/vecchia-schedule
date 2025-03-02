@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -14,6 +15,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,8 +24,17 @@ const Login = () => {
     try {
       await signIn(email, password);
       navigate("/");
+      toast({
+        title: "Login effettuato",
+        description: "Hai effettuato il login con successo.",
+      });
     } catch (error) {
       console.error("Login error:", error);
+      toast({
+        title: "Errore di login",
+        description: "Credenziali non valide. Riprova.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
