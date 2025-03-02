@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,18 +29,15 @@ const Profile = () => {
         
         setLoading(true);
         
-        // Get templates first since we'll need them for the analysis
         const templateData = await templateService.getTemplates();
         setTemplates(templateData);
         
-        // Find the employee record linked to the current user
         const employees = await employeeService.getEmployees();
         const userEmployee = employees.find(emp => emp.userId === user.id);
         
         if (userEmployee) {
           setEmployee(userEmployee);
           
-          // Fetch shifts for this employee for the current month
           const start = startOfMonth(currentMonth);
           const end = endOfMonth(currentMonth);
           
@@ -50,7 +46,6 @@ const Profile = () => {
             end.toISOString().split('T')[0]
           );
           
-          // Filter shifts for only this employee
           setShifts(shiftData.filter(shift => shift.employeeId === userEmployee.id));
         } else {
           toast({
@@ -87,7 +82,6 @@ const Profile = () => {
     }
   };
 
-  // Calculate weekly hours
   const calculateWeeklyHours = () => {
     if (!shifts.length) return [];
     
@@ -134,13 +128,11 @@ const Profile = () => {
 
   const weeklyHours = calculateWeeklyHours();
   
-  // Calculate total monthly hours
   const totalMonthlyHours = shifts.reduce(
     (sum, shift) => sum + parseFloat(shift.duration.toString()), 
     0
   );
   
-  // Group shifts by date for the schedule view
   const groupShiftsByDate = () => {
     const grouped: Record<string, Shift[]> = {};
     
@@ -163,7 +155,7 @@ const Profile = () => {
   const currentMonthName = format(currentMonth, 'MMMM yyyy', { locale: it });
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto px-0 sm:px-4 py-6 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold">Profilo Personale</h1>
