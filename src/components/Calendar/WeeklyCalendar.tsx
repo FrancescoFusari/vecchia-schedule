@@ -294,89 +294,87 @@ export function WeeklyCalendar({
                         {formatTime(time)}
                       </div>
                       
-                      {Array.from({
-              length: 7
-            }).map((_, dayIndex) => {
-              const isWeekend = dayIndex > 4;
-              const shifts = shiftsByDayAndTime[dayIndex][time] || [];
-              return <div key={dayIndex} className={`p-2 border-r last:border-r-0 border-gray-200 ${isWeekend ? "bg-amber-50/30" : ""} min-h-[60px]`} onClick={() => {
-                if (isAdmin()) {
-                  const date = new Date(formattedDates[dayIndex].date);
-                  handleAddShift(date, dayIndex);
-                }
-              }}>
+                      {Array.from({ length: 7 }).map((_, dayIndex) => {
+                        const isWeekend = dayIndex > 4;
+                        const shifts = shiftsByDayAndTime[dayIndex][time] || [];
+                        return <div key={dayIndex} className={`p-2 border-r last:border-r-0 border-gray-200 ${isWeekend ? "bg-amber-50/30" : ""} min-h-[60px]`} onClick={() => {
+                          if (isAdmin()) {
+                            const date = new Date(formattedDates[dayIndex].date);
+                            handleAddShift(date, dayIndex);
+                          }
+                        }}>
                             <div className="space-y-1">
                               {shifts.map(shift => {
-                    const employee = getEmployeeById(shift.employeeId);
-                    if (!employee) return null;
+                                const employee = getEmployeeById(shift.employeeId);
+                                if (!employee) return null;
 
-                    const employeeColor = employee.color || "#9CA3AF";
+                                const employeeColor = employee.color || "#9CA3AF";
 
-                    const customStyle = {
-                      backgroundColor: `${employeeColor}20`,
-                      color: employeeColor,
-                      borderColor: `${employeeColor}30`
-                    };
-                    return <div key={shift.id} className="px-2 py-1 rounded-md text-xs font-medium truncate border cursor-pointer" style={customStyle} onClick={e => {
-                      e.stopPropagation();
-                      if (isAdmin()) {
-                        handleEditShift(shift);
-                      }
-                    }}>
+                                const customStyle = {
+                                  backgroundColor: `${employeeColor}20`,
+                                  color: employeeColor,
+                                  borderColor: `${employeeColor}30`
+                                };
+                                return <div key={shift.id} className="px-2 py-1 rounded-md text-xs font-medium truncate border cursor-pointer" style={customStyle} onClick={e => {
+                                  e.stopPropagation();
+                                  if (isAdmin()) {
+                                    handleEditShift(shift);
+                                  }
+                                }}>
                                     {employee.firstName} {employee.lastName.charAt(0)} {formatTime(shift.startTime)}-{formatTime(shift.endTime)}
                                   </div>;
-                  })}
+                              })}
                             </div>
                           </div>;
-            })}
+                      })}
                     </div>)}
               </div>
             </div>}
           
           <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200 divide-y divide-gray-200">
               {DAYS_OF_WEEK.map((day, dayIndex) => {
-          const isWeekend = dayIndex > 4;
-          const shifts = shiftsByDay[dayIndex] || [];
-          const formattedDate = formattedDates[dayIndex];
-          const isToday = formattedDate.isToday;
-          return <div key={day} className={`${isWeekend ? "bg-amber-50/30" : ""}`}>
+                const isWeekend = dayIndex > 4;
+                const shifts = shiftsByDay[dayIndex] || [];
+                const formattedDate = formattedDates[dayIndex];
+                const isToday = formattedDate.isToday;
+                return <div key={day} className={`${isWeekend ? "bg-amber-50/30" : ""}`}>
                     <div className={`px-4 py-3 flex justify-between items-center ${isToday ? "bg-primary/10" : ""}`} onClick={() => {
-              if (isAdmin()) {
-                const date = new Date(formattedDates[dayIndex].date);
-                handleAddShift(date, dayIndex);
-              }
-            }}>
+                      if (isAdmin()) {
+                        const date = new Date(formattedDates[dayIndex].date);
+                        handleAddShift(date, dayIndex);
+                      }
+                    }}>
                       <div className="flex items-center">
                         <div className={`font-semibold ${isToday ? "text-primary" : ""}`}>
                           {day} {formattedDate.dayOfMonth}
                         </div>
                       </div>
                       {isAdmin() && <button className="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-gray-700" onClick={e => {
-                e.stopPropagation();
-                const date = new Date(formattedDates[dayIndex].date);
-                handleAddShift(date, dayIndex);
-              }}>
+                        e.stopPropagation();
+                        const date = new Date(formattedDates[dayIndex].date);
+                        handleAddShift(date, dayIndex);
+                      }}>
                           + Turno
                         </button>}
                     </div>
                     
                     <div className="px-4 py-2 space-y-2">
                       {shifts.length === 0 ? <div className="text-sm text-gray-500 py-2">Nessun turno</div> : shifts.map(shift => {
-                const employee = getEmployeeById(shift.employeeId);
-                if (!employee) return null;
+                        const employee = getEmployeeById(shift.employeeId);
+                        if (!employee) return null;
 
-                const employeeColor = employee.color || "#9CA3AF";
+                        const employeeColor = employee.color || "#9CA3AF";
 
-                const customStyle = {
-                  backgroundColor: `${employeeColor}20`,
-                  color: employeeColor,
-                  borderColor: `${employeeColor}30`
-                };
-                return <div key={shift.id} className="px-3 py-2 rounded-md text-sm font-medium border flex justify-between" style={customStyle} onClick={() => {
-                  if (isAdmin()) {
-                    handleEditShift(shift);
-                  }
-                }}>
+                        const customStyle = {
+                          backgroundColor: `${employeeColor}20`,
+                          color: employeeColor,
+                          borderColor: `${employeeColor}30`
+                        };
+                        return <div key={shift.id} className="px-3 py-2 rounded-md text-sm font-medium border flex justify-between" style={customStyle} onClick={() => {
+                          if (isAdmin()) {
+                            handleEditShift(shift);
+                          }
+                        }}>
                               <span>
                                 {employee.firstName} {employee.lastName.charAt(0)}
                               </span>
@@ -384,10 +382,10 @@ export function WeeklyCalendar({
                                 {formatTime(shift.startTime)}-{formatTime(shift.endTime)}
                               </span>
                             </div>;
-              })}
+                      })}
                     </div>
                   </div>;
-        })}
+              })}
             </div>}
         </>}
       
