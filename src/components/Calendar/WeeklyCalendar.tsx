@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { CalendarHeader } from "./CalendarHeader";
 import { DAYS_OF_WEEK } from "@/lib/constants";
@@ -11,7 +10,11 @@ import { HoursSummary } from "../Reports/HoursSummary";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 
-export function WeeklyCalendar() {
+interface WeeklyCalendarProps {
+  onViewChange?: (isWeekView: boolean) => void;
+}
+
+export function WeeklyCalendar({ onViewChange }: WeeklyCalendarProps) {
   const { isAdmin, user, loading } = useAuth();
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -168,7 +171,6 @@ export function WeeklyCalendar() {
     }
   };
   
-  // Get unique shift times to display on the left side
   const getUniqueShiftTimes = () => {
     const times = new Set<string>();
     shifts.forEach(shift => {
@@ -177,16 +179,19 @@ export function WeeklyCalendar() {
     return Array.from(times).sort();
   };
   
-  const shiftTimes = getUniqueShiftTimes();
+  const handleViewToggle = (isWeekView: boolean) => {
+    if (onViewChange) {
+      onViewChange(isWeekView);
+    }
+  };
   
-  // Group shifts by day and time
   const getShiftsByDayAndTime = () => {
     const shiftsByDay: Record<number, Record<string, Shift[]>> = {};
     
     // Initialize empty arrays for each day and shift time
     for (let day = 0; day < 7; day++) {
       shiftsByDay[day] = {};
-      shiftTimes.forEach(time => {
+      getUniqueShiftTimes().forEach(time => {
         shiftsByDay[day][time] = [];
       });
     }
@@ -254,6 +259,7 @@ export function WeeklyCalendar() {
         onNextMonth={handleNextWeek}
         onToday={handleToday}
         isWeekView={true}
+        onViewChange={handleViewToggle}
       />
       
       {/* Admin information banner */}
@@ -297,12 +303,12 @@ export function WeeklyCalendar() {
           
           {/* Time slots and shifts */}
           <div className="divide-y divide-gray-200">
-            {shiftTimes.length === 0 ? (
+            {getUniqueShiftTimes().length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 Nessun turno pianificato per questa settimana.
               </div>
             ) : (
-              shiftTimes.map(time => (
+              getUniqueShiftTimes().map(time => (
                 <div key={time} className="grid grid-cols-8">
                   {/* Time slot */}
                   <div className="p-2 text-xs font-medium text-gray-700 bg-gray-50 border-r border-gray-200 flex items-center justify-center">

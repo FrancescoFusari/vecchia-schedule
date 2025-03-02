@@ -54,7 +54,7 @@ const Dashboard = () => {
       </div>
       
       {isWeekView ? (
-        <WeeklyCalendar />
+        <WeeklyCalendar onViewChange={handleViewChange} />
       ) : (
         <MonthlyCalendar onViewChange={handleViewChange} />
       )}
