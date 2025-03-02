@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Employees from "./pages/Employees";
+import Templates from "./pages/Templates";
 import NotFound from "./pages/NotFound";
 import { Layout } from "./components/Layout";
 
@@ -64,6 +65,14 @@ const App = () => (
                 element={
                   <ProtectedRoute adminOnly>
                     <Employees />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="templates" 
+                element={
+                  <ProtectedRoute adminOnly>
+                    <Templates />
                   </ProtectedRoute>
                 } 
               />

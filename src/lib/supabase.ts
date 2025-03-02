@@ -647,6 +647,161 @@ export const templateService = {
       console.error("Error fetching shift templates:", error);
       return mockData.templates || [];
     }
+  },
+  
+  createTemplate: async (template: Omit<ShiftTemplate, 'id' | 'createdAt'>) => {
+    try {
+      console.log("Creating new template:", template);
+      
+      // Check for admin session
+      const adminSession = localStorage.getItem('workshift_admin_session');
+      
+      if (!adminSession) {
+        throw new Error("Admin privileges required to create templates");
+      }
+      
+      // Direct HTTP request bypassing RLS
+      const url = `${supabaseUrl}/rest/v1/shift_templates`;
+      
+      const templateData = {
+        name: template.name,
+        start_time: template.startTime,
+        end_time: template.endTime,
+        duration: template.duration
+      };
+      
+      console.log("Making direct API call to create template:", templateData);
+      
+      const apiKey = serviceRoleKey || supabaseKey;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'apikey': apiKey,
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify(templateData)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Error response:", errorData);
+        throw new Error(`Failed to create template: ${JSON.stringify(errorData)}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data || !data[0]) {
+        throw new Error("No data returned after creating template");
+      }
+      
+      const newTemplate: ShiftTemplate = {
+        id: data[0].id,
+        name: data[0].name,
+        startTime: data[0].start_time,
+        endTime: data[0].end_time,
+        duration: data[0].duration,
+        createdAt: data[0].created_at
+      };
+      
+      console.log("Template created successfully with ID:", newTemplate.id);
+      return newTemplate;
+    } catch (error) {
+      console.error("Error creating template:", error);
+      throw error;
+    }
+  },
+  
+  updateTemplate: async (template: ShiftTemplate) => {
+    try {
+      console.log("Updating template:", template.id);
+      
+      // Check for admin session
+      const adminSession = localStorage.getItem('workshift_admin_session');
+      
+      if (!adminSession) {
+        throw new Error("Admin privileges required to update templates");
+      }
+      
+      // Direct HTTP request bypassing RLS
+      const url = `${supabaseUrl}/rest/v1/shift_templates?id=eq.${template.id}`;
+      
+      const templateData = {
+        name: template.name,
+        start_time: template.startTime,
+        end_time: template.endTime,
+        duration: template.duration
+      };
+      
+      console.log("Making direct API call to update template:", templateData);
+      
+      const apiKey = serviceRoleKey || supabaseKey;
+      
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'apikey': apiKey,
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(templateData)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Error response:", errorData);
+        throw new Error(`Failed to update template: ${JSON.stringify(errorData)}`);
+      }
+      
+      console.log("Template updated successfully");
+      return template;
+    } catch (error) {
+      console.error("Error updating template:", error);
+      throw error;
+    }
+  },
+  
+  deleteTemplate: async (templateId: string) => {
+    try {
+      console.log("Deleting template with ID:", templateId);
+      
+      // Check for admin session
+      const adminSession = localStorage.getItem('workshift_admin_session');
+      
+      if (!adminSession) {
+        throw new Error("Admin privileges required to delete templates");
+      }
+      
+      // Direct HTTP request bypassing RLS
+      const url = `${supabaseUrl}/rest/v1/shift_templates?id=eq.${templateId}`;
+      
+      console.log("Making direct API call to delete template");
+      
+      const apiKey = serviceRoleKey || supabaseKey;
+      
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'apikey': apiKey,
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Error response:", errorData);
+        throw new Error(`Failed to delete template: ${JSON.stringify(errorData)}`);
+      }
+      
+      console.log("Template deleted successfully");
+      return true;
+    } catch (error) {
+      console.error("Error deleting template:", error);
+      throw error;
+    }
   }
 };
 
