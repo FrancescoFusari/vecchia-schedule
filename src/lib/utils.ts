@@ -129,6 +129,7 @@ export function formatMonthYear(date: Date): string {
 
 // Format employee name
 export function formatEmployeeName(firstName: string, lastName: string): string {
+  if (!lastName) return firstName;
   return `${firstName} ${lastName.charAt(0)}`;
 }
 
