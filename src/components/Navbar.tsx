@@ -34,8 +34,8 @@ export function Navbar() {
             <Link to="/">
               <Button
                 variant={isActive("/") ? "default" : "ghost"}
-                size={isMobile ? "icon" : "sm"}
-                className={`flex ${isMobile ? 'flex-col h-auto py-1 px-2' : 'items-center'}`}
+                size={isMobile ? "mobileNav" : "sm"}
+                className={`flex ${isMobile ? 'flex-col h-auto w-full' : 'items-center'}`}
               >
                 <CalendarDays className={isMobile ? "h-4 w-4 mb-1" : "mr-2 h-4 w-4"} />
                 <span className={isMobile ? "text-[10px] leading-tight" : ""}>Calendario</span>
@@ -47,8 +47,8 @@ export function Navbar() {
                 <Link to="/employees">
                   <Button
                     variant={isActive("/employees") ? "default" : "ghost"}
-                    size={isMobile ? "icon" : "sm"}
-                    className={`flex ${isMobile ? 'flex-col h-auto py-1 px-2' : 'items-center'}`}
+                    size={isMobile ? "mobileNav" : "sm"}
+                    className={`flex ${isMobile ? 'flex-col h-auto w-full' : 'items-center'}`}
                   >
                     <Users className={isMobile ? "h-4 w-4 mb-1" : "mr-2 h-4 w-4"} />
                     <span className={isMobile ? "text-[10px] leading-tight" : ""}>Dipendenti</span>
@@ -58,8 +58,8 @@ export function Navbar() {
                 <Link to="/templates">
                   <Button
                     variant={isActive("/templates") ? "default" : "ghost"}
-                    size={isMobile ? "icon" : "sm"}
-                    className={`flex ${isMobile ? 'flex-col h-auto py-1 px-2' : 'items-center'}`}
+                    size={isMobile ? "mobileNav" : "sm"}
+                    className={`flex ${isMobile ? 'flex-col h-auto w-full' : 'items-center'}`}
                   >
                     <Clock className={isMobile ? "h-4 w-4 mb-1" : "mr-2 h-4 w-4"} />
                     <span className={isMobile ? "text-[10px] leading-tight" : ""}>Template</span>
@@ -71,8 +71,8 @@ export function Navbar() {
             {/* Logout button */}
             <Button
               variant="ghost"
-              size={isMobile ? "icon" : "sm"}
-              className={`flex ${isMobile ? 'flex-col h-auto py-1 px-2 text-destructive' : 'items-center text-destructive'}`}
+              size={isMobile ? "mobileNav" : "sm"}
+              className={`flex ${isMobile ? 'flex-col h-auto w-full text-destructive' : 'items-center text-destructive'}`}
               onClick={() => signOut()}
             >
               <LogOut className={isMobile ? "h-4 w-4 mb-1" : "mr-2 h-4 w-4"} />

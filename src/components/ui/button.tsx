@@ -25,6 +25,8 @@ const buttonVariants = cva(
         sm: "h-9 rounded-md px-3",
         lg: "h-11 rounded-md px-8",
         icon: "h-9 w-9 p-0",
+        // Add a new size variant specifically for mobile navbar
+        mobileNav: "h-auto min-h-[40px] w-auto min-w-[60px] px-2 py-1",
       },
     },
     defaultVariants: {
