@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Shift, Employee, ShiftTemplate } from "@/lib/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatDate, calculateShiftDuration, generateId } from "@/lib/utils";
+import { formatDate, calculateShiftDuration, generateId, formatEmployeeName } from "@/lib/utils";
 import { DEFAULT_SHIFT_TEMPLATES } from "@/lib/constants";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -196,7 +196,7 @@ export function ShiftModal({ isOpen, onClose, shift, date, employees, onSave, on
               <SelectContent>
                 {employees.map((employee) => (
                   <SelectItem key={employee.id} value={employee.id}>
-                    {employee.firstName} {employee.lastName}
+                    {formatEmployeeName(employee.firstName, employee.lastName)}
                   </SelectItem>
                 ))}
               </SelectContent>
