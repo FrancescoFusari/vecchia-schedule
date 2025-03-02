@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { Employee, Shift, ShiftTemplate, User } from './types';
 
@@ -690,9 +689,7 @@ export const templateService = {
         throw new Error("Admin privileges required to create templates");
       }
       
-      // Direct HTTP request bypassing RLS
-      const url = `${supabaseUrl}/rest/v1/shift_templates`;
-      
+      // Prepare the data object for insertion
       const templateData = {
         name: template.name,
         start_time: template.startTime,
@@ -700,40 +697,30 @@ export const templateService = {
         duration: template.duration
       };
       
-      console.log("Making direct API call to create template:", templateData);
-      
-      const apiKey = serviceRoleKey || supabaseKey;
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'apikey': apiKey,
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=representation'
-        },
-        body: JSON.stringify(templateData)
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Error response:", errorData);
-        throw new Error(`Failed to create template: ${JSON.stringify(errorData)}`);
+      // Use adminClient to bypass RLS
+      const { data, error } = await adminClient
+        .from('shift_templates')
+        .insert(templateData)
+        .select('*')
+        .single();
+        
+      if (error) {
+        console.error("Error creating template:", error);
+        throw error;
       }
       
-      const data = await response.json();
-      
-      if (!data || !data[0]) {
+      if (!data) {
         throw new Error("No data returned after creating template");
       }
       
+      // Map the data to our ShiftTemplate type
       const newTemplate: ShiftTemplate = {
-        id: data[0].id,
-        name: data[0].name,
-        startTime: data[0].start_time,
-        endTime: data[0].end_time,
-        duration: data[0].duration,
-        createdAt: data[0].created_at
+        id: data.id,
+        name: data.name,
+        startTime: data.start_time,
+        endTime: data.end_time,
+        duration: data.duration,
+        createdAt: data.created_at
       };
       
       console.log("Template created successfully with ID:", newTemplate.id);
@@ -755,9 +742,23 @@ export const templateService = {
         throw new Error("Admin privileges required to update templates");
       }
       
-      // Direct HTTP request bypassing RLS
-      const url = `${supabaseUrl}/rest/v1/shift_templates?id=eq.${template.id}`;
+      // For mock templates (with IDs like "t1", "t2"), we handle differently
+      if (typeof template.id === 'string' && template.id.startsWith('t') && /^t\d+$/.test(template.id)) {
+        console.log("Detected mock template ID, handling specially");
+        // For mock templates, we need to simulate an update
+        const mockTemplates = [...mockData.templates];
+        const index = mockTemplates.findIndex(t => t.id === template.id);
+        
+        if (index >= 0) {
+          mockTemplates[index] = template;
+          mockData.templates = mockTemplates;
+          return template;
+        }
+        
+        throw new Error("Mock template not found");
+      }
       
+      // Prepare the data object for update
       const templateData = {
         name: template.name,
         start_time: template.startTime,
@@ -765,24 +766,15 @@ export const templateService = {
         duration: template.duration
       };
       
-      console.log("Making direct API call to update template:", templateData);
-      
-      const apiKey = serviceRoleKey || supabaseKey;
-      
-      const response = await fetch(url, {
-        method: 'PATCH',
-        headers: {
-          'apikey': apiKey,
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(templateData)
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Error response:", errorData);
-        throw new Error(`Failed to update template: ${JSON.stringify(errorData)}`);
+      // Use adminClient to bypass RLS
+      const { error } = await adminClient
+        .from('shift_templates')
+        .update(templateData)
+        .eq('id', template.id);
+        
+      if (error) {
+        console.error("Error updating template:", error);
+        throw error;
       }
       
       console.log("Template updated successfully");
@@ -804,26 +796,31 @@ export const templateService = {
         throw new Error("Admin privileges required to delete templates");
       }
       
-      // Direct HTTP request bypassing RLS
-      const url = `${supabaseUrl}/rest/v1/shift_templates?id=eq.${templateId}`;
-      
-      console.log("Making direct API call to delete template");
-      
-      const apiKey = serviceRoleKey || supabaseKey;
-      
-      const response = await fetch(url, {
-        method: 'DELETE',
-        headers: {
-          'apikey': apiKey,
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
+      // For mock templates (with IDs like "t1", "t2"), we handle differently
+      if (templateId.startsWith('t') && /^t\d+$/.test(templateId)) {
+        console.log("Detected mock template ID, handling specially");
+        // For mock templates, we need to simulate a deletion
+        const mockTemplates = [...mockData.templates];
+        const index = mockTemplates.findIndex(t => t.id === templateId);
+        
+        if (index >= 0) {
+          mockTemplates.splice(index, 1);
+          mockData.templates = mockTemplates;
+          return true;
         }
-      });
+        
+        throw new Error("Mock template not found");
+      }
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Error response:", errorData);
-        throw new Error(`Failed to delete template: ${JSON.stringify(errorData)}`);
+      // Use adminClient to bypass RLS
+      const { error } = await adminClient
+        .from('shift_templates')
+        .delete()
+        .eq('id', templateId);
+        
+      if (error) {
+        console.error("Error deleting template:", error);
+        throw error;
       }
       
       console.log("Template deleted successfully");
