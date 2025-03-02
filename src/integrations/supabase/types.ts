@@ -19,6 +19,7 @@ export type Database = {
           last_name: string
           phone: string | null
           position: string | null
+          user_id: string | null
         }
         Insert: {
           color?: string | null
@@ -29,6 +30,7 @@ export type Database = {
           last_name: string
           phone?: string | null
           position?: string | null
+          user_id?: string | null
         }
         Update: {
           color?: string | null
@@ -39,6 +41,7 @@ export type Database = {
           last_name?: string
           phone?: string | null
           position?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
