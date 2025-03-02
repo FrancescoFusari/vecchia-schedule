@@ -1,10 +1,11 @@
 
-import { CalendarDay as CalendarDayType, Employee, Shift } from "@/lib/types";
-import { ShiftItem } from "./ShiftItem";
-import { cn } from "@/lib/utils";
-import { useAuth } from "@/hooks/useAuth";
+import { format } from "date-fns";
+import { it } from "date-fns/locale";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import ShiftItem from "./ShiftItem";
+import { CalendarDay as CalendarDayType, Employee, Shift } from "@/lib/types";
 
 interface CalendarDayProps {
   day: CalendarDayType;
@@ -14,57 +15,63 @@ interface CalendarDayProps {
 }
 
 export function CalendarDay({ day, employees, onAddShift, onEditShift }: CalendarDayProps) {
-  const { isAdmin } = useAuth();
-  
-  const getEmployeeById = (id: string): Employee | undefined => {
-    return employees.find(emp => emp.id === id);
-  };
-  
+  const { date, isCurrentMonth, isToday, shifts } = day;
+
+  // Find employee names for each shift
+  const shiftsWithEmployees = shifts.map(shift => {
+    const employee = employees.find(emp => emp.id === shift.employeeId);
+    return {
+      ...shift,
+      employeeName: employee 
+        ? `${employee.firstName} ${employee.lastName.charAt(0)}`
+        : 'Sconosciuto'
+    };
+  });
+
   return (
     <div
-      className={cn(
-        "calendar-day border border-gray-200 p-2 transition-all duration-200 overflow-hidden",
-        !day.isCurrentMonth && "empty text-gray-400 bg-gray-50",
-        day.isToday && "border-primary/50"
-      )}
+      className={`min-h-[120px] p-1 bg-white border-b border-r ${
+        !isCurrentMonth ? "bg-gray-50" : ""
+      } ${isToday ? "ring-2 ring-primary ring-inset" : ""}`}
     >
       <div className="flex justify-between items-start">
-        <div
-          className={cn(
-            "font-semibold text-sm rounded-full w-7 h-7 flex items-center justify-center",
-            day.isToday && "bg-primary text-white"
-          )}
+        <span
+          className={`text-sm font-medium ${
+            isToday ? "text-primary" : !isCurrentMonth ? "text-gray-400" : ""
+          }`}
         >
-          {day.date.getDate()}
-        </div>
+          {format(date, "d")}
+        </span>
         
-        {isAdmin() && day.isCurrentMonth && (
+        {onAddShift && isCurrentMonth && (
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 rounded-full opacity-60 hover:opacity-100 bg-gray-100"
-            onClick={() => onAddShift?.(day.date)}
+            className="h-5 w-5"
+            onClick={() => onAddShift(date)}
           >
             <Plus className="h-3 w-3" />
           </Button>
         )}
       </div>
-      
-      <div className="mt-2 space-y-1 max-h-[250px] overflow-y-auto">
-        {day.shifts.map(shift => {
-          const employee = getEmployeeById(shift.employeeId);
-          if (!employee) return null;
-          
-          return (
-            <ShiftItem
-              key={shift.id}
-              shift={shift}
-              employee={employee}
-              onClick={() => onEditShift?.(shift)}
-            />
-          );
-        })}
-      </div>
+
+      {shifts.length > 0 && (
+        <ScrollArea className="h-[80px] mt-1">
+          <div className="space-y-1">
+            {shiftsWithEmployees.map((shift) => (
+              <ShiftItem
+                key={shift.id}
+                shift={shift}
+                employeeName={shift.employeeName}
+                onClick={() => onEditShift && onEditShift(shift)}
+                isClickable={!!onEditShift}
+              />
+            ))}
+          </div>
+        </ScrollArea>
+      )}
     </div>
   );
 }
+
+export default CalendarDay;

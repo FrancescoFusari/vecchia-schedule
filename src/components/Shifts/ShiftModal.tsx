@@ -1,227 +1,347 @@
 
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { format, parseISO } from "date-fns";
+import { it } from "date-fns/locale";
+import { useQueryClient } from "@tanstack/react-query";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Shift, Employee, ShiftTemplate } from "@/lib/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatDate, calculateShiftDuration, generateId } from "@/lib/utils";
-import { DEFAULT_SHIFT_TEMPLATES } from "@/lib/constants";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Textarea } from "@/components/ui/textarea";
+import { Loader2, Trash2 } from "lucide-react";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Employee, Shift } from "@/lib/types";
+import { shiftService } from "@/lib/supabase";
+import { useToast } from "@/hooks/use-toast";
 
 interface ShiftModalProps {
   isOpen: boolean;
   onClose: () => void;
-  shift: Shift | null;
-  date: Date | null;
+  shift?: Shift | null;
   employees: Employee[];
-  onSave: (shift: Shift) => void;
-  onDelete: (shiftId: string) => void;
+  selectedDate?: Date | null;
 }
 
-export function ShiftModal({ isOpen, onClose, shift, date, employees, onSave, onDelete }: ShiftModalProps) {
-  const [employeeId, setEmployeeId] = useState(shift?.employeeId || "");
-  const [shiftDate, setShiftDate] = useState(shift?.date || (date ? formatDate(date) : ""));
-  const [startTime, setStartTime] = useState(shift?.startTime || "");
-  const [endTime, setEndTime] = useState(shift?.endTime || "");
-  const [notes, setNotes] = useState(shift?.notes || "");
-  const [duration, setDuration] = useState(shift?.duration || 0);
+export default function ShiftModal({ 
+  isOpen, 
+  onClose, 
+  shift, 
+  employees, 
+  selectedDate 
+}: ShiftModalProps) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   
-  // Use predefined templates
-  const [templates] = useState<ShiftTemplate[]>(DEFAULT_SHIFT_TEMPLATES);
-  
-  // Calculate duration when times change
+  // Form state
+  const [employeeId, setEmployeeId] = useState("");
+  const [date, setDate] = useState("");
+  const [startTime, setStartTime] = useState("12:00");
+  const [endTime, setEndTime] = useState("18:00");
+  const [notes, setNotes] = useState("");
+
+  // Set default values when opening the modal
   useEffect(() => {
-    if (startTime && endTime) {
-      const calculatedDuration = calculateShiftDuration(startTime, endTime);
-      setDuration(calculatedDuration);
+    if (shift) {
+      setEmployeeId(shift.employeeId);
+      setDate(shift.date);
+      setStartTime(shift.startTime);
+      setEndTime(shift.endTime);
+      setNotes(shift.notes || "");
+    } else if (selectedDate) {
+      setDate(format(selectedDate, "yyyy-MM-dd"));
+      setEmployeeId(employees.length > 0 ? employees[0].id : "");
     }
-  }, [startTime, endTime]);
-  
-  const handleTemplateSelect = (templateId: string) => {
-    const template = templates.find(t => t.id === templateId);
-    if (template) {
-      setStartTime(template.startTime);
-      setEndTime(template.endTime);
-      setDuration(template.duration);
+  }, [shift, selectedDate, employees]);
+
+  // Calculate the duration between start and end time
+  const calculateDuration = (start: string, end: string): number => {
+    const [startHours, startMinutes] = start.split(":").map(Number);
+    const [endHours, endMinutes] = end.split(":").map(Number);
+    
+    let duration = (endHours - startHours) + (endMinutes - startMinutes) / 60;
+    
+    // If end time is before start time, assume it's the next day
+    if (duration < 0) {
+      duration += 24;
     }
+    
+    return parseFloat(duration.toFixed(2));
   };
-  
-  const handleSave = () => {
-    if (!employeeId || !shiftDate || !startTime || !endTime) {
-      // Show validation error
+
+  const handleSubmit = async () => {
+    if (!employeeId || !date || !startTime || !endTime) {
+      toast({
+        title: "Errore",
+        description: "Tutti i campi sono obbligatori",
+        variant: "destructive",
+      });
       return;
     }
+
+    setIsSubmitting(true);
     
-    const updatedShift: Shift = {
-      id: shift?.id || generateId(),
-      employeeId,
-      date: shiftDate,
-      startTime,
-      endTime,
-      duration,
-      notes,
-      createdAt: shift?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    
-    onSave(updatedShift);
-  };
-  
-  const handleDelete = () => {
-    if (shift) {
-      onDelete(shift.id);
+    try {
+      const duration = calculateDuration(startTime, endTime);
+      
+      if (shift) {
+        // Update existing shift
+        await shiftService.update({
+          ...shift,
+          employeeId,
+          date,
+          startTime,
+          endTime,
+          duration,
+          notes
+        });
+        
+        toast({
+          title: "Turno aggiornato",
+          description: "Il turno è stato aggiornato con successo",
+        });
+      } else {
+        // Create new shift
+        await shiftService.create({
+          employeeId,
+          date,
+          startTime,
+          endTime,
+          duration,
+          notes
+        });
+        
+        toast({
+          title: "Turno creato",
+          description: "Il nuovo turno è stato creato con successo",
+        });
+      }
+      
+      // Refresh shifts data
+      queryClient.invalidateQueries({ queryKey: ['shifts'] });
+      onClose();
+    } catch (error) {
+      console.error("Error saving shift:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante il salvataggio del turno",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
-  
+
+  const handleDelete = async () => {
+    if (!shift) return;
+    
+    setIsDeleting(true);
+    
+    try {
+      await shiftService.delete(shift.id);
+      
+      toast({
+        title: "Turno eliminato",
+        description: "Il turno è stato eliminato con successo",
+      });
+      
+      // Refresh shifts data
+      queryClient.invalidateQueries({ queryKey: ['shifts'] });
+      setShowDeleteDialog(false);
+      onClose();
+    } catch (error) {
+      console.error("Error deleting shift:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante l'eliminazione del turno",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={() => onClose()}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>
-            {shift ? "Modifica turno" : "Aggiungi turno"}
-          </DialogTitle>
-        </DialogHeader>
-        
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="date" className="text-right">
-              Data
-            </Label>
-            <Input
-              id="date"
-              type="date"
-              value={shiftDate}
-              onChange={(e) => setShiftDate(e.target.value)}
-              className="col-span-3"
-            />
-          </div>
+    <>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {shift ? "Modifica Turno" : "Nuovo Turno"}
+            </DialogTitle>
+          </DialogHeader>
           
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="employee" className="text-right">
-              Dipendente
-            </Label>
-            <Select value={employeeId} onValueChange={setEmployeeId}>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Seleziona dipendente" />
-              </SelectTrigger>
-              <SelectContent>
-                {employees.map((employee) => (
-                  <SelectItem key={employee.id} value={employee.id}>
-                    {employee.firstName} {employee.lastName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="template" className="text-right">
-              Template
-            </Label>
-            <Select onValueChange={handleTemplateSelect}>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Seleziona template" />
-              </SelectTrigger>
-              <SelectContent>
-                {templates.map((template) => (
-                  <SelectItem key={template.id} value={template.id}>
-                    {template.name} ({template.startTime}-{template.endTime})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="startTime" className="text-right">
-              Inizio
-            </Label>
-            <Input
-              id="startTime"
-              type="time"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="col-span-3"
-            />
-          </div>
-          
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="endTime" className="text-right">
-              Fine
-            </Label>
-            <Input
-              id="endTime"
-              type="time"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              className="col-span-3"
-            />
-          </div>
-          
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="duration" className="text-right">
-              Durata
-            </Label>
-            <div className="col-span-3 flex items-center">
-              <Input
-                id="duration"
-                type="number"
-                value={duration}
-                readOnly
-                className="bg-gray-50"
-              />
-              <span className="ml-2">ore</span>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="employee" className="text-right">
+                Dipendente
+              </Label>
+              <div className="col-span-3">
+                <Select 
+                  value={employeeId} 
+                  onValueChange={setEmployeeId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleziona dipendente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employees.map((employee) => (
+                      <SelectItem 
+                        key={employee.id} 
+                        value={employee.id}
+                      >
+                        {employee.firstName} {employee.lastName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="date" className="text-right">
+                Data
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="date"
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="startTime" className="text-right">
+                Ora Inizio
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="startTime"
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="endTime" className="text-right">
+                Ora Fine
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="endTime"
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="notes" className="text-right">
+                Note
+              </Label>
+              <div className="col-span-3">
+                <Input
+                  id="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Note opzionali"
+                />
+              </div>
             </div>
           </div>
           
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="notes" className="text-right">
-              Note
-            </Label>
-            <Textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="col-span-3"
-              rows={3}
-            />
-          </div>
-        </div>
-        
-        <DialogFooter className="flex justify-between">
-          {shift && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive">Elimina</Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Sei sicuro?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Questa azione eliminerà definitivamente il turno e non può essere annullata.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Annulla</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete}>
-                    Elimina
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-          
-          <div>
-            <Button variant="outline" onClick={onClose} className="mr-2">
-              Annulla
-            </Button>
-            <Button onClick={handleSave}>Salva</Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <DialogFooter className="sm:justify-between">
+            <div className="flex gap-2">
+              {shift && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  type="button"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Elimina
+                </Button>
+              )}
+            </div>
+            
+            <div className="flex gap-2">
+              <DialogClose asChild>
+                <Button variant="secondary" size="sm">
+                  Annulla
+                </Button>
+              </DialogClose>
+              
+              <Button 
+                onClick={handleSubmit} 
+                disabled={isSubmitting}
+                size="sm"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvataggio...
+                  </>
+                ) : (
+                  "Salva"
+                )}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Elimina Turno</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sei sicuro di voler eliminare questo turno?
+              Questa azione non può essere annullata.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Eliminazione...
+                </>
+              ) : (
+                "Elimina"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

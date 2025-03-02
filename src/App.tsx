@@ -1,80 +1,37 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/hooks/useAuth";
+import { Toaster } from "@/components/ui/toaster";
+import Layout from "@/components/Layout";
+import Login from "@/pages/Login";
+import Calendar from "@/pages/Calendar";
+import Employees from "@/pages/Employees";
+import NotFound from "@/pages/NotFound";
+import "./App.css";
 
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Employees from "./pages/Employees";
-import NotFound from "./pages/NotFound";
-import { Layout } from "./components/Layout";
-
+// Create a client
 const queryClient = new QueryClient();
 
-// Protected route component
-const ProtectedRoute = ({ children, adminOnly = false }: { children: JSX.Element, adminOnly?: boolean }) => {
-  const { user, loading, isAdmin } = useAuth();
-  
-  if (loading) {
-    // Show loading state
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-primary">Caricamento...</div>
-      </div>
-    );
-  }
-  
-  if (!user) {
-    // Redirect to login if not authenticated
-    return <Navigate to="/login" replace />;
-  }
-  
-  if (adminOnly && !isAdmin()) {
-    // Redirect to dashboard if not admin
-    return <Navigate to="/" replace />;
-  }
-  
-  return children;
-};
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <BrowserRouter>
+        <Router>
           <Routes>
             <Route path="/login" element={<Login />} />
-            
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Layout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Dashboard />} />
-              <Route 
-                path="employees" 
-                element={
-                  <ProtectedRoute adminOnly>
-                    <Employees />
-                  </ProtectedRoute>
-                } 
-              />
+            <Route path="/" element={<Layout />}>
+              <Route index element={<Navigate to="/calendar" replace />} />
+              <Route path="calendar" element={<Calendar />} />
+              <Route path="employees" element={<Employees />} />
+              <Route path="*" element={<NotFound />} />
             </Route>
-            
-            <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
+        </Router>
         <Toaster />
-        <Sonner />
       </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+    </QueryClientProvider>
+  );
+}
 
 export default App;
