@@ -76,7 +76,8 @@ export function TemplateModal({ isOpen, onClose, template, onSave, onDelete }: T
         startTime,
         endTime,
         duration,
-        createdAt: template?.createdAt || new Date().toISOString()
+        // Only include createdAt if it exists in the original template
+        ...(template?.createdAt && { createdAt: template.createdAt })
       };
       
       await onSave(updatedTemplate);
