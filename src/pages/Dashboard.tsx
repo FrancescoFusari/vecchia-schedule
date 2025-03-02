@@ -1,11 +1,13 @@
 
 import { MonthlyCalendar } from "@/components/Calendar/MonthlyCalendar";
+import { WeeklyCalendar } from "@/components/Calendar/WeeklyCalendar";
 import { useEffect, useState } from "react";
 import { Employee } from "@/lib/types";
 import { employeeService } from "@/lib/supabase";
 
 const Dashboard = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [isWeekView, setIsWeekView] = useState(false);
   
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -19,6 +21,10 @@ const Dashboard = () => {
     
     fetchEmployees();
   }, []);
+  
+  const handleViewChange = (weekView: boolean) => {
+    setIsWeekView(weekView);
+  };
   
   return (
     <div className="space-y-6">
@@ -47,7 +53,11 @@ const Dashboard = () => {
         ))}
       </div>
       
-      <MonthlyCalendar />
+      {isWeekView ? (
+        <WeeklyCalendar />
+      ) : (
+        <MonthlyCalendar onViewChange={handleViewChange} />
+      )}
     </div>
   );
 };

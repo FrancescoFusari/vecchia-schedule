@@ -1,56 +1,77 @@
 
+import { ChevronLeft, ChevronRight, CalendarDays, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { MONTHS } from "@/lib/constants";
+import { formatMonthYear } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface CalendarHeaderProps {
   date: Date;
   onPrevMonth: () => void;
   onNextMonth: () => void;
   onToday: () => void;
+  isWeekView?: boolean;
+  onViewChange?: (isWeekView: boolean) => void;
 }
 
-export function CalendarHeader({ date, onPrevMonth, onNextMonth, onToday }: CalendarHeaderProps) {
-  const month = date.getMonth();
-  const year = date.getFullYear();
+export function CalendarHeader({ 
+  date, 
+  onPrevMonth, 
+  onNextMonth, 
+  onToday, 
+  isWeekView = false,
+  onViewChange 
+}: CalendarHeaderProps) {
+  const title = isWeekView 
+    ? `Settimana di ${formatMonthYear(date)}` 
+    : formatMonthYear(date);
   
   return (
-    <div className="flex flex-col md:flex-row justify-between items-center mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-      <div className="flex items-center mb-4 md:mb-0">
-        <h2 className="text-2xl font-bold text-gray-900">
-          {MONTHS[month]} {year}
-        </h2>
-      </div>
-      
-      <div className="flex items-center space-x-2">
-        <Button
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+      <div className="flex items-center gap-2">
+        <Button 
+          variant="outline" 
+          size="icon"
+          onClick={onPrevMonth}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        
+        <div className="text-lg font-medium">
+          {title}
+        </div>
+        
+        <Button 
+          variant="outline" 
+          size="icon"
+          onClick={onNextMonth}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+        
+        <Button 
+          variant="outline" 
+          className="ml-2"
           onClick={onToday}
-          variant="outline"
-          className="rounded-full bg-white shadow-sm border hover:bg-gray-50"
         >
           Oggi
         </Button>
-        
-        <div className="flex items-center space-x-1 ml-2">
-          <Button
-            onClick={onPrevMonth}
-            variant="outline"
-            size="icon"
-            className="rounded-full bg-white shadow-sm border hover:bg-gray-50"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          
-          <Button
-            onClick={onNextMonth}
-            variant="outline"
-            size="icon"
-            className="rounded-full bg-white shadow-sm border hover:bg-gray-50"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </Button>
-        </div>
       </div>
+      
+      {onViewChange && (
+        <div className="flex items-center space-x-2">
+          <CalendarDays className={`h-4 w-4 ${!isWeekView ? "text-primary" : "text-gray-400"}`} />
+          <Switch
+            id="view-mode"
+            checked={isWeekView}
+            onCheckedChange={onViewChange}
+          />
+          <Label htmlFor="view-mode" className="flex items-center gap-1">
+            <CalendarClock className={`h-4 w-4 ${isWeekView ? "text-primary" : "text-gray-400"}`} />
+            <span className="text-sm">Vista settimanale</span>
+          </Label>
+        </div>
+      )}
     </div>
   );
 }
