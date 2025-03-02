@@ -9,14 +9,16 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import Employees from "./pages/Employees";
+import Templates from "./pages/Templates";
 import NotFound from "./pages/NotFound";
 import { Layout } from "./components/Layout";
 
 const queryClient = new QueryClient();
 
 // Protected route component
-const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const { user, loading } = useAuth();
+const ProtectedRoute = ({ children, adminOnly = false }: { children: JSX.Element, adminOnly?: boolean }) => {
+  const { user, loading, isAdmin } = useAuth();
   
   if (loading) {
     // Show loading state
@@ -30,6 +32,11 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   if (!user) {
     // Redirect to login if not authenticated
     return <Navigate to="/login" replace />;
+  }
+  
+  if (adminOnly && !isAdmin()) {
+    // Redirect to dashboard if not admin
+    return <Navigate to="/" replace />;
   }
   
   return children;
@@ -53,6 +60,22 @@ const App = () => (
               }
             >
               <Route index element={<Dashboard />} />
+              <Route 
+                path="employees" 
+                element={
+                  <ProtectedRoute adminOnly>
+                    <Employees />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="templates" 
+                element={
+                  <ProtectedRoute adminOnly>
+                    <Templates />
+                  </ProtectedRoute>
+                } 
+              />
             </Route>
             
             <Route path="*" element={<NotFound />} />
