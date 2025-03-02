@@ -2,6 +2,8 @@
 import { Shift, Employee } from "@/lib/types";
 import { cn, formatEmployeeName } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Edit } from "lucide-react";
 
 interface ShiftItemProps {
   shift: Shift;
@@ -23,13 +25,39 @@ export function ShiftItem({ shift, employee, onClick }: ShiftItemProps) {
     bgColor = "bg-green-100 text-green-800";
   }
   
+  if (isAdmin() && onClick) {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div
+              onClick={onClick}
+              className={cn(
+                "shift-item px-2 py-1 mb-1 rounded-md text-xs font-medium truncate flex justify-between items-center",
+                bgColor,
+                "hover:cursor-pointer hover:brightness-95 transition-all"
+              )}
+            >
+              <div className="truncate">
+                {formatEmployeeName(employee.firstName, employee.lastName)} {shift.startTime}-{shift.endTime}
+              </div>
+              <Edit className="h-3 w-3 flex-shrink-0 ml-1 opacity-50" />
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Modifica turno</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+  
   return (
     <div
-      onClick={isAdmin() ? onClick : undefined}
       className={cn(
-        "shift-item px-2 py-1 mb-1 rounded-md text-xs font-medium truncate cursor-default",
+        "shift-item px-2 py-1 mb-1 rounded-md text-xs font-medium truncate",
         bgColor,
-        isAdmin() && "hover:cursor-pointer"
+        "cursor-default"
       )}
     >
       {formatEmployeeName(employee.firstName, employee.lastName)} {shift.startTime}-{shift.endTime}

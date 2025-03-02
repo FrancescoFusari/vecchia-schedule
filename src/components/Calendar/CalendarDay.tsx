@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface CalendarDayProps {
   day: CalendarDayType;
@@ -23,7 +24,7 @@ export function CalendarDay({ day, employees, onAddShift, onEditShift }: Calenda
   return (
     <div
       className={cn(
-        "calendar-day border border-gray-200 p-2 transition-all duration-200 overflow-hidden",
+        "calendar-day border border-gray-200 p-2 transition-all duration-200 overflow-hidden h-full min-h-[120px]",
         !day.isCurrentMonth && "empty text-gray-400 bg-gray-50",
         day.isToday && "border-primary/50"
       )}
@@ -39,18 +40,33 @@ export function CalendarDay({ day, employees, onAddShift, onEditShift }: Calenda
         </div>
         
         {isAdmin() && day.isCurrentMonth && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 rounded-full opacity-60 hover:opacity-100 bg-gray-100"
-            onClick={() => onAddShift?.(day.date)}
-          >
-            <Plus className="h-3 w-3" />
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 rounded-full opacity-60 hover:opacity-100 bg-gray-100"
+                  onClick={() => onAddShift?.(day.date)}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Aggiungi turno</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         )}
       </div>
       
       <div className="mt-2 space-y-1 max-h-[250px] overflow-y-auto">
+        {day.shifts.length === 0 && day.isCurrentMonth && (
+          <div className="text-xs text-gray-400 italic py-1">
+            Nessun turno
+          </div>
+        )}
+        
         {day.shifts.map(shift => {
           const employee = getEmployeeById(shift.employeeId);
           if (!employee) return null;

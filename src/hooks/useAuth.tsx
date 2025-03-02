@@ -114,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // This function should match the logic in the is_admin() SQL function
   const isAdmin = () => {
     return user?.role === "admin" || user?.id === "admin-id";
   };

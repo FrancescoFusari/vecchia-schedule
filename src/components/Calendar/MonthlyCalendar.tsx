@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { CalendarHeader } from "./CalendarHeader";
 import { CalendarDay } from "./CalendarDay";
@@ -11,6 +10,7 @@ import { ShiftModal } from "../Shifts/ShiftModal";
 import { HoursSummary } from "../Reports/HoursSummary";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { AdminPanel } from "@/components/ui/alert";
 
 export function MonthlyCalendar() {
   const { isAdmin, user, loading } = useAuth();
@@ -23,6 +23,7 @@ export function MonthlyCalendar() {
   const [isAddingShift, setIsAddingShift] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
   
   // Check authentication
   useEffect(() => {
@@ -44,6 +45,7 @@ export function MonthlyCalendar() {
     const fetchData = async () => {
       try {
         setIsLoading(true);
+        setHasError(false);
         
         // Get employees
         const employeeData = await employeeService.getEmployees();
@@ -69,10 +71,12 @@ export function MonthlyCalendar() {
         const formattedStartDate = formatDate(startDate);
         const formattedEndDate = formatDate(endDate);
         
+        console.log(`Fetching shifts from ${formattedStartDate} to ${formattedEndDate}`);
         const shiftData = await shiftService.getShifts(formattedStartDate, formattedEndDate);
         setShifts(shiftData);
       } catch (error) {
         console.error("Error fetching calendar data:", error);
+        setHasError(true);
         toast({
           title: "Errore",
           description: "Si è verificato un errore durante il caricamento dei dati del calendario.",
@@ -155,9 +159,10 @@ export function MonthlyCalendar() {
       console.error("Error saving shift:", error);
       toast({
         title: "Errore",
-        description: "Si è verificato un errore durante il salvataggio del turno.",
+        description: "Si è verificato un errore durante il salvataggio del turno. Assicurati di avere i permessi necessari.",
         variant: "destructive",
       });
+      // Keep modal open for retry
     }
   };
   
@@ -174,9 +179,10 @@ export function MonthlyCalendar() {
       console.error("Error deleting shift:", error);
       toast({
         title: "Errore",
-        description: "Si è verificato un errore durante l'eliminazione del turno.",
+        description: "Si è verificato un errore durante l'eliminazione del turno. Assicurati di avere i permessi necessari.",
         variant: "destructive",
       });
+      // Keep modal open for retry
     }
   };
   
@@ -204,6 +210,20 @@ export function MonthlyCalendar() {
         onToday={handleToday}
       />
       
+      {/* Admin information banner */}
+      {isAdmin() && (
+        <div className="bg-amber-50 border border-amber-200 p-3 rounded-md text-amber-800 text-sm">
+          <strong>Modalità Admin:</strong> Puoi aggiungere, modificare ed eliminare i turni cliccando sul calendario.
+        </div>
+      )}
+      
+      {/* Error banner */}
+      {hasError && (
+        <div className="bg-red-50 border border-red-200 p-3 rounded-md text-red-800 text-sm">
+          Si è verificato un errore durante il caricamento dei dati. Prova ad aggiornare la pagina.
+        </div>
+      )}
+      
       {/* Calendar grid */}
       {isLoading ? (
         <div className="flex justify-center py-12">
@@ -221,7 +241,7 @@ export function MonthlyCalendar() {
           </div>
           
           {/* Calendar days */}
-          <div className="grid grid-cols-7">
+          <div className="grid grid-cols-7 auto-rows-fr">
             {calendarDays.map((day, index) => (
               <CalendarDay
                 key={index}
