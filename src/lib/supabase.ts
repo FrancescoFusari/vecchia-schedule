@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { Employee, Shift, ShiftTemplate, User } from './types';
 
@@ -368,48 +369,12 @@ export const shiftService = {
     try {
       console.log(`Fetching shifts between ${startDate} and ${endDate}`);
       
-      // Try to get the authenticated admin session
+      // Check for admin session first to determine which client to use
       const adminSession = localStorage.getItem('workshift_admin_session');
+      const client = adminSession ? adminClient : supabase;
       
-      if (adminSession) {
-        console.log("Admin session found, fetching shifts as admin");
-        
-        // Direct HTTP request bypassing RLS for admin
-        const url = `${supabaseUrl}/rest/v1/shifts?select=*&date=gte.${startDate}&date=lte.${endDate}&order=date.asc`;
-        
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'apikey': serviceRoleKey || supabaseKey,
-            'Authorization': `Bearer ${serviceRoleKey || supabaseKey}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch shifts: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        const shifts: Shift[] = data.map(shift => ({
-          id: shift.id,
-          employeeId: shift.employee_id,
-          date: shift.date,
-          startTime: shift.start_time,
-          endTime: shift.end_time,
-          duration: shift.duration,
-          notes: shift.notes || '',
-          createdAt: shift.created_at,
-          updatedAt: shift.updated_at
-        }));
-        
-        console.log(`Successfully fetched ${shifts.length} shifts as admin`);
-        return shifts;
-      }
-      
-      // If not admin, use standard client
-      const { data, error } = await supabase
+      // Use the client directly with the SDK instead of making direct HTTP requests
+      const { data, error } = await client
         .from('shifts')
         .select('*')
         .gte('date', startDate)
@@ -472,38 +437,84 @@ export const shiftService = {
       
       console.log("Creating shift with data:", shiftData);
       
-      // Use adminClient instead of supabase for admin operations
-      // This ensures we bypass RLS policies properly
-      const { data, error } = await adminClient
-        .from('shifts')
-        .insert(shiftData)
-        .select()
-        .single();
+      // When using the service role key, we need to explicitly set the headers to include it
+      if (serviceRoleKey) {
+        console.log("Using service role key for admin operation");
         
-      if (error) {
-        console.error("Error creating shift:", error);
-        throw error;
+        // Create a temporary admin client for this specific request
+        // This ensures fresh authentication for this critical operation
+        const tempAdminClient = createClient(supabaseUrl, serviceRoleKey, {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false
+          }
+        });
+        
+        const { data, error } = await tempAdminClient
+          .from('shifts')
+          .insert(shiftData)
+          .select()
+          .single();
+          
+        if (error) {
+          console.error("Error creating shift with admin client:", error);
+          throw error;
+        }
+        
+        if (!data) {
+          throw new Error("No data returned after creating shift");
+        }
+        
+        // Map the returned data to our Shift type
+        const newShift: Shift = {
+          id: data.id,
+          employeeId: data.employee_id,
+          date: data.date,
+          startTime: data.start_time,
+          endTime: data.end_time,
+          duration: data.duration,
+          notes: data.notes || '',
+          createdAt: data.created_at,
+          updatedAt: data.updated_at
+        };
+        
+        console.log("Shift created successfully with ID:", newShift.id);
+        return newShift;
+      } else {
+        // Fallback to regular admin client if service role key isn't available
+        console.warn("Service role key not available, using regular admin client");
+        
+        const { data, error } = await adminClient
+          .from('shifts')
+          .insert(shiftData)
+          .select()
+          .single();
+          
+        if (error) {
+          console.error("Error creating shift with admin client:", error);
+          throw error;
+        }
+        
+        if (!data) {
+          throw new Error("No data returned after creating shift");
+        }
+        
+        // Map the returned data to our Shift type
+        const newShift: Shift = {
+          id: data.id,
+          employeeId: data.employee_id,
+          date: data.date,
+          startTime: data.start_time,
+          endTime: data.end_time,
+          duration: data.duration,
+          notes: data.notes || '',
+          createdAt: data.created_at,
+          updatedAt: data.updated_at
+        };
+        
+        console.log("Shift created successfully with ID:", newShift.id);
+        return newShift;
       }
-      
-      if (!data) {
-        throw new Error("No data returned after creating shift");
-      }
-      
-      // Map the returned data to our Shift type
-      const newShift: Shift = {
-        id: data.id,
-        employeeId: data.employee_id,
-        date: data.date,
-        startTime: data.start_time,
-        endTime: data.end_time,
-        duration: data.duration,
-        notes: data.notes || '',
-        createdAt: data.created_at,
-        updatedAt: data.updated_at
-      };
-      
-      console.log("Shift created successfully with ID:", newShift.id);
-      return newShift;
     } catch (error) {
       console.error("Error creating shift:", error);
       throw error;
@@ -531,15 +542,38 @@ export const shiftService = {
         notes: shift.notes || null
       };
       
-      // Use adminClient instead of supabase
-      const { error } = await adminClient
-        .from('shifts')
-        .update(shiftData)
-        .eq('id', shift.id);
+      // When using the service role key, we need to explicitly set the headers to include it
+      if (serviceRoleKey) {
+        console.log("Using service role key for admin operation");
         
-      if (error) {
-        console.error("Error updating shift:", error);
-        throw error;
+        // Create a temporary admin client for this specific request
+        const tempAdminClient = createClient(supabaseUrl, serviceRoleKey, {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false
+          }
+        });
+        
+        const { error } = await tempAdminClient
+          .from('shifts')
+          .update(shiftData)
+          .eq('id', shift.id);
+          
+        if (error) {
+          console.error("Error updating shift with admin client:", error);
+          throw error;
+        }
+      } else {
+        // Fallback to regular admin client if service role key isn't available
+        const { error } = await adminClient
+          .from('shifts')
+          .update(shiftData)
+          .eq('id', shift.id);
+          
+        if (error) {
+          console.error("Error updating shift with admin client:", error);
+          throw error;
+        }
       }
       
       console.log("Shift updated successfully");
@@ -561,15 +595,38 @@ export const shiftService = {
         throw new Error("Admin privileges required to delete shifts");
       }
       
-      // Use adminClient instead of supabase
-      const { error } = await adminClient
-        .from('shifts')
-        .delete()
-        .eq('id', shiftId);
+      // When using the service role key, we need to explicitly set the headers to include it
+      if (serviceRoleKey) {
+        console.log("Using service role key for admin operation");
         
-      if (error) {
-        console.error("Error deleting shift:", error);
-        throw error;
+        // Create a temporary admin client for this specific request
+        const tempAdminClient = createClient(supabaseUrl, serviceRoleKey, {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false
+          }
+        });
+        
+        const { error } = await tempAdminClient
+          .from('shifts')
+          .delete()
+          .eq('id', shiftId);
+          
+        if (error) {
+          console.error("Error deleting shift with admin client:", error);
+          throw error;
+        }
+      } else {
+        // Fallback to regular admin client if service role key isn't available
+        const { error } = await adminClient
+          .from('shifts')
+          .delete()
+          .eq('id', shiftId);
+          
+        if (error) {
+          console.error("Error deleting shift with admin client:", error);
+          throw error;
+        }
       }
       
       console.log("Shift deleted successfully");
