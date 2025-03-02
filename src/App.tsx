@@ -1,25 +1,78 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
+import { TooltipProvider } from "@/components/ui/tooltip";
+
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import Employees from "./pages/Employees";
 import NotFound from "./pages/NotFound";
+import { Layout } from "./components/Layout";
 
 const queryClient = new QueryClient();
+
+// Protected route component
+const ProtectedRoute = ({ children, adminOnly = false }: { children: JSX.Element, adminOnly?: boolean }) => {
+  const { user, loading, isAdmin } = useAuth();
+  
+  if (loading) {
+    // Show loading state
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-primary">Caricamento...</div>
+      </div>
+    );
+  }
+  
+  if (!user) {
+    // Redirect to login if not authenticated
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (adminOnly && !isAdmin()) {
+    // Redirect to dashboard if not admin
+    return <Navigate to="/" replace />;
+  }
+  
+  return children;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Layout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Dashboard />} />
+              <Route 
+                path="employees" 
+                element={
+                  <ProtectedRoute adminOnly>
+                    <Employees />
+                  </ProtectedRoute>
+                } 
+              />
+            </Route>
+            
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+        <Toaster />
+        <Sonner />
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
