@@ -10,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 interface CalendarDayProps {
   day: CalendarDayType;
   employees: Employee[];
-  onAddShift?: (date: Date) => void;
+  onAddShift?: (date: Date, dayOfWeek: number) => void;
   onEditShift?: (shift: Shift) => void;
 }
 
@@ -27,8 +27,13 @@ export function CalendarDay({ day, employees, onAddShift, onEditShift }: Calenda
       const localDate = new Date(day.date);
       // Set to noon to avoid timezone issues
       localDate.setHours(12, 0, 0, 0);
-      console.log(`Adding shift for date: ${formatDate(localDate)}`);
-      onAddShift(localDate);
+      
+      // Get day of week (0 = Monday, 1 = Tuesday, ..., 6 = Sunday)
+      let dayOfWeek = localDate.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+      dayOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert to 0 = Monday, ..., 6 = Sunday
+      
+      console.log(`Adding shift for date: ${formatDate(localDate)}, day of week: ${dayOfWeek}`);
+      onAddShift(localDate, dayOfWeek);
     }
   };
   

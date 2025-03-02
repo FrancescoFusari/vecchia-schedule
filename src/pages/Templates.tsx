@@ -4,11 +4,13 @@ import { templateService } from "@/lib/supabase";
 import { ShiftTemplate } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Edit, Trash } from "lucide-react";
+import { Plus, Edit, Trash, Calendar } from "lucide-react";
 import { TemplateModal } from "@/components/Shifts/TemplateModal";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { DAYS_OF_WEEK } from "@/lib/constants";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 
 export default function Templates() {
   const { isAdmin } = useAuth();
@@ -111,6 +113,19 @@ export default function Templates() {
     }
   };
   
+  // Helper function to format days of week
+  const formatDaysOfWeek = (daysOfWeek?: number[]) => {
+    if (!daysOfWeek || daysOfWeek.length === 0) {
+      return "Tutti i giorni";
+    }
+    
+    if (daysOfWeek.length === 7) {
+      return "Tutti i giorni";
+    }
+    
+    return daysOfWeek.map(day => DAYS_OF_WEEK[day]).join(", ");
+  };
+  
   return (
     <div className="container py-8">
       <div className="flex justify-between items-center mb-6">
@@ -146,6 +161,19 @@ export default function Templates() {
                   {template.startTime} - {template.endTime} ({template.duration} ore)
                 </CardDescription>
               </CardHeader>
+              <CardContent>
+                <div className="flex items-center text-sm text-gray-500">
+                  <Calendar className="mr-2 h-4 w-4" />
+                  <span>{formatDaysOfWeek(template.daysOfWeek)}</span>
+                </div>
+                {template.daysOfWeek && template.daysOfWeek.length > 0 && template.daysOfWeek.length < 7 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {template.daysOfWeek.map(day => (
+                      <Badge key={day} variant="outline">{DAYS_OF_WEEK[day]}</Badge>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
               {isAdmin() && (
                 <CardFooter className="justify-end space-x-2">
                   <Button variant="outline" size="sm" onClick={() => handleEditTemplate(template)}>

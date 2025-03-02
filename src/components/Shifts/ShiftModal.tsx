@@ -1,29 +1,37 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Shift, Employee, ShiftTemplate } from "@/lib/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatDate, calculateShiftDuration, generateId, formatEmployeeName } from "@/lib/utils";
-import { DEFAULT_SHIFT_TEMPLATES } from "@/lib/constants";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { templateService } from "@/lib/supabase";
+import { Employee, Shift, ShiftTemplate } from "@/lib/types";
+import { DEFAULT_SHIFT_TEMPLATES } from "@/lib/constants";
+import { calculateShiftDuration, formatDate, generateId } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface ShiftModalProps {
   isOpen: boolean;
   onClose: () => void;
   shift: Shift | null;
   date: Date | null;
+  dayOfWeek?: number;
   employees: Employee[];
   onSave: (shift: Shift) => void;
   onDelete: (shiftId: string) => void;
 }
 
-export function ShiftModal({ isOpen, onClose, shift, date, employees, onSave, onDelete }: ShiftModalProps) {
+export function ShiftModal({ 
+  isOpen, 
+  onClose, 
+  shift, 
+  date, 
+  dayOfWeek,
+  employees, 
+  onSave, 
+  onDelete 
+}: ShiftModalProps) {
   const [employeeId, setEmployeeId] = useState(shift?.employeeId || "");
   const [shiftDate, setShiftDate] = useState("");
   const [startTime, setStartTime] = useState(shift?.startTime || "");
@@ -32,41 +40,61 @@ export function ShiftModal({ isOpen, onClose, shift, date, employees, onSave, on
   const [duration, setDuration] = useState(shift?.duration || 0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Use templates from Supabase if available, otherwise fallback to constants
   const [templates, setTemplates] = useState<ShiftTemplate[]>(DEFAULT_SHIFT_TEMPLATES);
+  const [allTemplates, setAllTemplates] = useState<ShiftTemplate[]>([]);
   
-  // Initialize date when component mounts or props change
   useEffect(() => {
     if (shift) {
-      // If editing existing shift, use its date
       setShiftDate(shift.date);
       console.log(`Setting date from shift: ${shift.date}`);
     } else if (date) {
-      // If adding new shift, use the provided date
       const formattedDate = formatDate(date);
       console.log(`Setting date from prop: ${formattedDate}`);
       setShiftDate(formattedDate);
     }
   }, [shift, date]);
   
-  // Fetch templates when modal opens
   useEffect(() => {
     const fetchTemplates = async () => {
       try {
         const templatesData = await templateService.getTemplates();
-        if (templatesData && templatesData.length > 0) {
+        console.log("Templates fetched for shift modal:", templatesData);
+        setAllTemplates(templatesData);
+        
+        if (dayOfWeek !== undefined) {
+          filterTemplatesByDay(templatesData, dayOfWeek);
+        } else {
           setTemplates(templatesData);
         }
       } catch (error) {
         console.error("Error fetching shift templates:", error);
-        // Fallback to default templates if fetch fails
+        toast({
+          title: "Attenzione",
+          description: "Impossibile caricare i template, verranno utilizzati i template predefiniti.",
+          variant: "destructive",
+        });
+        setTemplates(DEFAULT_SHIFT_TEMPLATES);
       }
     };
     
     fetchTemplates();
-  }, []);
+  }, [isOpen, dayOfWeek]);
   
-  // Calculate duration when times change
+  const filterTemplatesByDay = (allTemplates: ShiftTemplate[], day: number) => {
+    console.log(`Filtering templates for day: ${day}`);
+    
+    const filtered = allTemplates.filter(template => {
+      if (!template.daysOfWeek || template.daysOfWeek.length === 0) {
+        return true;
+      }
+      
+      return template.daysOfWeek.includes(day);
+    });
+    
+    console.log(`Filtered templates: ${filtered.length}`);
+    setTemplates(filtered);
+  };
+  
   useEffect(() => {
     if (startTime && endTime) {
       const calculatedDuration = calculateShiftDuration(startTime, endTime);
@@ -74,12 +102,11 @@ export function ShiftModal({ isOpen, onClose, shift, date, employees, onSave, on
     }
   }, [startTime, endTime]);
   
-  const handleTemplateSelect = (templateId: string) => {
+  const applyTemplate = (templateId: string) => {
     const template = templates.find(t => t.id === templateId);
     if (template) {
       setStartTime(template.startTime);
       setEndTime(template.endTime);
-      setDuration(template.duration);
     }
   };
   
@@ -87,7 +114,7 @@ export function ShiftModal({ isOpen, onClose, shift, date, employees, onSave, on
     if (!employeeId) {
       toast({
         title: "Errore di validazione",
-        description: "Seleziona un dipendente per il turno.",
+        description: "Seleziona un dipendente.",
         variant: "destructive",
       });
       return false;
@@ -105,7 +132,7 @@ export function ShiftModal({ isOpen, onClose, shift, date, employees, onSave, on
     if (!startTime) {
       toast({
         title: "Errore di validazione",
-        description: "Inserisci l'orario di inizio del turno.",
+        description: "Inserisci l'orario di inizio.",
         variant: "destructive",
       });
       return false;
@@ -114,7 +141,7 @@ export function ShiftModal({ isOpen, onClose, shift, date, employees, onSave, on
     if (!endTime) {
       toast({
         title: "Errore di validazione",
-        description: "Inserisci l'orario di fine del turno.",
+        description: "Inserisci l'orario di fine.",
         variant: "destructive",
       });
       return false;
@@ -123,7 +150,7 @@ export function ShiftModal({ isOpen, onClose, shift, date, employees, onSave, on
     return true;
   };
   
-  const handleSave = async () => {
+  const handleSubmit = async () => {
     if (!validateForm()) return;
     
     try {
@@ -140,15 +167,16 @@ export function ShiftModal({ isOpen, onClose, shift, date, employees, onSave, on
         duration,
         notes,
         createdAt: shift?.createdAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       };
       
       await onSave(updatedShift);
+      onClose();
     } catch (error) {
       console.error("Error saving shift:", error);
       toast({
         title: "Errore",
-        description: "Si è verificato un errore durante il salvataggio del turno. Assicurati di avere i permessi necessari.",
+        description: "Si è verificato un errore durante il salvataggio del turno.",
         variant: "destructive",
       });
     } finally {
@@ -161,14 +189,14 @@ export function ShiftModal({ isOpen, onClose, shift, date, employees, onSave, on
       try {
         setIsSubmitting(true);
         await onDelete(shift.id);
+        onClose();
       } catch (error) {
         console.error("Error deleting shift:", error);
         toast({
           title: "Errore",
-          description: "Si è verificato un errore durante l'eliminazione del turno. Assicurati di avere i permessi necessari.",
+          description: "Si è verificato un errore durante l'eliminazione del turno.",
           variant: "destructive",
         });
-      } finally {
         setIsSubmitting(false);
       }
     }
@@ -182,11 +210,33 @@ export function ShiftModal({ isOpen, onClose, shift, date, employees, onSave, on
             {shift ? "Modifica turno" : "Aggiungi turno"}
           </DialogTitle>
           <DialogDescription>
-            {shift ? "Modifica i dettagli del turno esistente." : "Aggiungi un nuovo turno al calendario."}
+            {shift ? "Modifica i dettagli del turno esistente." : "Aggiungi un nuovo turno."}
           </DialogDescription>
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="employee" className="text-right">
+              Dipendente
+            </Label>
+            <Select
+              value={employeeId}
+              onValueChange={setEmployeeId}
+              disabled={isSubmitting}
+            >
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Seleziona dipendente" />
+              </SelectTrigger>
+              <SelectContent>
+                {employees.map((employee) => (
+                  <SelectItem key={employee.id} value={employee.id}>
+                    {employee.firstName} {employee.lastName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="date" className="text-right">
               Data
@@ -205,28 +255,13 @@ export function ShiftModal({ isOpen, onClose, shift, date, employees, onSave, on
           </div>
           
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="employee" className="text-right">
-              Dipendente
-            </Label>
-            <Select value={employeeId} onValueChange={setEmployeeId} disabled={isSubmitting}>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Seleziona dipendente" />
-              </SelectTrigger>
-              <SelectContent>
-                {employees.map((employee) => (
-                  <SelectItem key={employee.id} value={employee.id}>
-                    {formatEmployeeName(employee.firstName, employee.lastName)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="template" className="text-right">
               Template
             </Label>
-            <Select onValueChange={handleTemplateSelect} disabled={isSubmitting}>
+            <Select
+              onValueChange={applyTemplate}
+              disabled={isSubmitting}
+            >
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="Seleziona template" />
               </SelectTrigger>
@@ -250,6 +285,7 @@ export function ShiftModal({ isOpen, onClose, shift, date, employees, onSave, on
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
               className="col-span-3"
+              disabled={isSubmitting}
             />
           </div>
           
@@ -263,6 +299,7 @@ export function ShiftModal({ isOpen, onClose, shift, date, employees, onSave, on
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
               className="col-span-3"
+              disabled={isSubmitting}
             />
           </div>
           
@@ -286,12 +323,13 @@ export function ShiftModal({ isOpen, onClose, shift, date, employees, onSave, on
             <Label htmlFor="notes" className="text-right">
               Note
             </Label>
-            <Textarea
+            <Input
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="col-span-3"
-              rows={3}
+              placeholder="Note opzionali"
+              disabled={isSubmitting}
             />
           </div>
         </div>
@@ -323,7 +361,7 @@ export function ShiftModal({ isOpen, onClose, shift, date, employees, onSave, on
             <Button variant="outline" onClick={onClose} className="mr-2" disabled={isSubmitting}>
               Annulla
             </Button>
-            <Button onClick={handleSave} disabled={isSubmitting}>
+            <Button onClick={handleSubmit} disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
                   <span className="mr-2">Salvataggio...</span>

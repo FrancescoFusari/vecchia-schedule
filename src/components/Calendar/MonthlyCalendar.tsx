@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { CalendarHeader } from "./CalendarHeader";
 import { CalendarDay } from "./CalendarDay";
@@ -24,6 +23,7 @@ export function MonthlyCalendar() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [currentDayOfWeek, setCurrentDayOfWeek] = useState<number | undefined>(undefined);
   
   // Check authentication
   useEffect(() => {
@@ -118,9 +118,10 @@ export function MonthlyCalendar() {
     setCurrentDate(new Date());
   };
   
-  const handleAddShift = (date: Date) => {
-    console.log(`Modal receiving date: ${formatDate(date)}`);
+  const handleAddShift = (date: Date, dayOfWeek: number) => {
+    console.log(`Modal receiving date: ${formatDate(date)}, day of week: ${dayOfWeek}`);
     setSelectedDate(date);
+    setCurrentDayOfWeek(dayOfWeek);
     setIsAddingShift(true);
     setSelectedShift(null);
   };
@@ -266,10 +267,11 @@ export function MonthlyCalendar() {
       {/* Shift modal for adding/editing shifts */}
       {(isAddingShift || selectedShift) && (
         <ShiftModal
-          isOpen={true}
+          isOpen={isAddingShift || !!selectedShift}
           onClose={handleShiftModalClose}
           shift={selectedShift}
           date={selectedDate}
+          dayOfWeek={currentDayOfWeek}
           employees={employees}
           onSave={handleSaveShift}
           onDelete={handleDeleteShift}

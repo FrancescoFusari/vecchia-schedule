@@ -1,4 +1,3 @@
-
 export type Role = "admin" | "employee";
 
 export interface User {
@@ -39,7 +38,8 @@ export interface ShiftTemplate {
   startTime: string; // HH:MM format
   endTime: string; // HH:MM format
   duration: number; // in hours
-  createdAt: string; // Changed from optional to required
+  daysOfWeek?: number[]; // 0 for Monday, 1 for Tuesday, ... 6 for Sunday
+  createdAt: string;
 }
 
 export interface CalendarDay {

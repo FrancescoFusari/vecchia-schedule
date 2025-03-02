@@ -1,13 +1,16 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ShiftTemplate } from "@/lib/types";
 import { calculateShiftDuration, generateId } from "@/lib/utils";
 import { templateService } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { DAYS_OF_WEEK } from "@/lib/constants";
 
 interface TemplateModalProps {
   isOpen: boolean;
@@ -22,6 +25,7 @@ export function TemplateModal({ isOpen, onClose, template, onSave, onDelete }: T
   const [startTime, setStartTime] = useState(template?.startTime || "");
   const [endTime, setEndTime] = useState(template?.endTime || "");
   const [duration, setDuration] = useState(template?.duration || 0);
+  const [selectedDays, setSelectedDays] = useState<number[]>(template?.daysOfWeek || []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Calculate duration when times change
@@ -63,6 +67,16 @@ export function TemplateModal({ isOpen, onClose, template, onSave, onDelete }: T
     return true;
   };
   
+  const handleDayToggle = (dayIndex: number) => {
+    setSelectedDays(prev => {
+      if (prev.includes(dayIndex)) {
+        return prev.filter(d => d !== dayIndex);
+      } else {
+        return [...prev, dayIndex];
+      }
+    });
+  };
+  
   const handleSave = async () => {
     if (!validateForm()) return;
     
@@ -75,6 +89,7 @@ export function TemplateModal({ isOpen, onClose, template, onSave, onDelete }: T
         startTime,
         endTime,
         duration,
+        daysOfWeek: selectedDays.length > 0 ? selectedDays : undefined,
         createdAt: template?.createdAt || new Date().toISOString()
       };
       
@@ -177,6 +192,25 @@ export function TemplateModal({ isOpen, onClose, template, onSave, onDelete }: T
                 className="bg-gray-50"
               />
               <span className="ml-2">ore</span>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-4 gap-4">
+            <Label className="text-right pt-2">
+              Giorni
+            </Label>
+            <div className="col-span-3 grid grid-cols-2 gap-2">
+              {DAYS_OF_WEEK.map((day, index) => (
+                <div key={index} className="flex items-center space-x-2">
+                  <Checkbox 
+                    id={`day-${index}`} 
+                    checked={selectedDays.includes(index)}
+                    onCheckedChange={() => handleDayToggle(index)}
+                    disabled={isSubmitting}
+                  />
+                  <Label htmlFor={`day-${index}`}>{day}</Label>
+                </div>
+              ))}
             </div>
           </div>
         </div>
