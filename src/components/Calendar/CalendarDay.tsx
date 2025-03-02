@@ -10,12 +10,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 interface CalendarDayProps {
   day: CalendarDayType;
   employees: Employee[];
-  timeSlots: string[];
   onAddShift?: (date: Date, dayOfWeek: number) => void;
   onEditShift?: (shift: Shift) => void;
 }
 
-export function CalendarDay({ day, employees, timeSlots, onAddShift, onEditShift }: CalendarDayProps) {
+export function CalendarDay({ day, employees, onAddShift, onEditShift }: CalendarDayProps) {
   const { isAdmin } = useAuth();
   
   const getEmployeeById = (id: string): Employee | undefined => {
@@ -38,24 +37,15 @@ export function CalendarDay({ day, employees, timeSlots, onAddShift, onEditShift
     }
   };
   
-  // Group shifts by time slot
-  const getShiftsByTimeSlot = (timeSlot: string) => {
-    return day.shifts.filter(shift => shift.startTime === timeSlot);
-  };
-  
-  // Check if it's a weekend day (Saturday or Sunday)
-  const isWeekend = day.date.getDay() === 0 || day.date.getDay() === 6;
-  
   return (
-    <div className="flex flex-col">
-      {/* Day number header */}
-      <div 
-        className={cn(
-          "h-10 flex justify-between items-center p-2 sticky top-0 border-b border-gray-200",
-          !day.isCurrentMonth && "bg-gray-50 text-gray-400",
-          day.isToday && "border-primary/50"
-        )}
-      >
+    <div
+      className={cn(
+        "calendar-day border border-gray-200 p-2 transition-all duration-200 overflow-hidden h-full min-h-[120px]",
+        !day.isCurrentMonth && "empty text-gray-400 bg-gray-50",
+        day.isToday && "border-primary/50"
+      )}
+    >
+      <div className="flex justify-between items-start">
         <div
           className={cn(
             "font-semibold text-sm rounded-full w-7 h-7 flex items-center justify-center",
@@ -86,43 +76,27 @@ export function CalendarDay({ day, employees, timeSlots, onAddShift, onEditShift
         )}
       </div>
       
-      {/* Time slot cells */}
-      {timeSlots.map((timeSlot, index) => {
-        const shiftsInSlot = getShiftsByTimeSlot(timeSlot);
-        
-        return (
-          <div 
-            key={index} 
-            className={cn(
-              "calendar-day-slot h-24 border-b border-r border-gray-200 p-1 overflow-y-auto",
-              !day.isCurrentMonth && "bg-gray-50"
-            )}
-          >
-            {shiftsInSlot.length === 0 && day.isCurrentMonth ? (
-              <div className="h-full flex items-center justify-center text-xs text-gray-400 italic">
-                {/* Empty state - show nothing or a subtle indicator */}
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {shiftsInSlot.map(shift => {
-                  const employee = getEmployeeById(shift.employeeId);
-                  if (!employee) return null;
-                  
-                  return (
-                    <ShiftItem
-                      key={shift.id}
-                      shift={shift}
-                      employee={employee}
-                      isWeekend={isWeekend}
-                      onClick={() => onEditShift?.(shift)}
-                    />
-                  );
-                })}
-              </div>
-            )}
+      <div className="mt-2 space-y-1 max-h-[250px] overflow-y-auto">
+        {day.shifts.length === 0 && day.isCurrentMonth && (
+          <div className="text-xs text-gray-400 italic py-1">
+            Nessun turno
           </div>
-        );
-      })}
+        )}
+        
+        {day.shifts.map(shift => {
+          const employee = getEmployeeById(shift.employeeId);
+          if (!employee) return null;
+          
+          return (
+            <ShiftItem
+              key={shift.id}
+              shift={shift}
+              employee={employee}
+              onClick={() => onEditShift?.(shift)}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }
