@@ -23,7 +23,6 @@ export function EmployeeTable({ employees, onEdit, onDelete }: EmployeeTableProp
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[100px]">ID</TableHead>
             <TableHead>Nome</TableHead>
             <TableHead>Cognome</TableHead>
             <TableHead>Email</TableHead>
@@ -35,7 +34,6 @@ export function EmployeeTable({ employees, onEdit, onDelete }: EmployeeTableProp
         <TableBody>
           {employees.map((employee) => (
             <TableRow key={employee.id} className="hover:bg-gray-50">
-              <TableCell className="font-medium">{employee.id}</TableCell>
               <TableCell>{employee.firstName}</TableCell>
               <TableCell>{employee.lastName}</TableCell>
               <TableCell>{employee.email}</TableCell>
@@ -64,7 +62,7 @@ export function EmployeeTable({ employees, onEdit, onDelete }: EmployeeTableProp
           
           {employees.length === 0 && (
             <TableRow>
-              <TableCell colSpan={7} className="text-center h-24 text-gray-500">
+              <TableCell colSpan={6} className="text-center h-24 text-gray-500">
                 Nessun dipendente trovato
               </TableCell>
             </TableRow>
