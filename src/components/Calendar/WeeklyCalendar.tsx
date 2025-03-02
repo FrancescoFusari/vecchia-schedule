@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { CalendarHeader } from "./CalendarHeader";
 import { DAYS_OF_WEEK } from "@/lib/constants";
@@ -263,7 +264,7 @@ export function WeeklyCalendar({
   return <div className="space-y-6 animate-fade-in">
       <CalendarHeader date={currentDate} onPrevMonth={handlePrevWeek} onNextMonth={handleNextWeek} onToday={handleToday} isWeekView={true} onViewChange={handleViewToggle} />
       
-      {isAdmin()}
+      {isAdmin && isAdmin()}
       
       {hasError && <div className="bg-red-50 border border-red-200 p-3 rounded-md text-red-800 text-sm">
           Si è verificato un errore durante il caricamento dei dati. Prova ad aggiornare la pagina.
@@ -298,7 +299,7 @@ export function WeeklyCalendar({
                         const isWeekend = dayIndex > 4;
                         const shifts = shiftsByDayAndTime[dayIndex][time] || [];
                         return <div key={dayIndex} className={`p-2 border-r last:border-r-0 border-gray-200 ${isWeekend ? "bg-amber-50/30" : ""} min-h-[60px]`} onClick={() => {
-                          if (isAdmin()) {
+                          if (isAdmin && isAdmin()) {
                             const date = new Date(formattedDates[dayIndex].date);
                             handleAddShift(date, dayIndex);
                           }
@@ -317,7 +318,7 @@ export function WeeklyCalendar({
                                 };
                                 return <div key={shift.id} className="px-2 py-1 rounded-md text-xs font-medium truncate border cursor-pointer" style={customStyle} onClick={e => {
                                   e.stopPropagation();
-                                  if (isAdmin()) {
+                                  if (isAdmin && isAdmin()) {
                                     handleEditShift(shift);
                                   }
                                 }}>
@@ -339,7 +340,7 @@ export function WeeklyCalendar({
                 const isToday = formattedDate.isToday;
                 return <div key={day} className={`${isWeekend ? "bg-amber-50/30" : ""}`}>
                     <div className={`px-4 py-3 flex justify-between items-center ${isToday ? "bg-primary/10" : ""}`} onClick={() => {
-                      if (isAdmin()) {
+                      if (isAdmin && isAdmin()) {
                         const date = new Date(formattedDates[dayIndex].date);
                         handleAddShift(date, dayIndex);
                       }
@@ -349,7 +350,7 @@ export function WeeklyCalendar({
                           {day} {formattedDate.dayOfMonth}
                         </div>
                       </div>
-                      {isAdmin() && <button className="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-gray-700" onClick={e => {
+                      {isAdmin && isAdmin() && <button className="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-gray-700" onClick={e => {
                         e.stopPropagation();
                         const date = new Date(formattedDates[dayIndex].date);
                         handleAddShift(date, dayIndex);
@@ -371,7 +372,7 @@ export function WeeklyCalendar({
                           borderColor: `${employeeColor}30`
                         };
                         return <div key={shift.id} className="px-3 py-2 rounded-md text-sm font-medium border flex justify-between" style={customStyle} onClick={() => {
-                          if (isAdmin()) {
+                          if (isAdmin && isAdmin()) {
                             handleEditShift(shift);
                           }
                         }}>
@@ -387,8 +388,7 @@ export function WeeklyCalendar({
                   </div>;
               })}
             </div>}
-        </>}
-      
+          
       <HoursSummary />
       
       {(isAddingShift || selectedShift) && <ShiftModal isOpen={isAddingShift || !!selectedShift} onClose={handleShiftModalClose} shift={selectedShift} date={selectedDate} dayOfWeek={currentDayOfWeek} employees={employees} onSave={handleSaveShift} onDelete={handleDeleteShift} />}

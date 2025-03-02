@@ -1,3 +1,4 @@
+
 import { ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { Shift, CalendarDay } from "./types";
@@ -120,6 +121,10 @@ function isSameDay(date1: Date, date2: Date): boolean {
 
 // Get week start and end dates
 export function getWeekDates(date: Date): { start: Date; end: Date } {
+  if (!date) {
+    date = new Date(); // Provide a default date if date is undefined
+  }
+  
   const day = date.getDay();
   // Adjust for Monday as first day of week (0 is Monday in our system)
   const diff = day === 0 ? 6 : day - 1;
