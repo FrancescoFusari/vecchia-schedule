@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { authService, supabase } from "@/lib/supabase";
 import { User } from "@/lib/types";
@@ -19,7 +18,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [authInitialized, setAuthInitialized] = useState(false);
 
-  // Check for existing session on mount
   useEffect(() => {
     const checkSession = async () => {
       try {
@@ -35,7 +33,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     checkSession();
 
-    // Set up auth state change listener
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("Auth state changed:", event, session?.user?.id);
       if (event === 'SIGNED_OUT') {
@@ -48,7 +45,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => {
-      // Clean up subscription
       authListener.subscription.unsubscribe();
     };
   }, []);
