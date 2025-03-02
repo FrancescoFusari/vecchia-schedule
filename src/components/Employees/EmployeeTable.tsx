@@ -9,7 +9,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash } from "lucide-react";
+import { Edit, Trash, ChevronRight } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Card } from "@/components/ui/card";
 
 interface EmployeeTableProps {
   employees: Employee[];
@@ -18,6 +20,50 @@ interface EmployeeTableProps {
 }
 
 export function EmployeeTable({ employees, onEdit, onDelete }: EmployeeTableProps) {
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <div className="space-y-3">
+        {employees.length === 0 ? (
+          <Card className="p-6 text-center text-gray-500">
+            Nessun dipendente trovato
+          </Card>
+        ) : (
+          employees.map((employee) => (
+            <Card key={employee.id} className="overflow-hidden">
+              <div className="p-4 flex items-center justify-between">
+                <div>
+                  <h3 className="font-medium">{employee.firstName} {employee.lastName}</h3>
+                  <p className="text-sm text-gray-500">{employee.email}</p>
+                  {employee.position && <p className="text-xs text-gray-400">{employee.position}</p>}
+                </div>
+                <div className="flex items-center">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onEdit(employee)}
+                    className="h-8 w-8"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onDelete(employee.id)}
+                    className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
+                  >
+                    <Trash className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          ))
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-md border bg-white overflow-hidden">
       <Table>

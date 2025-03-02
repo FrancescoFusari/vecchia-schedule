@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Employees = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -20,14 +21,12 @@ const Employees = () => {
   const [loadingError, setLoadingError] = useState<string | null>(null);
   const { isAdmin, user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   
-  // Check if user is admin, if not redirect to dashboard
   useEffect(() => {
-    // Make sure admin session exists in localStorage
     const adminSession = localStorage.getItem('workshift_admin_session');
     
     if (!user) {
-      // If no user is set yet, wait
       if (isLoading) return;
       
       toast({
@@ -49,14 +48,12 @@ const Employees = () => {
     }
   }, [isAdmin, navigate, user, isLoading]);
   
-  // Load employees
   const fetchEmployees = async () => {
     try {
       setIsLoading(true);
       setLoadingError(null);
       console.log("Fetching employees...");
       
-      // Verify admin session exists
       const adminSession = localStorage.getItem('workshift_admin_session');
       if (!adminSession) {
         throw new Error("Admin session non trovata. Effettua nuovamente il login come amministratore.");
@@ -86,7 +83,6 @@ const Employees = () => {
   };
   
   useEffect(() => {
-    // Only fetch if user is an admin
     const adminSession = localStorage.getItem('workshift_admin_session');
     if (user && isAdmin() && adminSession) {
       fetchEmployees();
@@ -115,7 +111,6 @@ const Employees = () => {
   const confirmDeleteEmployee = async () => {
     if (deleteConfirmEmployeeId) {
       try {
-        // Verify admin session exists
         const adminSession = localStorage.getItem('workshift_admin_session');
         if (!adminSession) {
           throw new Error("Admin session non trovata. Effettua nuovamente il login come amministratore.");
@@ -153,14 +148,12 @@ const Employees = () => {
   
   const handleSaveEmployee = async (employee: Employee) => {
     try {
-      // Verify admin session exists
       const adminSession = localStorage.getItem('workshift_admin_session');
       if (!adminSession) {
         throw new Error("Admin session non trovata. Effettua nuovamente il login come amministratore.");
       }
       
       if (selectedEmployee) {
-        // Update existing employee
         const updatedEmployee = await employeeService.updateEmployee(employee);
         setEmployees(prev => prev.map(e => e.id === updatedEmployee.id ? updatedEmployee : e));
         toast({
@@ -168,7 +161,6 @@ const Employees = () => {
           description: "Le informazioni del dipendente sono state aggiornate con successo.",
         });
       } else {
-        // Add new employee
         const newEmployee = await employeeService.createEmployee(employee);
         setEmployees(prev => [...prev, newEmployee]);
         toast({
@@ -181,7 +173,6 @@ const Employees = () => {
     } catch (error) {
       console.error("Error saving employee:", error);
       
-      // More specific error handling
       let errorMessage = "Si è verificato un errore durante il salvataggio del dipendente.";
       
       if (error instanceof Error) {
@@ -204,7 +195,6 @@ const Employees = () => {
     }
   };
   
-  // If not admin, don't render anything while checking
   if (!user) {
     return (
       <div className="flex justify-center items-center h-[50vh]">
@@ -213,31 +203,33 @@ const Employees = () => {
     );
   }
   
-  // If not admin, don't render the actual content
   if (!isAdmin()) {
     return null;
   }
   
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
+      <div className={`${isMobile ? 'flex flex-col space-y-3' : 'flex justify-between items-center'}`}>
         <div>
           <h1 className="text-2xl font-bold">Gestione Dipendenti</h1>
-          <p className="text-gray-500">Visualizza, aggiungi e gestisci dipendenti</p>
+          <p className="text-gray-500 mb-2">Visualizza, aggiungi e gestisci dipendenti</p>
         </div>
         
-        <div className="flex gap-2">
+        <div className={`flex ${isMobile ? 'flex-col space-y-2 w-full' : 'gap-2'}`}>
           <Button 
             variant="outline" 
             onClick={handleRefresh} 
             disabled={isRefreshing || isLoading}
-            className="flex items-center gap-1"
+            className={`flex items-center gap-1 ${isMobile ? 'w-full justify-center' : ''}`}
           >
             <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
             Aggiorna
           </Button>
           
-          <Button onClick={handleAddEmployee}>
+          <Button 
+            onClick={handleAddEmployee}
+            className={isMobile ? 'w-full justify-center' : ''}
+          >
             <Plus className="h-4 w-4 mr-2" />
             Nuovo Dipendente
           </Button>
