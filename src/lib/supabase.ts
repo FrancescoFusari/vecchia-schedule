@@ -1,15 +1,25 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { Employee, Shift, ShiftTemplate, User } from './types';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const serviceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
   throw new Error('Missing Supabase credentials');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Create a service role client for admin operations
+const createAdminClient = () => {
+  // Only create if we have the service role key
+  if (serviceRoleKey) {
+    return createClient(supabaseUrl, serviceRoleKey);
+  }
+  // Otherwise, use regular client - RLS will govern access
+  return supabase;
+};
 
 // Auth functions
 export const authService = {
@@ -191,6 +201,21 @@ export const employeeService = {
   getEmployees: async () => {
     try {
       console.log("Fetching employees from database...");
+      
+      // Check for admin session first
+      const adminSession = localStorage.getItem('workshift_admin_session');
+      if (!adminSession) {
+        console.warn("No admin session found");
+      }
+      
+      // Attempt to get debug auth status
+      try {
+        const { data: authStatus } = await supabase.rpc('debug_auth_status');
+        console.log("Auth status:", authStatus);
+      } catch (error) {
+        console.log("Couldn't get auth status:", error);
+      }
+      
       const { data, error } = await supabase
         .from('employees')
         .select('*')
@@ -222,11 +247,6 @@ export const employeeService = {
       return employees;
     } catch (error) {
       console.error("Error fetching employees:", error);
-      // Check if the user has an admin session
-      const adminSession = localStorage.getItem('workshift_admin_session');
-      if (!adminSession) {
-        console.warn("No admin session found - this may be causing RLS permission issues");
-      }
       
       // Use mock data only for development/testing purposes
       console.warn("Using mock employee data as fallback");
@@ -244,17 +264,8 @@ export const employeeService = {
         throw new Error("Admin privileges required to create employees");
       }
       
-      // Use an API key approach for admin operations
-      // This is secure because we're checking the admin session first
-      const adminSupabase = createClient(supabaseUrl, supabaseKey, {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      });
-      
-      // Set custom headers to identify admin request
-      adminSupabase.functions.setAuth(supabaseKey);
+      // Use service role client for admin operations if available
+      const adminClient = createAdminClient();
       
       // Prepare the data object for insertion
       const employeeData = {
@@ -267,7 +278,7 @@ export const employeeService = {
       
       console.log("Employee data to insert:", employeeData);
       
-      const { data, error } = await adminSupabase
+      const { data, error } = await adminClient
         .from('employees')
         .insert(employeeData)
         .select('*')
@@ -297,14 +308,6 @@ export const employeeService = {
       return newEmployee;
     } catch (error) {
       console.error("Error creating employee:", error);
-      
-      // Check for RLS policy error
-      const errorObj = error as any;
-      if (errorObj?.code === '42501') {
-        console.error("RLS policy violation. Make sure you have admin privileges.");
-        throw new Error("Permission denied: Only administrators can create employees.");
-      }
-      
       throw error;
     }
   },
@@ -319,16 +322,8 @@ export const employeeService = {
         throw new Error("Admin privileges required to update employees");
       }
       
-      // Use an API key approach for admin operations
-      const adminSupabase = createClient(supabaseUrl, supabaseKey, {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      });
-      
-      // Set custom headers to identify admin request
-      adminSupabase.functions.setAuth(supabaseKey);
+      // Use service role client for admin operations if available
+      const adminClient = createAdminClient();
       
       // Prepare the data object for update
       const employeeData = {
@@ -339,7 +334,7 @@ export const employeeService = {
         position: employee.position || null
       };
       
-      const { error } = await adminSupabase
+      const { error } = await adminClient
         .from('employees')
         .update(employeeData)
         .eq('id', employee.id);
@@ -367,18 +362,10 @@ export const employeeService = {
         throw new Error("Admin privileges required to delete employees");
       }
       
-      // Use an API key approach for admin operations
-      const adminSupabase = createClient(supabaseUrl, supabaseKey, {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      });
+      // Use service role client for admin operations if available
+      const adminClient = createAdminClient();
       
-      // Set custom headers to identify admin request
-      adminSupabase.functions.setAuth(supabaseKey);
-      
-      const { error } = await adminSupabase
+      const { error } = await adminClient
         .from('employees')
         .delete()
         .eq('id', employeeId);

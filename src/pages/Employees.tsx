@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Employee } from "@/lib/types";
 import { EmployeeTable } from "@/components/Employees/EmployeeTable";

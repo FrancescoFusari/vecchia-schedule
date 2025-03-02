@@ -142,6 +142,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      debug_auth_status: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
