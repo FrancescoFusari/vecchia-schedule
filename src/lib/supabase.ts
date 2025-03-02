@@ -414,6 +414,9 @@ export const shiftService = {
     try {
       console.log("Creating new shift:", shift);
       
+      // Check for admin session first
+      const adminSession = localStorage.getItem('workshift_admin_session');
+      
       // Prepare the data object for insertion
       const shiftData = {
         employee_id: shift.employeeId,
@@ -424,11 +427,12 @@ export const shiftService = {
         notes: shift.notes
       };
       
-      // Check for admin session first to determine which client to use
-      const adminSession = localStorage.getItem('workshift_admin_session');
+      console.log("Using admin client:", !!adminSession);
+      
+      // Use adminClient when admin is logged in, not regular supabase client
       const client = adminSession ? adminClient : supabase;
       
-      let { data, error } = await client
+      const { data, error } = await client
         .from('shifts')
         .insert(shiftData)
         .select('*')
@@ -465,8 +469,13 @@ export const shiftService = {
   
   updateShift: async (shift: Shift) => {
     try {
-      // First try using admin client to bypass RLS
-      let { error } = await adminClient
+      console.log("Updating shift:", shift.id);
+      
+      // Check for admin session first
+      const adminSession = localStorage.getItem('workshift_admin_session');
+      const client = adminSession ? adminClient : supabase;
+      
+      const { error } = await client
         .from('shifts')
         .update({
           employee_id: shift.employeeId,
@@ -479,27 +488,11 @@ export const shiftService = {
         .eq('id', shift.id);
         
       if (error) {
-        console.error("Error updating shift with admin client:", error);
-        
-        // Fallback to regular client
-        const response = await supabase
-          .from('shifts')
-          .update({
-            employee_id: shift.employeeId,
-            date: shift.date,
-            start_time: shift.startTime,
-            end_time: shift.endTime,
-            duration: shift.duration,
-            notes: shift.notes
-          })
-          .eq('id', shift.id);
-          
-        if (response.error) {
-          console.error("Error updating shift:", response.error);
-          throw response.error;
-        }
+        console.error("Error updating shift:", error);
+        throw error;
       }
       
+      console.log("Shift updated successfully");
       return shift;
     } catch (error) {
       console.error("Error updating shift:", error);
@@ -509,27 +502,23 @@ export const shiftService = {
   
   deleteShift: async (shiftId: string) => {
     try {
-      // First try using admin client to bypass RLS
-      let { error } = await adminClient
+      console.log("Deleting shift with ID:", shiftId);
+      
+      // Check for admin session first
+      const adminSession = localStorage.getItem('workshift_admin_session');
+      const client = adminSession ? adminClient : supabase;
+      
+      const { error } = await client
         .from('shifts')
         .delete()
         .eq('id', shiftId);
         
       if (error) {
-        console.error("Error deleting shift with admin client:", error);
-        
-        // Fallback to regular client
-        const response = await supabase
-          .from('shifts')
-          .delete()
-          .eq('id', shiftId);
-          
-        if (response.error) {
-          console.error("Error deleting shift:", response.error);
-          throw response.error;
-        }
+        console.error("Error deleting shift:", error);
+        throw error;
       }
       
+      console.log("Shift deleted successfully");
       return true;
     } catch (error) {
       console.error("Error deleting shift:", error);
