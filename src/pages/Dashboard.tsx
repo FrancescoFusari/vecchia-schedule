@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { EmployeeTable } from "@/components/Employees/EmployeeTable";
 import { EmployeeModal } from "@/components/Employees/EmployeeModal";
 import { TemplateModal } from "@/components/Shifts/TemplateModal";
@@ -40,21 +40,17 @@ const Dashboard = () => {
   const { signOut } = useAuth();
   const isMobile = useIsMobile();
   
-  // Employee state
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isEmployeeModalOpen, setIsEmployeeModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   
-  // Template state
   const [templates, setTemplates] = useState<ShiftTemplate[]>([]);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<ShiftTemplate | null>(null);
   
-  // Hours report state
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [shifts, setShifts] = useState<Shift[]>([]);
   
-  // Fetch employees
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
@@ -73,7 +69,6 @@ const Dashboard = () => {
     fetchEmployees();
   }, []);
   
-  // Fetch templates
   useEffect(() => {
     const fetchTemplates = async () => {
       try {
@@ -92,7 +87,6 @@ const Dashboard = () => {
     fetchTemplates();
   }, []);
   
-  // Fetch shifts for the current month
   useEffect(() => {
     const fetchMonthlyShifts = async () => {
       try {
@@ -117,7 +111,6 @@ const Dashboard = () => {
     fetchMonthlyShifts();
   }, [currentMonth]);
   
-  // Employee handlers
   const handleAddEmployee = () => {
     setSelectedEmployee(null);
     setIsEmployeeModalOpen(true);
@@ -166,7 +159,6 @@ const Dashboard = () => {
     }
   };
   
-  // Template handlers
   const handleAddTemplate = () => {
     setSelectedTemplate(null);
     setIsTemplateModalOpen(true);
@@ -219,9 +211,7 @@ const Dashboard = () => {
     }
   };
 
-  // Calculate hours per employee per week (Monday to Sunday)
   const calculateWeeklyHours = () => {
-    // Get all weeks in the current month (starting Monday)
     const start = startOfMonth(currentMonth);
     const end = endOfMonth(currentMonth);
     const weeks = eachWeekOfInterval(
@@ -229,7 +219,6 @@ const Dashboard = () => {
       { weekStartsOn: 1 } // 1 = Monday
     );
     
-    // Generate the hours summary
     return employees.map(employee => {
       const weeklyHours = weeks.map(weekStart => {
         const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
@@ -245,7 +234,6 @@ const Dashboard = () => {
           0
         );
         
-        // Calculate shift template usage
         const templateUsage = templates.reduce((acc, template) => {
           const count = employeeShifts.filter(shift => 
             shift.startTime === template.startTime && 
@@ -267,7 +255,6 @@ const Dashboard = () => {
         };
       });
       
-      // Calculate total monthly hours (full month)
       const totalMonthlyHours = shifts.filter(
         shift => 
           shift.employeeId === employee.id && 
@@ -277,7 +264,6 @@ const Dashboard = () => {
         0
       );
       
-      // Calculate template usage for entire month
       const monthlyTemplateUsage = templates.reduce((acc, template) => {
         const count = shifts.filter(shift => 
           shift.employeeId === employee.id &&
@@ -306,10 +292,8 @@ const Dashboard = () => {
     end: endOfMonth(currentMonth) 
   }, { weekStartsOn: 1 }); // Monday-based weeks
 
-  // Get current month name and year in Italian
   const currentMonthName = format(currentMonth, 'MMMM yyyy', { locale: it });
-  
-  // Determine visible weeks for mobile view (show max 2 weeks at a time)
+
   const [visibleWeekIndex, setVisibleWeekIndex] = useState(0);
   const maxVisibleWeeks = isMobile ? 2 : weeks.length;
   const visibleWeeks = weeks.slice(
@@ -329,7 +313,6 @@ const Dashboard = () => {
     }
   };
   
-  // Reset visible week when month changes
   useEffect(() => {
     setVisibleWeekIndex(0);
   }, [currentMonth]);
@@ -488,103 +471,169 @@ const Dashboard = () => {
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              {isMobile && weeks.length > maxVisibleWeeks && (
-                <div className="flex justify-between items-center p-2 bg-muted/20 border-b">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={handlePrevWeeks}
-                    disabled={visibleWeekIndex === 0}
-                    className="h-8 px-2"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <div className="text-xs font-medium">
-                    Settimana {visibleWeekIndex/maxVisibleWeeks + 1} di {Math.ceil(weeks.length/maxVisibleWeeks)}
+              <div className="md:hidden">
+                {employees.length === 0 ? (
+                  <div className="text-center p-6 text-gray-500">
+                    Nessun dipendente trovato
                   </div>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={handleNextWeeks}
-                    disabled={visibleWeekIndex + maxVisibleWeeks >= weeks.length}
-                    className="h-8 px-2"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-            
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/40">
-                      <TableHead className="font-semibold w-[180px] sticky left-0 bg-background z-10 shadow-[1px_0_0_0_#e5e7eb]">
-                        Dipendente
-                      </TableHead>
-                      {visibleWeeks.map((week, index) => (
-                        <TableHead key={index} className="text-center font-medium whitespace-nowrap">
-                          <div className="text-xs">
-                            {format(week, "dd", { locale: it })} - {format(endOfWeek(week, { weekStartsOn: 1 }), "dd MMM", { locale: it })}
-                          </div>
-                        </TableHead>
-                      ))}
-                      <TableHead className="text-center font-semibold whitespace-nowrap sticky right-0 bg-background z-10 shadow-[-1px_0_0_0_#e5e7eb]">
-                        Totale Mese
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {hoursData.map(({ employee, weeklyHours, totalHours }) => (
-                      <TableRow key={employee.id} className="hover:bg-muted/30 transition-colors">
-                        <TableCell className="font-medium sticky left-0 bg-background z-10 shadow-[1px_0_0_0_#e5e7eb]">
+                ) : (
+                  <div className="space-y-4 p-4">
+                    {hoursData.map(({ employee, weeklyHours, totalHours, monthlyTemplateUsage }) => (
+                      <Card 
+                        key={employee.id} 
+                        className="overflow-hidden border"
+                        style={{ 
+                          borderLeft: employee.color ? `4px solid ${employee.color}` : undefined 
+                        }}
+                      >
+                        <CardHeader className="p-3 bg-muted/20 flex flex-row items-center justify-between space-y-0">
                           <div className="flex items-center space-x-2">
                             <div 
-                              className="w-3 h-3 rounded-full flex-shrink-0" 
+                              className="w-3 h-3 rounded-full" 
                               style={{ backgroundColor: employee.color || '#9CA3AF' }} 
                             />
-                            <span className="truncate">{employee.firstName} {employee.lastName}</span>
+                            <h3 className="font-medium">{employee.firstName} {employee.lastName}</h3>
                           </div>
-                        </TableCell>
-                        {weeklyHours
-                          .slice(visibleWeekIndex, visibleWeekIndex + maxVisibleWeeks)
-                          .map((week, index) => (
-                            <TableCell key={index} className="text-center p-1 sm:p-4">
-                              <div className="flex flex-col items-center">
-                                <span className="font-medium text-sm sm:text-base">
-                                  {week.hours.toFixed(1)}
-                                </span>
-                                <div className="text-[10px] sm:text-xs text-muted-foreground mt-1 max-w-[110px]">
-                                  {Object.entries(week.templateUsage).map(([template, count], i) => (
-                                    <Badge 
-                                      key={i} 
-                                      variant="outline" 
-                                      className="m-0.5 whitespace-nowrap text-[9px] sm:text-xs"
-                                      style={{
-                                        borderColor: employee.color ? `${employee.color}50` : undefined,
-                                        backgroundColor: employee.color ? `${employee.color}15` : undefined
-                                      }}
-                                    >
-                                      {template}: {count}
-                                    </Badge>
-                                  ))}
+                          <div className="font-bold text-lg">
+                            {totalHours.toFixed(1)}h
+                          </div>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                          <div className="divide-y">
+                            {weeklyHours.map((week, index) => (
+                              <div key={index} className="p-3">
+                                <div className="flex justify-between items-center mb-1">
+                                  <p className="text-xs text-muted-foreground">
+                                    {format(week.weekStart, "dd/MM", { locale: it })} - {format(week.weekEnd, "dd/MM", { locale: it })}
+                                  </p>
+                                  <p className="font-medium">{week.hours.toFixed(1)}h</p>
                                 </div>
+                                {Object.entries(week.templateUsage).length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {Object.entries(week.templateUsage).map(([template, count], i) => (
+                                      <Badge 
+                                        key={i} 
+                                        variant="outline" 
+                                        className="text-[10px]"
+                                        style={{
+                                          borderColor: employee.color ? `${employee.color}50` : undefined,
+                                          backgroundColor: employee.color ? `${employee.color}15` : undefined
+                                        }}
+                                      >
+                                        {template}: {count}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
-                            </TableCell>
-                          ))}
-                        <TableCell className="text-center font-bold sticky right-0 bg-muted/20 z-10 shadow-[-1px_0_0_0_#e5e7eb]">
-                          {totalHours.toFixed(1)}
-                        </TableCell>
-                      </TableRow>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+                )}
               </div>
               
-              {employees.length === 0 && (
-                <div className="text-center p-6 text-gray-500">
-                  Nessun dipendente trovato
+              <div className="hidden md:block">
+                {isMobile && weeks.length > maxVisibleWeeks && (
+                  <div className="flex justify-between items-center p-2 bg-muted/20 border-b">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={handlePrevWeeks}
+                      disabled={visibleWeekIndex === 0}
+                      className="h-8 px-2"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <div className="text-xs font-medium">
+                      Settimana {visibleWeekIndex/maxVisibleWeeks + 1} di {Math.ceil(weeks.length/maxVisibleWeeks)}
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={handleNextWeeks}
+                      disabled={visibleWeekIndex + maxVisibleWeeks >= weeks.length}
+                      className="h-8 px-2"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/40">
+                        <TableHead className="font-semibold w-[180px] sticky left-0 bg-background z-10 shadow-[1px_0_0_0_#e5e7eb]">
+                          Dipendente
+                        </TableHead>
+                        {visibleWeeks.map((week, index) => (
+                          <TableHead key={index} className="text-center font-medium whitespace-nowrap">
+                            <div className="text-xs">
+                              {format(week, "dd", { locale: it })} - {format(endOfWeek(week, { weekStartsOn: 1 }), "dd MMM", { locale: it })}
+                            </div>
+                          </TableHead>
+                        ))}
+                        <TableHead className="text-center font-semibold whitespace-nowrap sticky right-0 bg-background z-10 shadow-[-1px_0_0_0_#e5e7eb]">
+                          Totale Mese
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {hoursData.map(({ employee, weeklyHours, totalHours }) => (
+                        <TableRow key={employee.id} className="hover:bg-muted/30 transition-colors">
+                          <TableCell className="font-medium sticky left-0 bg-background z-10 shadow-[1px_0_0_0_#e5e7eb]">
+                            <div className="flex items-center space-x-2">
+                              <div 
+                                className="w-3 h-3 rounded-full flex-shrink-0" 
+                                style={{ backgroundColor: employee.color || '#9CA3AF' }} 
+                              />
+                              <span className="truncate">{employee.firstName} {employee.lastName}</span>
+                            </div>
+                          </TableCell>
+                          {weeklyHours
+                            .slice(visibleWeekIndex, visibleWeekIndex + maxVisibleWeeks)
+                            .map((week, index) => (
+                              <TableCell key={index} className="text-center p-1 sm:p-4">
+                                <div className="flex flex-col items-center">
+                                  <span className="font-medium text-sm sm:text-base">
+                                    {week.hours.toFixed(1)}
+                                  </span>
+                                  <div className="text-[10px] sm:text-xs text-muted-foreground mt-1 max-w-[110px]">
+                                    {Object.entries(week.templateUsage).map(([template, count], i) => (
+                                      <Badge 
+                                        key={i} 
+                                        variant="outline" 
+                                        className="m-0.5 whitespace-nowrap text-[9px] sm:text-xs"
+                                        style={{
+                                          borderColor: employee.color ? `${employee.color}50` : undefined,
+                                          backgroundColor: employee.color ? `${employee.color}15` : undefined
+                                        }}
+                                      >
+                                        {template}: {count}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              </TableCell>
+                            ))}
+                          <TableCell className="text-center font-bold sticky right-0 bg-muted/20 z-10 shadow-[-1px_0_0_0_#e5e7eb]">
+                            {totalHours.toFixed(1)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
-              )}
+                
+                {employees.length === 0 && (
+                  <div className="text-center p-6 text-gray-500">
+                    Nessun dipendente trovato
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
