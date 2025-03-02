@@ -10,6 +10,7 @@ import { formatDate, calculateShiftDuration, generateId } from "@/lib/utils";
 import { DEFAULT_SHIFT_TEMPLATES } from "@/lib/constants";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { templateService } from "@/lib/supabase";
 
 interface ShiftModalProps {
   isOpen: boolean;
@@ -29,8 +30,25 @@ export function ShiftModal({ isOpen, onClose, shift, date, employees, onSave, on
   const [notes, setNotes] = useState(shift?.notes || "");
   const [duration, setDuration] = useState(shift?.duration || 0);
   
-  // Use predefined templates
-  const [templates] = useState<ShiftTemplate[]>(DEFAULT_SHIFT_TEMPLATES);
+  // Use templates from Supabase if available, otherwise fallback to constants
+  const [templates, setTemplates] = useState<ShiftTemplate[]>(DEFAULT_SHIFT_TEMPLATES);
+  
+  // Fetch templates when modal opens
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const templatesData = await templateService.getTemplates();
+        if (templatesData && templatesData.length > 0) {
+          setTemplates(templatesData);
+        }
+      } catch (error) {
+        console.error("Error fetching shift templates:", error);
+        // Fallback to default templates if fetch fails
+      }
+    };
+    
+    fetchTemplates();
+  }, []);
   
   // Calculate duration when times change
   useEffect(() => {
