@@ -6,58 +6,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "lucide-react";
-import { useNavigate, Link } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!username || !password) {
-      toast({
-        title: "Errore",
-        description: "Username e password sono richiesti",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     setIsLoading(true);
     
     try {
-      console.log("Attempting login with:", username);
-      const result = await signIn(username, password);
-      console.log("Login result:", result);
-      
-      if (result) {
-        toast({
-          title: "Login effettuato",
-          description: "Accesso effettuato con successo",
-        });
-        navigate("/");
-      } else {
-        setIsLoading(false);
-        toast({
-          title: "Errore di login",
-          description: "Credenziali non valide. Riprova.",
-          variant: "destructive",
-        });
-      }
+      await signIn(email, password);
+      navigate("/");
     } catch (error) {
       console.error("Login error:", error);
+    } finally {
       setIsLoading(false);
-      toast({
-        title: "Errore di login",
-        description: "Credenziali non valide. Riprova.",
-        variant: "destructive",
-      });
     }
   };
   
@@ -84,14 +52,13 @@ const Login = () => {
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="username"
-                  type="text"
-                  placeholder="Inserisci il tuo username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  disabled={isLoading}
+                  id="email"
+                  type="email"
+                  placeholder="nome@esempio.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                 />
               </div>
@@ -104,26 +71,20 @@ const Login = () => {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading}
                   required
                 />
               </div>
               
               <div className="text-sm text-gray-500 bg-blue-50 p-3 rounded-md">
                 <p className="mb-1 font-medium">Credenziali di demo:</p>
-                <p>Admin: Admin / juventus96</p>
+                <p>Admin: admin@example.com / password</p>
+                <p>Dipendente: employee@example.com / password</p>
               </div>
             </CardContent>
-            <CardFooter className="flex flex-col space-y-4">
+            <CardFooter>
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Caricamento..." : "Accedi"}
               </Button>
-              <div className="text-center text-sm">
-                Non hai un account?{" "}
-                <Link to="/register" className="text-primary hover:underline">
-                  Registrati
-                </Link>
-              </div>
             </CardFooter>
           </form>
         </Card>

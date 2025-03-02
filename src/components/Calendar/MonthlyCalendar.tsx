@@ -5,26 +5,27 @@ import { CalendarDay } from "./CalendarDay";
 import { DAYS_OF_WEEK } from "@/lib/constants";
 import { getCalendarDays } from "@/lib/utils";
 import { Shift, Employee } from "@/lib/types";
+import { useAuth } from "@/hooks/useAuth";
+import { mockData } from "@/lib/supabase";
 import { ShiftModal } from "../Shifts/ShiftModal";
 import { HoursSummary } from "../Reports/HoursSummary";
-import { useToast } from "@/hooks/use-toast";
-import { shiftService } from "@/lib/supabase";
 
-interface MonthlyCalendarProps {
-  currentDate: Date;
-  shifts: Shift[];
-  employees: Employee[];
-  isAdmin: boolean;
-}
-
-export function MonthlyCalendar({ currentDate: initialDate, shifts: initialShifts, employees, isAdmin }: MonthlyCalendarProps) {
-  const { toast } = useToast();
-  const [currentDate, setCurrentDate] = useState(initialDate);
-  const [shifts, setShifts] = useState<Shift[]>(initialShifts);
+export function MonthlyCalendar() {
+  const { isAdmin } = useAuth();
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [shifts, setShifts] = useState<Shift[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [calendarDays, setCalendarDays] = useState<any[]>([]);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [isAddingShift, setIsAddingShift] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  
+  // Load data
+  useEffect(() => {
+    // In a real app, this would fetch from Supabase
+    setShifts(mockData.shifts);
+    setEmployees(mockData.employees);
+  }, []);
   
   // Update calendar when month changes or when shifts change
   useEffect(() => {
@@ -33,10 +34,6 @@ export function MonthlyCalendar({ currentDate: initialDate, shifts: initialShift
     const days = getCalendarDays(year, month, shifts);
     setCalendarDays(days);
   }, [currentDate, shifts]);
-  
-  useEffect(() => {
-    setShifts(initialShifts);
-  }, [initialShifts]);
   
   const handlePrevMonth = () => {
     setCurrentDate(prev => {
@@ -74,54 +71,20 @@ export function MonthlyCalendar({ currentDate: initialDate, shifts: initialShift
     setIsAddingShift(false);
   };
   
-  const handleSaveShift = async (shift: Shift) => {
-    try {
-      if (selectedShift) {
-        // Update existing shift
-        const updatedShift = await shiftService.update(shift);
-        setShifts(prev => prev.map(s => s.id === shift.id ? updatedShift : s));
-        toast({
-          title: "Turno aggiornato",
-          description: "Il turno è stato aggiornato con successo.",
-        });
-      } else {
-        // Add new shift
-        const newShift = await shiftService.create(shift);
-        setShifts(prev => [...prev, newShift]);
-        toast({
-          title: "Turno aggiunto",
-          description: "Il nuovo turno è stato aggiunto con successo.",
-        });
-      }
-    } catch (error) {
-      console.error("Error saving shift:", error);
-      toast({
-        title: "Errore",
-        description: "Si è verificato un errore durante il salvataggio del turno.",
-        variant: "destructive",
-      });
+  const handleSaveShift = (shift: Shift) => {
+    if (selectedShift) {
+      // Update existing shift
+      setShifts(prev => prev.map(s => s.id === shift.id ? shift : s));
+    } else {
+      // Add new shift
+      setShifts(prev => [...prev, shift]);
     }
     
     handleShiftModalClose();
   };
   
-  const handleDeleteShift = async (shiftId: string) => {
-    try {
-      await shiftService.delete(shiftId);
-      setShifts(prev => prev.filter(s => s.id !== shiftId));
-      toast({
-        title: "Turno eliminato",
-        description: "Il turno è stato eliminato con successo.",
-      });
-    } catch (error) {
-      console.error("Error deleting shift:", error);
-      toast({
-        title: "Errore",
-        description: "Si è verificato un errore durante l'eliminazione del turno.",
-        variant: "destructive",
-      });
-    }
-    
+  const handleDeleteShift = (shiftId: string) => {
+    setShifts(prev => prev.filter(s => s.id !== shiftId));
     handleShiftModalClose();
   };
   
@@ -153,8 +116,8 @@ export function MonthlyCalendar({ currentDate: initialDate, shifts: initialShift
               key={index}
               day={day}
               employees={employees}
-              onAddShift={isAdmin ? handleAddShift : undefined}
-              onEditShift={isAdmin ? handleEditShift : undefined}
+              onAddShift={isAdmin() ? handleAddShift : undefined}
+              onEditShift={isAdmin() ? handleEditShift : undefined}
             />
           ))}
         </div>

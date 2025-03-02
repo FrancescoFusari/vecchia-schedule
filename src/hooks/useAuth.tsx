@@ -1,13 +1,13 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { supabase } from "@/lib/supabase";
 import { User, Role } from "@/lib/types";
-import { useToast } from "@/hooks/use-toast";
-import { authService } from "@/lib/supabase";
+import { toast } from "@/hooks/use-toast";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signIn: (username: string, password: string) => Promise<User | null>;
-  register: (username: string, firstName: string, lastName: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   isAdmin: () => boolean;
 }
@@ -17,59 +17,45 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
 
   useEffect(() => {
-    // Check for current user on mount
-    const checkUser = async () => {
-      try {
-        console.log("Checking for current user...");
-        const currentUser = await authService.getCurrentUser();
-        console.log("Current user:", currentUser);
-        setUser(currentUser);
-      } catch (error) {
-        console.error("Error checking user:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkUser();
-    
-    // Set up auth state listener
-    const { data } = authService.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event, session);
-      if (event === "SIGNED_IN" || event === "USER_UPDATED") {
-        const currentUser = await authService.getCurrentUser();
-        console.log("Updated user after state change:", currentUser);
-        setUser(currentUser);
-      } else if (event === "SIGNED_OUT") {
-        setUser(null);
-      }
-    });
+    // Mock authentication state for demo purposes
+    // In a real app, this would check Supabase session
+    const storedUser = localStorage.getItem("workshift_user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+    setLoading(false);
     
     // Clean up subscription on unmount
     return () => {
-      data.subscription.unsubscribe();
+      // No-op for mock implementation
     };
   }, []);
 
-  const signIn = async (username: string, password: string): Promise<User | null> => {
+  const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
-      console.log("Attempting to sign in user:", username);
-      const { user: userData } = await authService.signIn(username, password);
+      const { data, error } = await supabase.auth.signIn(email, password);
       
-      if (userData) {
-        console.log("Setting user data:", userData);
+      if (error) throw error;
+      
+      if (data && data.user) {
+        const userData: User = {
+          id: data.user.id,
+          email: data.user.email,
+          role: data.user.user_metadata.role as Role,
+          firstName: data.user.user_metadata.firstName,
+          lastName: data.user.user_metadata.lastName
+        };
+        
         setUser(userData);
+        localStorage.setItem("workshift_user", JSON.stringify(userData));
         toast({
           title: "Login effettuato",
-          description: `Benvenuto, ${userData.firstName || userData.username}!`,
+          description: `Benvenuto, ${userData.firstName}!`,
         });
-        return userData;
       }
-      return null;
     } catch (error) {
       console.error("Error signing in:", error);
       toast({
@@ -77,28 +63,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: "Credenziali non valide. Riprova.",
         variant: "destructive",
       });
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const register = async (username: string, firstName: string, lastName: string, password: string) => {
-    try {
-      setLoading(true);
-      await authService.register(username, firstName, lastName, password);
-      toast({
-        title: "Registrazione completata",
-        description: "Il tuo account è stato creato con successo. Ora puoi accedere.",
-      });
-    } catch (error) {
-      console.error("Error registering:", error);
-      toast({
-        title: "Errore di registrazione",
-        description: "Si è verificato un errore durante la registrazione. Riprova.",
-        variant: "destructive",
-      });
-      throw error;
     } finally {
       setLoading(false);
     }
@@ -107,8 +71,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       setLoading(true);
-      await authService.signOut();
+      await supabase.auth.signOut();
       setUser(null);
+      localStorage.removeItem("workshift_user");
       toast({
         title: "Logout effettuato",
         description: "Hai effettuato il logout con successo.",
@@ -130,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, register, signOut, isAdmin }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signOut, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );

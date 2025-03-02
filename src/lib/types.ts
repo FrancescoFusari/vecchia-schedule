@@ -3,7 +3,7 @@ export type Role = "admin" | "employee";
 
 export interface User {
   id: string;
-  username: string;
+  email: string;
   role: Role;
   firstName: string;
   lastName: string;
