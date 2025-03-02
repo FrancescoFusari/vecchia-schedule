@@ -3,12 +3,13 @@ import { useState, useEffect } from "react";
 import { CalendarHeader } from "./CalendarHeader";
 import { CalendarDay } from "./CalendarDay";
 import { DAYS_OF_WEEK } from "@/lib/constants";
-import { getCalendarDays } from "@/lib/utils";
+import { getCalendarDays, formatDate } from "@/lib/utils";
 import { Shift, Employee } from "@/lib/types";
 import { useAuth } from "@/hooks/useAuth";
-import { mockData } from "@/lib/supabase";
+import { employeeService, shiftService } from "@/lib/supabase";
 import { ShiftModal } from "../Shifts/ShiftModal";
 import { HoursSummary } from "../Reports/HoursSummary";
+import { toast } from "@/hooks/use-toast";
 
 export function MonthlyCalendar() {
   const { isAdmin } = useAuth();
@@ -19,13 +20,54 @@ export function MonthlyCalendar() {
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [isAddingShift, setIsAddingShift] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Load data
   useEffect(() => {
-    // In a real app, this would fetch from Supabase
-    setShifts(mockData.shifts);
-    setEmployees(mockData.employees);
-  }, []);
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Get employees
+        const employeeData = await employeeService.getEmployees();
+        setEmployees(employeeData);
+        
+        // Get shifts for current month
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        
+        // Create date range for the month (with padding for the calendar view)
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        
+        // Add padding to include days from previous and next months that appear in the calendar
+        const startDate = new Date(firstDay);
+        startDate.setDate(startDate.getDate() - (startDate.getDay() === 0 ? 6 : startDate.getDay() - 1)); // Previous Monday
+        
+        const endDate = new Date(lastDay);
+        const daysToAdd = 7 - endDate.getDay();
+        endDate.setDate(endDate.getDate() + (daysToAdd === 7 ? 0 : daysToAdd)); // Next Sunday
+        
+        // Format dates for API
+        const formattedStartDate = formatDate(startDate);
+        const formattedEndDate = formatDate(endDate);
+        
+        const shiftData = await shiftService.getShifts(formattedStartDate, formattedEndDate);
+        setShifts(shiftData);
+      } catch (error) {
+        console.error("Error fetching calendar data:", error);
+        toast({
+          title: "Errore",
+          description: "Si è verificato un errore durante il caricamento dei dati del calendario.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [currentDate]);
   
   // Update calendar when month changes or when shifts change
   useEffect(() => {
@@ -71,21 +113,54 @@ export function MonthlyCalendar() {
     setIsAddingShift(false);
   };
   
-  const handleSaveShift = (shift: Shift) => {
-    if (selectedShift) {
-      // Update existing shift
-      setShifts(prev => prev.map(s => s.id === shift.id ? shift : s));
-    } else {
-      // Add new shift
-      setShifts(prev => [...prev, shift]);
+  const handleSaveShift = async (shift: Shift) => {
+    try {
+      if (selectedShift) {
+        // Update existing shift
+        const updatedShift = await shiftService.updateShift(shift);
+        setShifts(prev => prev.map(s => s.id === updatedShift.id ? updatedShift : s));
+        toast({
+          title: "Turno aggiornato",
+          description: "Il turno è stato aggiornato con successo.",
+        });
+      } else {
+        // Add new shift
+        const newShift = await shiftService.createShift(shift);
+        setShifts(prev => [...prev, newShift]);
+        toast({
+          title: "Turno aggiunto",
+          description: "Il nuovo turno è stato aggiunto con successo.",
+        });
+      }
+      
+      handleShiftModalClose();
+    } catch (error) {
+      console.error("Error saving shift:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante il salvataggio del turno.",
+        variant: "destructive",
+      });
     }
-    
-    handleShiftModalClose();
   };
   
-  const handleDeleteShift = (shiftId: string) => {
-    setShifts(prev => prev.filter(s => s.id !== shiftId));
-    handleShiftModalClose();
+  const handleDeleteShift = async (shiftId: string) => {
+    try {
+      await shiftService.deleteShift(shiftId);
+      setShifts(prev => prev.filter(s => s.id !== shiftId));
+      toast({
+        title: "Turno eliminato",
+        description: "Il turno è stato eliminato con successo.",
+      });
+      handleShiftModalClose();
+    } catch (error) {
+      console.error("Error deleting shift:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante l'eliminazione del turno.",
+        variant: "destructive",
+      });
+    }
   };
   
   return (
@@ -99,29 +174,35 @@ export function MonthlyCalendar() {
       />
       
       {/* Calendar grid */}
-      <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
-        {/* Day headers */}
-        <div className="grid grid-cols-7 border-b border-gray-200">
-          {DAYS_OF_WEEK.map(day => (
-            <div key={day} className="py-2 text-center font-semibold text-sm border-r last:border-r-0 border-gray-200">
-              {day}
-            </div>
-          ))}
+      {isLoading ? (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
-        
-        {/* Calendar days */}
-        <div className="grid grid-cols-7">
-          {calendarDays.map((day, index) => (
-            <CalendarDay
-              key={index}
-              day={day}
-              employees={employees}
-              onAddShift={isAdmin() ? handleAddShift : undefined}
-              onEditShift={isAdmin() ? handleEditShift : undefined}
-            />
-          ))}
+      ) : (
+        <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
+          {/* Day headers */}
+          <div className="grid grid-cols-7 border-b border-gray-200">
+            {DAYS_OF_WEEK.map(day => (
+              <div key={day} className="py-2 text-center font-semibold text-sm border-r last:border-r-0 border-gray-200">
+                {day}
+              </div>
+            ))}
+          </div>
+          
+          {/* Calendar days */}
+          <div className="grid grid-cols-7">
+            {calendarDays.map((day, index) => (
+              <CalendarDay
+                key={index}
+                day={day}
+                employees={employees}
+                onAddShift={isAdmin() ? handleAddShift : undefined}
+                onEditShift={isAdmin() ? handleEditShift : undefined}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
       
       {/* Hours summary */}
       <HoursSummary
