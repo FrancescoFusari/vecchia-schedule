@@ -61,13 +61,32 @@ export const authService = {
 
   // Login
   signIn: async (username: string, password: string) => {
-    console.log("Sign in attempt:", { username });
-    
     try {
-      // Simplified approach - handle admin and regular users in a consistent way
-      const email = username === 'admin' ? 'admin@workshift.local' : `${username}@workshift.local`;
+      console.log("Attempting login with:", username);
       
-      console.log("Attempting to sign in with email:", email);
+      // Handle admin login (hardcoded for simplicity and reliability)
+      if (username === 'admin' && password === 'juventus96') {
+        console.log("Admin login detected, using hardcoded admin credentials");
+        
+        // For admin, we create a hardcoded user object
+        const adminUser: User = {
+          id: 'admin-id',
+          username: 'admin',
+          email: 'admin@workshift.local',
+          role: 'admin',
+          firstName: 'Admin',
+          lastName: 'User'
+        };
+        
+        // Store admin session in local storage for persistence
+        localStorage.setItem('workshift_admin_session', JSON.stringify(adminUser));
+        
+        return { userData: adminUser };
+      }
+      
+      // For regular employees, try normal Supabase auth
+      const email = `${username}@workshift.local`;
+      console.log("Regular login, using email:", email);
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -84,39 +103,20 @@ export const authService = {
         throw new Error('No user returned from login');
       }
 
-      console.log("Sign in successful:", data.user.id);
+      // Get the user metadata
+      const userMeta = data.user.user_metadata;
       
-      // Get user profile data based on role
-      let profileData;
-      const userRole = data.user.user_metadata.role || 'employee';
-      
-      if (userRole === 'admin') {
-        const { data: adminData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.user.id)
-          .single();
-        profileData = adminData;
-      } else {
-        const { data: employeeData } = await supabase
-          .from('employees')
-          .select('*')
-          .eq('id', data.user.id)
-          .single();
-        profileData = employeeData;
-      }
-
       // Create a user object with consistent structure
       const userData: User = {
         id: data.user.id,
-        username: data.user.user_metadata.username || username,
+        username: userMeta.username || username,
         email: data.user.email || email,
-        role: userRole as 'admin' | 'employee',
-        firstName: data.user.user_metadata.firstName || '',
-        lastName: data.user.user_metadata.lastName || ''
+        role: (userMeta.role as 'admin' | 'employee') || 'employee',
+        firstName: userMeta.firstName || '',
+        lastName: userMeta.lastName || ''
       };
 
-      return { userData, profileData };
+      return { userData };
     } catch (error) {
       console.error("Error signing in:", error);
       throw error;
@@ -126,6 +126,10 @@ export const authService = {
   // Sign out
   signOut: async () => {
     try {
+      // Clear admin session if exists
+      localStorage.removeItem('workshift_admin_session');
+      
+      // Also sign out from Supabase
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       return true;
@@ -138,25 +142,32 @@ export const authService = {
   // Get the current user
   getCurrentUser: async () => {
     try {
-      console.log("Checking for current user...");
+      // First check for admin session
+      const adminSession = localStorage.getItem('workshift_admin_session');
+      if (adminSession) {
+        console.log("Found admin session in localStorage");
+        return JSON.parse(adminSession) as User;
+      }
+      
+      // Otherwise check Supabase session
+      console.log("Checking Supabase for user session");
       const { data } = await supabase.auth.getSession();
-      console.log("Getting current user:", { user: data.session?.user || null });
       
       if (!data.session?.user) {
-        console.log("Current user: null");
+        console.log("No Supabase session found");
         return null;
       }
       
       const user = data.session.user;
-      console.log("Current user:", user);
-
+      const userMeta = user.user_metadata;
+      
       const userData: User = {
         id: user.id,
-        username: user.user_metadata.username,
+        username: userMeta.username || user.email?.split('@')[0] || '',
         email: user.email,
-        role: user.user_metadata.role as 'admin' | 'employee',
-        firstName: user.user_metadata.firstName,
-        lastName: user.user_metadata.lastName
+        role: (userMeta.role as 'admin' | 'employee') || 'employee',
+        firstName: userMeta.firstName || '',
+        lastName: userMeta.lastName || ''
       };
 
       return userData;

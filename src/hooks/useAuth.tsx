@@ -38,6 +38,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("Auth state changed:", event, session?.user?.id);
       if (event === 'SIGNED_OUT') {
+        // Also clear admin session on sign out
+        localStorage.removeItem('workshift_admin_session');
         setUser(null);
       } else if (session?.user && event === 'SIGNED_IN') {
         authService.getCurrentUser().then(userData => {
@@ -56,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       console.log("Attempting to sign in with username:", username);
       
-      // Directly try authentication with the provided credentials
+      // This will use our simplified auth approach
       const { userData } = await authService.signIn(username, password);
       
       if (userData) {
