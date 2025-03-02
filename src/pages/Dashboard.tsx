@@ -4,10 +4,12 @@ import { WeeklyCalendar } from "@/components/Calendar/WeeklyCalendar";
 import { useEffect, useState } from "react";
 import { Employee } from "@/lib/types";
 import { employeeService } from "@/lib/supabase";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Dashboard = () => {
+  const isMobile = useIsMobile();
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [isWeekView, setIsWeekView] = useState(false);
+  const [isWeekView, setIsWeekView] = useState(isMobile);
   
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -21,6 +23,11 @@ const Dashboard = () => {
     
     fetchEmployees();
   }, []);
+  
+  // Update view when mobile status changes
+  useEffect(() => {
+    setIsWeekView(isMobile);
+  }, [isMobile]);
   
   const handleViewChange = (weekView: boolean) => {
     setIsWeekView(weekView);
