@@ -83,7 +83,7 @@ const Dashboard = () => {
       const isNew = !employees.some(e => e.id === employee.id);
       
       if (isNew) {
-        await employeeService.addEmployee(employee);
+        await employeeService.createEmployee(employee);
         setEmployees(prev => [...prev, employee]);
       } else {
         await employeeService.updateEmployee(employee);
@@ -132,7 +132,7 @@ const Dashboard = () => {
       const isNew = !templates.some(t => t.id === template.id);
       
       if (isNew) {
-        await templateService.addTemplate(template);
+        await templateService.createTemplate(template);
         setTemplates(prev => [...prev, template]);
       } else {
         await templateService.updateTemplate(template);
