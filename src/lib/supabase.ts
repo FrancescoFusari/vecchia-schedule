@@ -1,3 +1,4 @@
+
 import { Employee, Shift, User, Role } from './types';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -6,12 +7,32 @@ class AuthService {
 
   async createUser(email: string, password: string, userData: {firstName: string, lastName: string, role: 'admin' | 'employee'}) {
     try {
-      const { data, error } = await supabase.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-        user_metadata: userData,
-      });
+      // First check if user already exists
+      const { data: existingUsers } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+
+      // If user already exists, just return success
+      if (existingUsers) {
+        return { data: existingUsers, error: null };
+      }
+
+      // For direct usage without email confirmation, we need to use the service role
+      // which we'll handle through a serverless function
+      const { data, error } = await fetch('/api/create-demo-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          userData
+        }),
+      }).then(res => res.json());
+
       return { data, error };
     } catch (error) {
       console.error("Error creating user:", error);

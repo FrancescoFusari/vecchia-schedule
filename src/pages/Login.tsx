@@ -27,7 +27,8 @@ export default function Login() {
     const setupDemoAccounts = async () => {
       try {
         setCreatingDemoAccounts(true);
-        // Try to create demo admin account
+        
+        // Create demo admin account
         const { error: adminError } = await authService.createUser(
           "admin@example.com", 
           "password", 
@@ -38,12 +39,16 @@ export default function Login() {
           }
         );
 
-        // If there's an error but it's because the user already exists, that's fine
-        if (adminError && !adminError.message.includes("already exists")) {
+        if (adminError && !adminError.message?.includes("already exists")) {
           console.error("Error creating admin demo account:", adminError);
+          toast({
+            title: "Attenzione",
+            description: "Errore nella creazione dell'account admin demo. Riprova più tardi.",
+            variant: "destructive",
+          });
         }
 
-        // Try to create demo employee account
+        // Create demo employee account
         const { error: employeeError } = await authService.createUser(
           "employee@example.com", 
           "password", 
@@ -54,18 +59,28 @@ export default function Login() {
           }
         );
 
-        if (employeeError && !employeeError.message.includes("already exists")) {
+        if (employeeError && !employeeError.message?.includes("already exists")) {
           console.error("Error creating employee demo account:", employeeError);
+          toast({
+            title: "Attenzione",
+            description: "Errore nella creazione dell'account employee demo. Riprova più tardi.",
+            variant: "destructive",
+          });
         }
       } catch (err) {
         console.error("Error setting up demo accounts:", err);
+        toast({
+          title: "Errore",
+          description: "Si è verificato un errore durante la configurazione degli account demo.",
+          variant: "destructive",
+        });
       } finally {
         setCreatingDemoAccounts(false);
       }
     };
 
     setupDemoAccounts();
-  }, []);
+  }, [toast]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,14 +89,30 @@ export default function Login() {
     
     try {
       await signIn(email, password);
+      toast({
+        title: "Benvenuto",
+        description: "Login effettuato con successo!"
+      });
       navigate("/");
     } catch (err) {
       console.error("Login error:", err);
       if (err instanceof Error) {
-        setError(err.message);
+        // Handle specific error messages
+        if (err.message.includes("Email not confirmed")) {
+          setError("L'email non è confermata. Controlla la tua casella di posta.");
+        } else if (err.message.includes("Invalid login credentials")) {
+          setError("Credenziali di accesso non valide. Controlla email e password.");
+        } else {
+          setError(err.message);
+        }
       } else {
         setError("Si è verificato un errore durante il login. Riprova.");
       }
+      toast({
+        title: "Errore di login",
+        description: "Credenziali non valide o utente non trovato.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoggingIn(false);
     }
