@@ -227,6 +227,7 @@ export const employeeService = {
         phone: emp.phone || '',
         position: emp.position || '',
         color: emp.color || '',
+        userId: emp.user_id || undefined,
         createdAt: emp.created_at
       }));
       
@@ -258,7 +259,8 @@ export const employeeService = {
         email: employee.email,
         phone: employee.phone || null,
         position: employee.position || null,
-        color: employee.color || null
+        color: employee.color || null,
+        user_id: employee.userId || null  // Add user_id field
       };
       
       console.log("Employee data to insert:", employeeData);
@@ -288,6 +290,7 @@ export const employeeService = {
         phone: data.phone || '',
         position: data.position || '',
         color: data.color || '',
+        userId: data.user_id || undefined,
         createdAt: data.created_at
       };
       
@@ -316,7 +319,8 @@ export const employeeService = {
         email: employee.email,
         phone: employee.phone || null,
         position: employee.position || null,
-        color: employee.color || null
+        color: employee.color || null,
+        user_id: employee.userId || null  // Add user_id field
       };
       
       // Use adminClient to bypass RLS
@@ -469,7 +473,6 @@ export const shiftService = {
           throw new Error("No data returned after creating shift");
         }
         
-        // Map the returned data to our Shift type
         const newShift: Shift = {
           id: data.id,
           employeeId: data.employee_id,
@@ -503,7 +506,6 @@ export const shiftService = {
           throw new Error("No data returned after creating shift");
         }
         
-        // Map the returned data to our Shift type
         const newShift: Shift = {
           id: data.id,
           employeeId: data.employee_id,

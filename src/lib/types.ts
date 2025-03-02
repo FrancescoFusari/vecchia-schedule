@@ -1,3 +1,4 @@
+
 export type Role = "admin" | "employee";
 
 export interface User {
@@ -18,6 +19,7 @@ export interface Employee {
   phone?: string;
   position?: string;
   color?: string;
+  userId?: string; // Link to registered user
   createdAt: string;
 }
 

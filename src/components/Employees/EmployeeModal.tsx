@@ -8,6 +8,9 @@ import { Employee } from "@/lib/types";
 import { generateId } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/lib/supabase";
+import { User } from "@/lib/types";
 
 // Predefined colors for employees
 const EMPLOYEE_COLORS = [
@@ -31,6 +34,14 @@ interface EmployeeModalProps {
   onDelete: (employeeId: string) => void;
 }
 
+interface RegisteredUser {
+  id: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+}
+
 export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: EmployeeModalProps) {
   const [firstName, setFirstName] = useState(employee?.firstName || "");
   const [lastName, setLastName] = useState(employee?.lastName || "");
@@ -39,10 +50,21 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
   const [phone, setPhone] = useState(employee?.phone || "");
   const [position, setPosition] = useState(employee?.position || "");
   const [color, setColor] = useState(employee?.color || EMPLOYEE_COLORS[0].value);
+  const [userId, setUserId] = useState(employee?.userId || "");
+  const [registeredUsers, setRegisteredUsers] = useState<RegisteredUser[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   
+  // Fetch registered users when the modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchRegisteredUsers();
+    }
+  }, [isOpen]);
+  
+  // Reset form when employee changes
   useEffect(() => {
     if (employee) {
       setFirstName(employee.firstName);
@@ -52,6 +74,7 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
       setPhone(employee.phone || "");
       setPosition(employee.position || "");
       setColor(employee.color || EMPLOYEE_COLORS[0].value);
+      setUserId(employee.userId || "");
     } else {
       setFirstName("");
       setLastName("");
@@ -60,10 +83,56 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
       setPhone("");
       setPosition("");
       setColor(EMPLOYEE_COLORS[0].value);
+      setUserId("");
     }
     setErrors({});
     setErrorMessage(null);
   }, [employee]);
+  
+  const fetchRegisteredUsers = async () => {
+    setIsLoadingUsers(true);
+    try {
+      const adminSession = localStorage.getItem('workshift_admin_session');
+      if (!adminSession) {
+        toast({
+          title: "Accesso negato",
+          description: "Solo gli amministratori possono vedere gli utenti registrati.",
+          variant: "destructive",
+        });
+        setIsLoadingUsers(false);
+        return;
+      }
+      
+      // Fetch registered users from profiles table
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, first_name, last_name, email')
+        .order('first_name', { ascending: true });
+      
+      if (error) {
+        console.error("Error fetching registered users:", error);
+        toast({
+          title: "Errore",
+          description: "Impossibile caricare gli utenti registrati.",
+          variant: "destructive",
+        });
+      } else if (data) {
+        // Map the response to our RegisteredUser interface
+        const users: RegisteredUser[] = data.map(user => ({
+          id: user.id,
+          username: user.username || user.first_name.toLowerCase(),
+          firstName: user.first_name,
+          lastName: user.last_name || "",
+          email: user.email
+        }));
+        setRegisteredUsers(users);
+      }
+    } catch (error) {
+      console.error("Error fetching registered users:", error);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
   
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -116,6 +185,7 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
         phone: phone.trim() || undefined,
         position: position.trim() || undefined,
         color: color,
+        userId: userId || undefined,
         createdAt: employee?.createdAt || new Date().toISOString(),
       };
       
@@ -152,6 +222,22 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
     }
   };
   
+  // Handle user selection
+  const handleUserChange = (selectedUserId: string) => {
+    setUserId(selectedUserId);
+    
+    // If a user is selected, auto-fill the employee details
+    if (selectedUserId) {
+      const selectedUser = registeredUsers.find(user => user.id === selectedUserId);
+      if (selectedUser) {
+        setFirstName(selectedUser.firstName);
+        setLastName(selectedUser.lastName || "");
+        setEmail(selectedUser.email || "");
+        setUsername(selectedUser.username);
+      }
+    }
+  };
+  
   return (
     <Dialog open={isOpen} onOpenChange={() => !isSubmitting && onClose()}>
       <DialogContent className="sm:max-w-[425px]">
@@ -168,6 +254,34 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
         )}
         
         <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="user" className="text-right">
+              Utente
+            </Label>
+            <div className="col-span-3">
+              <Select value={userId} onValueChange={handleUserChange}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Seleziona un utente" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Nessun utente (solo dipendente)</SelectItem>
+                  {isLoadingUsers ? (
+                    <SelectItem value="" disabled>Caricamento utenti...</SelectItem>
+                  ) : (
+                    registeredUsers.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.firstName} {user.lastName} ({user.username})
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-gray-500 mt-1">
+                Collega il dipendente a un utente registrato per permettergli di accedere alla propria dashboard.
+              </p>
+            </div>
+          </div>
+          
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="firstName" className="text-right">
               Nome <span className="text-red-500">*</span>
