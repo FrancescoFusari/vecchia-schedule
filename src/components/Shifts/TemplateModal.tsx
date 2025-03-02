@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -76,8 +75,7 @@ export function TemplateModal({ isOpen, onClose, template, onSave, onDelete }: T
         startTime,
         endTime,
         duration,
-        // Only include createdAt if it exists in the original template
-        ...(template?.createdAt && { createdAt: template.createdAt })
+        createdAt: template?.createdAt || new Date().toISOString()
       };
       
       await onSave(updatedTemplate);

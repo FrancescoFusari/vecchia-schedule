@@ -39,7 +39,7 @@ export interface ShiftTemplate {
   startTime: string; // HH:MM format
   endTime: string; // HH:MM format
   duration: number; // in hours
-  createdAt?: string; // Added this optional property to fix the TypeScript errors
+  createdAt: string; // Changed from optional to required
 }
 
 export interface CalendarDay {
