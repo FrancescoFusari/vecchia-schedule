@@ -93,7 +93,7 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
       const updatedEmployee: Employee = {
         id: employee?.id || generateId(),
         firstName: firstName.trim(),
-        lastName: lastName.trim() || firstName.trim(), // Default lastName to firstName if empty
+        lastName: lastName.trim() || "", // Changed to empty string instead of defaulting to firstName
         email: email.trim() || null,
         username: username.trim() || firstName.trim().toLowerCase(),
         phone: phone.trim() || undefined,
