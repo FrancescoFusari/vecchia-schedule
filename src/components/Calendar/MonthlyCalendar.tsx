@@ -119,6 +119,7 @@ export function MonthlyCalendar() {
   };
   
   const handleAddShift = (date: Date) => {
+    console.log(`Modal receiving date: ${formatDate(date)}`);
     setSelectedDate(date);
     setIsAddingShift(true);
     setSelectedShift(null);

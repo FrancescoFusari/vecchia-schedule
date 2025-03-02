@@ -1,7 +1,7 @@
 
 import { CalendarDay as CalendarDayType, Employee, Shift } from "@/lib/types";
 import { ShiftItem } from "./ShiftItem";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,17 @@ export function CalendarDay({ day, employees, onAddShift, onEditShift }: Calenda
   
   const getEmployeeById = (id: string): Employee | undefined => {
     return employees.find(emp => emp.id === id);
+  };
+  
+  // Create a new Date object with the time set to noon to avoid timezone issues
+  const handleAddShift = () => {
+    if (onAddShift) {
+      const localDate = new Date(day.date);
+      // Set to noon to avoid timezone issues
+      localDate.setHours(12, 0, 0, 0);
+      console.log(`Adding shift for date: ${formatDate(localDate)}`);
+      onAddShift(localDate);
+    }
   };
   
   return (
@@ -47,7 +58,7 @@ export function CalendarDay({ day, employees, onAddShift, onEditShift }: Calenda
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6 rounded-full opacity-60 hover:opacity-100 bg-gray-100"
-                  onClick={() => onAddShift?.(day.date)}
+                  onClick={handleAddShift}
                 >
                   <Plus className="h-3 w-3" />
                 </Button>

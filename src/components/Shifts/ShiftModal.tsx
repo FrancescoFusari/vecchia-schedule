@@ -25,7 +25,7 @@ interface ShiftModalProps {
 
 export function ShiftModal({ isOpen, onClose, shift, date, employees, onSave, onDelete }: ShiftModalProps) {
   const [employeeId, setEmployeeId] = useState(shift?.employeeId || "");
-  const [shiftDate, setShiftDate] = useState(shift?.date || (date ? formatDate(date) : ""));
+  const [shiftDate, setShiftDate] = useState("");
   const [startTime, setStartTime] = useState(shift?.startTime || "");
   const [endTime, setEndTime] = useState(shift?.endTime || "");
   const [notes, setNotes] = useState(shift?.notes || "");
@@ -34,6 +34,20 @@ export function ShiftModal({ isOpen, onClose, shift, date, employees, onSave, on
   
   // Use templates from Supabase if available, otherwise fallback to constants
   const [templates, setTemplates] = useState<ShiftTemplate[]>(DEFAULT_SHIFT_TEMPLATES);
+  
+  // Initialize date when component mounts or props change
+  useEffect(() => {
+    if (shift) {
+      // If editing existing shift, use its date
+      setShiftDate(shift.date);
+      console.log(`Setting date from shift: ${shift.date}`);
+    } else if (date) {
+      // If adding new shift, use the provided date
+      const formattedDate = formatDate(date);
+      console.log(`Setting date from prop: ${formattedDate}`);
+      setShiftDate(formattedDate);
+    }
+  }, [shift, date]);
   
   // Fetch templates when modal opens
   useEffect(() => {
@@ -115,6 +129,8 @@ export function ShiftModal({ isOpen, onClose, shift, date, employees, onSave, on
     try {
       setIsSubmitting(true);
       
+      console.log(`Saving shift with date: ${shiftDate}`);
+      
       const updatedShift: Shift = {
         id: shift?.id || generateId(),
         employeeId,
@@ -179,7 +195,10 @@ export function ShiftModal({ isOpen, onClose, shift, date, employees, onSave, on
               id="date"
               type="date"
               value={shiftDate}
-              onChange={(e) => setShiftDate(e.target.value)}
+              onChange={(e) => {
+                console.log(`Date changed to: ${e.target.value}`);
+                setShiftDate(e.target.value);
+              }}
               className="col-span-3"
               disabled={isSubmitting}
             />
