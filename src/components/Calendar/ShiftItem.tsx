@@ -3,7 +3,6 @@ import { Shift, Employee } from "@/lib/types";
 import { cn, formatEmployeeName } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Edit } from "lucide-react";
 
 interface ShiftItemProps {
   shift: Shift;
@@ -33,7 +32,7 @@ export function ShiftItem({ shift, employee, onClick }: ShiftItemProps) {
             <div
               onClick={onClick}
               className={cn(
-                "shift-item px-2 py-1 mb-1 rounded-md text-xs font-medium truncate flex justify-between items-center",
+                "shift-item px-2 py-1 mb-1 rounded-md text-xs font-medium truncate",
                 bgColor,
                 "hover:cursor-pointer hover:brightness-95 transition-all"
               )}
@@ -41,7 +40,6 @@ export function ShiftItem({ shift, employee, onClick }: ShiftItemProps) {
               <div className="truncate">
                 {formatEmployeeName(employee.firstName, employee.lastName)} {shift.startTime}-{shift.endTime}
               </div>
-              <Edit className="h-3 w-3 flex-shrink-0 ml-1 opacity-50" />
             </div>
           </TooltipTrigger>
           <TooltipContent>
