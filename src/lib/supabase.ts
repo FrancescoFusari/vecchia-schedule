@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { Employee, Shift, ShiftTemplate, User } from './types';
+import { DEFAULT_SHIFT_TEMPLATES } from './constants';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -640,13 +641,13 @@ export const shiftService = {
 export const templateService = {
   getTemplates: async () => {
     try {
-      console.log("Fetching shift templates...");
+      console.log("Fetching shift templates from database...");
       
       // Check for admin session first to determine which client to use
       const adminSession = localStorage.getItem('workshift_admin_session');
       const client = adminSession ? adminClient : supabase;
       
-      let { data, error } = await client
+      const { data, error } = await client
         .from('shift_templates')
         .select('*')
         .order('name', { ascending: true });
@@ -657,10 +658,33 @@ export const templateService = {
       }
       
       if (!data || data.length === 0) {
-        console.log("No templates found, returning default templates");
-        return mockData.templates || [];
+        console.log("No templates found in database, inserting default templates");
+        
+        // If no templates exist, create the default ones
+        const defaultTemplates = await Promise.all(
+          DEFAULT_SHIFT_TEMPLATES.map(async template => {
+            // Use the template service to create each default template
+            try {
+              return await templateService.createTemplate({
+                name: template.name,
+                startTime: template.startTime,
+                endTime: template.endTime,
+                duration: template.duration
+              });
+            } catch (error) {
+              console.error("Error creating default template:", error);
+              return null;
+            }
+          })
+        );
+        
+        // Filter out any nulls from failed template creations
+        const createdTemplates = defaultTemplates.filter(template => template !== null);
+        console.log(`Successfully created ${createdTemplates.length} default templates`);
+        return createdTemplates;
       }
       
+      // Map database columns to our application types
       const templates: ShiftTemplate[] = data.map(template => ({
         id: template.id,
         name: template.name,
@@ -670,17 +694,19 @@ export const templateService = {
         createdAt: template.created_at
       }));
       
-      console.log(`Successfully fetched ${templates.length} templates`);
+      console.log(`Successfully fetched ${templates.length} templates from database`);
       return templates;
     } catch (error) {
       console.error("Error fetching shift templates:", error);
-      return mockData.templates || [];
+      // If there's an error, return default templates as fallback
+      console.warn("Using default templates as fallback due to database error");
+      return DEFAULT_SHIFT_TEMPLATES;
     }
   },
   
   createTemplate: async (template: Omit<ShiftTemplate, 'id' | 'createdAt'>) => {
     try {
-      console.log("Creating new template:", template);
+      console.log("Creating new template in database:", template);
       
       // Check for admin session
       const adminSession = localStorage.getItem('workshift_admin_session');
@@ -705,7 +731,7 @@ export const templateService = {
         .single();
         
       if (error) {
-        console.error("Error creating template:", error);
+        console.error("Error creating template in database:", error);
         throw error;
       }
       
@@ -723,7 +749,7 @@ export const templateService = {
         createdAt: data.created_at
       };
       
-      console.log("Template created successfully with ID:", newTemplate.id);
+      console.log("Template created successfully in database with ID:", newTemplate.id);
       return newTemplate;
     } catch (error) {
       console.error("Error creating template:", error);
@@ -733,29 +759,13 @@ export const templateService = {
   
   updateTemplate: async (template: ShiftTemplate) => {
     try {
-      console.log("Updating template:", template.id);
+      console.log("Updating template in database:", template.id);
       
       // Check for admin session
       const adminSession = localStorage.getItem('workshift_admin_session');
       
       if (!adminSession) {
         throw new Error("Admin privileges required to update templates");
-      }
-      
-      // For mock templates (with IDs like "t1", "t2"), we handle differently
-      if (typeof template.id === 'string' && template.id.startsWith('t') && /^t\d+$/.test(template.id)) {
-        console.log("Detected mock template ID, handling specially");
-        // For mock templates, we need to simulate an update
-        const mockTemplates = [...mockData.templates];
-        const index = mockTemplates.findIndex(t => t.id === template.id);
-        
-        if (index >= 0) {
-          mockTemplates[index] = template;
-          mockData.templates = mockTemplates;
-          return template;
-        }
-        
-        throw new Error("Mock template not found");
       }
       
       // Prepare the data object for update
@@ -773,11 +783,11 @@ export const templateService = {
         .eq('id', template.id);
         
       if (error) {
-        console.error("Error updating template:", error);
+        console.error("Error updating template in database:", error);
         throw error;
       }
       
-      console.log("Template updated successfully");
+      console.log("Template updated successfully in database");
       return template;
     } catch (error) {
       console.error("Error updating template:", error);
@@ -787,29 +797,13 @@ export const templateService = {
   
   deleteTemplate: async (templateId: string) => {
     try {
-      console.log("Deleting template with ID:", templateId);
+      console.log("Deleting template from database with ID:", templateId);
       
       // Check for admin session
       const adminSession = localStorage.getItem('workshift_admin_session');
       
       if (!adminSession) {
         throw new Error("Admin privileges required to delete templates");
-      }
-      
-      // For mock templates (with IDs like "t1", "t2"), we handle differently
-      if (templateId.startsWith('t') && /^t\d+$/.test(templateId)) {
-        console.log("Detected mock template ID, handling specially");
-        // For mock templates, we need to simulate a deletion
-        const mockTemplates = [...mockData.templates];
-        const index = mockTemplates.findIndex(t => t.id === templateId);
-        
-        if (index >= 0) {
-          mockTemplates.splice(index, 1);
-          mockData.templates = mockTemplates;
-          return true;
-        }
-        
-        throw new Error("Mock template not found");
       }
       
       // Use adminClient to bypass RLS
@@ -819,11 +813,11 @@ export const templateService = {
         .eq('id', templateId);
         
       if (error) {
-        console.error("Error deleting template:", error);
+        console.error("Error deleting template from database:", error);
         throw error;
       }
       
-      console.log("Template deleted successfully");
+      console.log("Template deleted successfully from database");
       return true;
     } catch (error) {
       console.error("Error deleting template:", error);
@@ -832,7 +826,7 @@ export const templateService = {
   }
 };
 
-// Mock data (to be used as fallback only if Supabase fails)
+// Keep the mockData but we'll only use it as a last resort fallback
 export const mockData = {
   employees: [
     { id: "1", firstName: "Francesco", lastName: "R", email: "francesco.r@example.com", username: "francesco.r", phone: "+39 123 456 7890", position: "Cameriere", createdAt: "2023-01-01" },
@@ -862,12 +856,5 @@ export const mockData = {
     { id: "s10", employeeId: "3", date: "2024-02-03", startTime: "12:00", endTime: "23:00", duration: 11, createdAt: "2024-01-15", updatedAt: "2024-01-15" }
   ],
   
-  templates: [
-    { id: "t1", name: "Mattina", startTime: "09:00", endTime: "15:00", duration: 6, createdAt: "2023-01-01" },
-    { id: "t2", name: "Pomeriggio", startTime: "15:00", endTime: "21:00", duration: 6, createdAt: "2023-01-01" },
-    { id: "t3", name: "Sera", startTime: "17:00", endTime: "23:00", duration: 6, createdAt: "2023-01-01" },
-    { id: "t4", name: "Giornata Piena", startTime: "09:00", endTime: "21:00", duration: 12, createdAt: "2023-01-01" },
-    { id: "t5", name: "Pranzo", startTime: "11:00", endTime: "15:00", duration: 4, createdAt: "2023-01-01" },
-    { id: "t6", name: "Cena", startTime: "18:00", endTime: "23:00", duration: 5, createdAt: "2023-01-01" }
-  ]
+  templates: DEFAULT_SHIFT_TEMPLATES
 };

@@ -23,6 +23,7 @@ export default function Templates() {
       try {
         setIsLoading(true);
         const templatesData = await templateService.getTemplates();
+        console.log("Templates fetched:", templatesData);
         setTemplates(templatesData);
       } catch (error) {
         console.error("Error fetching shift templates:", error);
