@@ -1,21 +1,37 @@
-
 import { useState } from "react";
 import { EmployeeTable } from "@/components/Employees/EmployeeTable";
 import { EmployeeModal } from "@/components/Employees/EmployeeModal";
 import { TemplateModal } from "@/components/Shifts/TemplateModal";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, LogOut, Users, Clock, Calendar } from "lucide-react";
+import { Plus, LogOut, Users, Clock, Calendar, PieChart } from "lucide-react";
 import { useEffect } from "react";
 import { Employee, ShiftTemplate, Shift } from "@/lib/types";
 import { employeeService, templateService, shiftService } from "@/lib/supabase";
-import { format, startOfMonth, endOfMonth, eachWeekOfInterval, endOfWeek, startOfWeek } from "date-fns";
+import { 
+  format, 
+  startOfMonth, 
+  endOfMonth, 
+  eachWeekOfInterval, 
+  endOfWeek, 
+  startOfWeek, 
+  parseISO,
+  isSameMonth 
+} from "date-fns";
 import { it } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 const Dashboard = () => {
   const { signOut } = useAuth();
@@ -80,7 +96,6 @@ const Dashboard = () => {
         const start = startOfMonth(currentMonth);
         const end = endOfMonth(currentMonth);
         
-        // Fix #1: Change getShiftsByDateRange to getShifts
         const shiftData = await shiftService.getShifts(
           start.toISOString().split('T')[0], // Format as YYYY-MM-DD string
           end.toISOString().split('T')[0]    // Format as YYYY-MM-DD string
@@ -201,38 +216,81 @@ const Dashboard = () => {
     }
   };
 
-  // Calculate hours per employee per week
+  // Calculate hours per employee per week (Monday to Sunday)
   const calculateWeeklyHours = () => {
-    // Get all weeks in the current month
+    // Get all weeks in the current month (starting Monday)
     const start = startOfMonth(currentMonth);
     const end = endOfMonth(currentMonth);
-    const weeks = eachWeekOfInterval({ start, end });
+    const weeks = eachWeekOfInterval(
+      { start, end }, 
+      { weekStartsOn: 1 } // 1 = Monday
+    );
     
     // Generate the hours summary
     return employees.map(employee => {
       const weeklyHours = weeks.map(weekStart => {
-        const weekEnd = endOfWeek(weekStart);
+        const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
         const employeeShifts = shifts.filter(
           shift => 
             shift.employeeId === employee.id && 
-            new Date(shift.date) >= startOfWeek(weekStart) && 
+            new Date(shift.date) >= startOfWeek(weekStart, { weekStartsOn: 1 }) && 
             new Date(shift.date) <= weekEnd
         );
         
-        const totalHours = employeeShifts.reduce((sum, shift) => sum + parseFloat(shift.duration.toString()), 0);
+        const totalHours = employeeShifts.reduce(
+          (sum, shift) => sum + parseFloat(shift.duration.toString()), 
+          0
+        );
+        
+        // Calculate shift template usage
+        const templateUsage = templates.reduce((acc, template) => {
+          const count = employeeShifts.filter(shift => 
+            shift.startTime === template.startTime && 
+            shift.endTime === template.endTime
+          ).length;
+          if (count > 0) {
+            acc[template.name] = count;
+          }
+          return acc;
+        }, {} as Record<string, number>);
+        
         return {
           weekStart,
           weekEnd,
           hours: totalHours,
+          templateUsage
         };
       });
       
-      const totalMonthlyHours = weeklyHours.reduce((sum, week) => sum + week.hours, 0);
+      // Calculate total monthly hours (full month)
+      const totalMonthlyHours = shifts.filter(
+        shift => 
+          shift.employeeId === employee.id && 
+          isSameMonth(parseISO(shift.date), currentMonth)
+      ).reduce(
+        (sum, shift) => sum + parseFloat(shift.duration.toString()), 
+        0
+      );
+      
+      // Calculate template usage for entire month
+      const monthlyTemplateUsage = templates.reduce((acc, template) => {
+        const count = shifts.filter(shift => 
+          shift.employeeId === employee.id &&
+          isSameMonth(parseISO(shift.date), currentMonth) &&
+          shift.startTime === template.startTime && 
+          shift.endTime === template.endTime
+        ).length;
+        if (count > 0) {
+          acc[template.name] = count;
+        }
+        return acc;
+      }, {} as Record<string, number>);
       
       return {
         employee,
         weeklyHours,
         totalHours: totalMonthlyHours,
+        monthlyTemplateUsage
       };
     });
   };
@@ -241,7 +299,7 @@ const Dashboard = () => {
   const weeks = eachWeekOfInterval({ 
     start: startOfMonth(currentMonth), 
     end: endOfMonth(currentMonth) 
-  });
+  }, { weekStartsOn: 1 }); // Monday-based weeks
 
   return (
     <div className="space-y-6">
@@ -274,7 +332,7 @@ const Dashboard = () => {
       </div>
       
       <Tabs defaultValue="employees">
-        <TabsList className="grid w-full grid-cols-3 mb-4">
+        <TabsList className="grid w-full grid-cols-4 mb-4">
           <TabsTrigger value="employees" className="flex items-center justify-center gap-2">
             <Users className="h-4 w-4" />
             <span>Dipendenti</span>
@@ -285,7 +343,11 @@ const Dashboard = () => {
           </TabsTrigger>
           <TabsTrigger value="hours" className="flex items-center justify-center gap-2">
             <Calendar className="h-4 w-4" />
-            <span>Ore Mensili</span>
+            <span>Ore</span>
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center justify-center gap-2">
+            <PieChart className="h-4 w-4" />
+            <span>Analisi</span>
           </TabsTrigger>
         </TabsList>
         
@@ -324,7 +386,7 @@ const Dashboard = () => {
             {templates.map((template) => (
               <Card 
                 key={template.id} 
-                className="p-4 cursor-pointer hover:bg-gray-50"
+                className="p-4 cursor-pointer hover:bg-gray-50 transition-all border border-muted"
                 onClick={() => handleEditTemplate(template)}
               >
                 <h3 className="font-medium text-lg">{template.name}</h3>
@@ -354,72 +416,167 @@ const Dashboard = () => {
         </TabsContent>
         
         <TabsContent value="hours" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">
-              Ore del mese: {format(currentMonth, 'MMMM yyyy', { locale: it })}
-            </h2>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline"
-                onClick={() => setCurrentMonth(prevMonth => {
-                  const newDate = new Date(prevMonth);
-                  newDate.setMonth(newDate.getMonth() - 1);
-                  return newDate;
-                })}
-              >
-                Mese Precedente
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => setCurrentMonth(prevMonth => {
-                  const newDate = new Date(prevMonth);
-                  newDate.setMonth(newDate.getMonth() + 1);
-                  return newDate;
-                })}
-              >
-                Mese Successivo
-              </Button>
-            </div>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="p-2 text-left border">Dipendente</th>
-                  {weeks.map((week, index) => (
-                    <th key={index} className="p-2 text-center border">
-                      {format(week, "d", { locale: it })} - {format(endOfWeek(week), "d MMM", { locale: it })}
-                    </th>
-                  ))}
-                  <th className="p-2 text-center border">Totale Ore</th>
-                </tr>
-              </thead>
-              <tbody>
-                {hoursData.map(({ employee, weeklyHours, totalHours }) => (
-                  <tr key={employee.id} className="hover:bg-gray-50">
-                    <td className="p-2 border font-medium">
-                      {employee.firstName} {employee.lastName}
-                    </td>
-                    {weeklyHours.map((week, index) => (
-                      <td key={index} className="p-2 text-center border">
-                        {week.hours.toFixed(1)}
-                      </td>
+          <Card className="border shadow-sm">
+            <CardHeader className="bg-primary/5 px-6 py-4 border-b">
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-xl font-semibold text-primary">
+                  Ore del mese: {format(currentMonth, 'MMMM yyyy', { locale: it })}
+                </CardTitle>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentMonth(prevMonth => {
+                      const newDate = new Date(prevMonth);
+                      newDate.setMonth(newDate.getMonth() - 1);
+                      return newDate;
+                    })}
+                  >
+                    Mese Precedente
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentMonth(prevMonth => {
+                      const newDate = new Date(prevMonth);
+                      newDate.setMonth(newDate.getMonth() + 1);
+                      return newDate;
+                    })}
+                  >
+                    Mese Successivo
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/40">
+                      <TableHead className="font-semibold w-[180px]">Dipendente</TableHead>
+                      {weeks.map((week, index) => (
+                        <TableHead key={index} className="text-center font-medium">
+                          {format(week, "dd", { locale: it })} - {format(endOfWeek(week, { weekStartsOn: 1 }), "dd MMM", { locale: it })}
+                        </TableHead>
+                      ))}
+                      <TableHead className="text-center font-semibold">Totale Mese</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {hoursData.map(({ employee, weeklyHours, totalHours }) => (
+                      <TableRow key={employee.id} className="hover:bg-muted/30 transition-colors">
+                        <TableCell className="font-medium flex items-center">
+                          {employee.color && (
+                            <div 
+                              className="w-3 h-3 rounded-full mr-2" 
+                              style={{ backgroundColor: employee.color }} 
+                            />
+                          )}
+                          {employee.firstName} {employee.lastName}
+                        </TableCell>
+                        {weeklyHours.map((week, index) => (
+                          <TableCell key={index} className="text-center">
+                            <div className="flex flex-col">
+                              <span className="font-medium">{week.hours.toFixed(1)}</span>
+                              {Object.keys(week.templateUsage).length > 0 && (
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  {Object.entries(week.templateUsage).map(([template, count], i) => (
+                                    <div key={i}>
+                                      {template}: {count}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                        ))}
+                        <TableCell className="text-center font-bold bg-muted/20">
+                          {totalHours.toFixed(1)}
+                        </TableCell>
+                      </TableRow>
                     ))}
-                    <td className="p-2 text-center border font-bold">
-                      {totalHours.toFixed(1)}
-                    </td>
-                  </tr>
+                  </TableBody>
+                </Table>
+              </div>
+              
+              {employees.length === 0 && (
+                <div className="text-center p-6 text-gray-500">
+                  Nessun dipendente trovato
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="analytics" className="space-y-4">
+          <Card className="border shadow-sm">
+            <CardHeader className="bg-primary/5 px-6 py-4 border-b">
+              <CardTitle className="text-xl font-semibold text-primary">
+                Analisi Template per Dipendente
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {hoursData.map(({ employee, monthlyTemplateUsage, totalHours }) => (
+                  <Card key={employee.id} className="border overflow-hidden">
+                    <CardHeader 
+                      className="p-4 border-b"
+                      style={{ 
+                        backgroundColor: employee.color ? `${employee.color}20` : undefined,
+                        borderLeft: employee.color ? `4px solid ${employee.color}` : undefined
+                      }}
+                    >
+                      <CardTitle className="text-lg flex items-center">
+                        {employee.color && (
+                          <div 
+                            className="w-3 h-3 rounded-full mr-2" 
+                            style={{ backgroundColor: employee.color }} 
+                          />
+                        )}
+                        {employee.firstName} {employee.lastName}
+                      </CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        Totale ore: {totalHours.toFixed(1)}
+                      </p>
+                    </CardHeader>
+                    <CardContent className="p-4">
+                      {Object.keys(monthlyTemplateUsage).length > 0 ? (
+                        <div className="space-y-2">
+                          {Object.entries(monthlyTemplateUsage).map(([template, count], i) => (
+                            <div key={i} className="flex justify-between items-center">
+                              <span className="font-medium">{template}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm">{count} turni</span>
+                                <div className="bg-muted w-16 h-2 rounded-full overflow-hidden">
+                                  <div 
+                                    className="h-full rounded-full" 
+                                    style={{ 
+                                      width: `${(count / Object.values(monthlyTemplateUsage).reduce((a, b) => a + b, 0)) * 100}%`,
+                                      backgroundColor: employee.color || '#3B82F6'
+                                    }} 
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-center text-muted-foreground py-4">
+                          Nessun turno questo mese
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
                 ))}
-              </tbody>
-            </table>
-          </div>
-          
-          {employees.length === 0 && (
-            <div className="text-center p-6 text-gray-500">
-              Nessun dipendente trovato
-            </div>
-          )}
+                
+                {employees.length === 0 && (
+                  <div className="text-center p-6 text-gray-500 col-span-full">
+                    Nessun dipendente trovato
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
