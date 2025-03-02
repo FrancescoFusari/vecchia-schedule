@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { CalendarHeader } from "./CalendarHeader";
 import { CalendarDay } from "./CalendarDay";
@@ -8,7 +7,6 @@ import { Shift, Employee } from "@/lib/types";
 import { useAuth } from "@/hooks/useAuth";
 import { employeeService, shiftService } from "@/lib/supabase";
 import { ShiftModal } from "../Shifts/ShiftModal";
-import { HoursSummary } from "../Reports/HoursSummary";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 
@@ -30,7 +28,6 @@ export function MonthlyCalendar({ onViewChange }: MonthlyCalendarProps) {
   const [hasError, setHasError] = useState(false);
   const [currentDayOfWeek, setCurrentDayOfWeek] = useState<number | undefined>(undefined);
   
-  // Check authentication
   useEffect(() => {
     if (!loading && !user) {
       toast({
@@ -42,9 +39,7 @@ export function MonthlyCalendar({ onViewChange }: MonthlyCalendarProps) {
     }
   }, [user, loading, navigate]);
   
-  // Load data
   useEffect(() => {
-    // Don't fetch data if not authenticated
     if (!user) return;
     
     const fetchData = async () => {
@@ -52,27 +47,22 @@ export function MonthlyCalendar({ onViewChange }: MonthlyCalendarProps) {
         setIsLoading(true);
         setHasError(false);
         
-        // Get employees
         const employeeData = await employeeService.getEmployees();
         setEmployees(employeeData);
         
-        // Get shifts for current month
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
         
-        // Create date range for the month (with padding for the calendar view)
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
         
-        // Add padding to include days from previous and next months that appear in the calendar
         const startDate = new Date(firstDay);
-        startDate.setDate(startDate.getDate() - (startDate.getDay() === 0 ? 6 : startDate.getDay() - 1)); // Previous Monday
+        startDate.setDate(startDate.getDate() - (startDate.getDay() === 0 ? 6 : startDate.getDay() - 1));
         
         const endDate = new Date(lastDay);
         const daysToAdd = 7 - endDate.getDay();
-        endDate.setDate(endDate.getDate() + (daysToAdd === 7 ? 0 : daysToAdd)); // Next Sunday
+        endDate.setDate(endDate.getDate() + (daysToAdd === 7 ? 0 : daysToAdd));
         
-        // Format dates for API
         const formattedStartDate = formatDate(startDate);
         const formattedEndDate = formatDate(endDate);
         
@@ -95,7 +85,6 @@ export function MonthlyCalendar({ onViewChange }: MonthlyCalendarProps) {
     fetchData();
   }, [currentDate, user]);
   
-  // Update calendar when month changes or when shifts change
   useEffect(() => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -144,7 +133,6 @@ export function MonthlyCalendar({ onViewChange }: MonthlyCalendarProps) {
   const handleSaveShift = async (shift: Shift) => {
     try {
       if (selectedShift) {
-        // Update existing shift
         const updatedShift = await shiftService.updateShift(shift);
         setShifts(prev => prev.map(s => s.id === updatedShift.id ? updatedShift : s));
         toast({
@@ -152,7 +140,6 @@ export function MonthlyCalendar({ onViewChange }: MonthlyCalendarProps) {
           description: "Il turno è stato aggiornato con successo.",
         });
       } else {
-        // Add new shift
         const newShift = await shiftService.createShift(shift);
         setShifts(prev => [...prev, newShift]);
         toast({
@@ -169,7 +156,6 @@ export function MonthlyCalendar({ onViewChange }: MonthlyCalendarProps) {
         description: "Si è verificato un errore durante il salvataggio del turno. Assicurati di avere i permessi necessari.",
         variant: "destructive",
       });
-      // Keep modal open for retry
     }
   };
   
@@ -189,11 +175,9 @@ export function MonthlyCalendar({ onViewChange }: MonthlyCalendarProps) {
         description: "Si è verificato un errore durante l'eliminazione del turno. Assicurati di avere i permessi necessari.",
         variant: "destructive",
       });
-      // Keep modal open for retry
     }
   };
   
-  // If loading auth, show loading indicator
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -202,14 +186,12 @@ export function MonthlyCalendar({ onViewChange }: MonthlyCalendarProps) {
     );
   }
   
-  // If not authenticated, don't render anything (will redirect in effect)
   if (!user) {
     return null;
   }
   
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Calendar header with navigation */}
       <CalendarHeader
         date={currentDate}
         onPrevMonth={handlePrevMonth}
@@ -219,28 +201,24 @@ export function MonthlyCalendar({ onViewChange }: MonthlyCalendarProps) {
         onViewChange={onViewChange}
       />
       
-      {/* Admin information banner */}
       {isAdmin() && (
         <div className="bg-amber-50 border border-amber-200 p-3 rounded-md text-amber-800 text-sm">
           <strong>Modalità Admin:</strong> Puoi aggiungere, modificare ed eliminare i turni cliccando sul calendario.
         </div>
       )}
       
-      {/* Error banner */}
       {hasError && (
         <div className="bg-red-50 border border-red-200 p-3 rounded-md text-red-800 text-sm">
           Si è verificato un errore durante il caricamento dei dati. Prova ad aggiornare la pagina.
         </div>
       )}
       
-      {/* Calendar grid */}
       {isLoading ? (
         <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
-          {/* Day headers */}
           <div className="grid grid-cols-7 border-b border-gray-200">
             {DAYS_OF_WEEK.map(day => (
               <div key={day} className="py-2 text-center font-semibold text-sm border-r last:border-r-0 border-gray-200">
@@ -249,7 +227,6 @@ export function MonthlyCalendar({ onViewChange }: MonthlyCalendarProps) {
             ))}
           </div>
           
-          {/* Calendar days */}
           <div className="grid grid-cols-7 auto-rows-fr">
             {calendarDays.map((day, index) => (
               <CalendarDay
@@ -264,14 +241,6 @@ export function MonthlyCalendar({ onViewChange }: MonthlyCalendarProps) {
         </div>
       )}
       
-      {/* Hours summary */}
-      <HoursSummary
-        shifts={shifts}
-        employees={employees}
-        currentDate={currentDate}
-      />
-      
-      {/* Shift modal for adding/editing shifts */}
       {(isAddingShift || selectedShift) && (
         <ShiftModal
           isOpen={isAddingShift || !!selectedShift}

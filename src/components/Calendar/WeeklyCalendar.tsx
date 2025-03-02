@@ -6,10 +6,10 @@ import { Shift, Employee } from "@/lib/types";
 import { useAuth } from "@/hooks/useAuth";
 import { employeeService, shiftService } from "@/lib/supabase";
 import { ShiftModal } from "../Shifts/ShiftModal";
-import { HoursSummary } from "../Reports/HoursSummary";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { HoursSummary } from "../Reports/HoursSummary";
 
 interface WeeklyCalendarProps {
   onViewChange?: (isWeekView: boolean) => void;
@@ -498,11 +498,7 @@ export function WeeklyCalendar({ onViewChange }: WeeklyCalendarProps) {
       )}
       
       {/* Hours summary */}
-      <HoursSummary
-        shifts={shifts}
-        employees={employees}
-        currentDate={currentDate}
-      />
+      
       
       {/* Shift modal for adding/editing shifts */}
       {(isAddingShift || selectedShift) && (
