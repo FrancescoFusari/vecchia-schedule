@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { Employee, Shift, User, Role } from './types';
 
@@ -11,20 +10,33 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 // Authentication functions
 export const authService = {
   signIn: async (email: string, password: string) => {
+    console.log("Auth service: signing in with", email);
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     
-    if (error) throw error;
+    console.log("Auth response:", data, error);
+    
+    if (error) {
+      console.error("Auth error:", error);
+      throw error;
+    }
     
     // Get user profile from the profiles table
     if (data.user) {
-      const { data: profileData } = await supabase
+      console.log("Fetching user profile for", data.user.id);
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', data.user.id)
         .single();
+      
+      console.log("Profile data:", profileData, profileError);
+      
+      if (profileError) {
+        console.error("Profile fetch error:", profileError);
+      }
       
       if (profileData) {
         return {

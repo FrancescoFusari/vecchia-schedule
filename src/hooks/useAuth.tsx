@@ -23,7 +23,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check for current user on mount
     const checkUser = async () => {
       try {
+        console.log("Checking for current user...");
         const currentUser = await authService.getCurrentUser();
+        console.log("Current user:", currentUser);
         setUser(currentUser);
       } catch (error) {
         console.error("Error checking user:", error);
@@ -36,8 +38,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     // Set up auth state listener
     const { data } = authService.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed:", event, session);
       if (event === "SIGNED_IN" || event === "USER_UPDATED") {
         const currentUser = await authService.getCurrentUser();
+        console.log("Updated user after state change:", currentUser);
         setUser(currentUser);
       } else if (event === "SIGNED_OUT") {
         setUser(null);
@@ -53,9 +57,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
+      console.log("Attempting to sign in user:", email);
       const { data, error } = await authService.signIn(email, password);
       
-      if (error) throw error;
+      if (error) {
+        console.error("Sign in error:", error);
+        throw error;
+      }
+      
+      console.log("Sign in success, data:", data);
       
       if (data && data.user) {
         const userData: User = {
@@ -66,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           lastName: data.user.user_metadata.lastName
         };
         
+        console.log("Setting user data:", userData);
         setUser(userData);
         toast({
           title: "Login effettuato",

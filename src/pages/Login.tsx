@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -22,12 +21,9 @@ const Login = () => {
     setIsLoading(true);
     
     try {
+      console.log("Attempting login with:", email);
       await signIn(email, password);
       navigate("/");
-      toast({
-        title: "Login effettuato",
-        description: "Hai effettuato il login con successo.",
-      });
     } catch (error) {
       console.error("Login error:", error);
       toast({
