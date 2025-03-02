@@ -5,7 +5,7 @@ import { TemplateModal } from "@/components/Shifts/TemplateModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, LogOut, Users, Clock, Calendar, PieChart, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, LogOut, Users, Clock, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect } from "react";
 import { Employee, ShiftTemplate, Shift } from "@/lib/types";
 import { employeeService, templateService, shiftService } from "@/lib/supabase";
@@ -348,7 +348,7 @@ const Dashboard = () => {
       </div>
       
       <Tabs defaultValue="employees">
-        <TabsList className="grid w-full grid-cols-4 mb-4">
+        <TabsList className="grid w-full grid-cols-3 mb-4">
           <TabsTrigger value="employees" className="flex items-center justify-center gap-2">
             <Users className="h-4 w-4" />
             <span className="hidden sm:inline">Dipendenti</span>
@@ -360,10 +360,6 @@ const Dashboard = () => {
           <TabsTrigger value="hours" className="flex items-center justify-center gap-2">
             <Calendar className="h-4 w-4" />
             <span className="hidden sm:inline">Ore</span>
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center justify-center gap-2">
-            <PieChart className="h-4 w-4" />
-            <span className="hidden sm:inline">Analisi</span>
           </TabsTrigger>
         </TabsList>
         
@@ -630,77 +626,6 @@ const Dashboard = () => {
                 
                 {employees.length === 0 && (
                   <div className="text-center p-6 text-gray-500">
-                    Nessun dipendente trovato
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="analytics" className="space-y-4">
-          <Card className="border shadow-sm">
-            <CardHeader className="bg-primary/5 px-6 py-4 border-b">
-              <CardTitle className="text-xl font-semibold text-primary">
-                Analisi Template per Dipendente
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {hoursData.map(({ employee, monthlyTemplateUsage, totalHours }) => (
-                  <Card key={employee.id} className="border overflow-hidden">
-                    <CardHeader 
-                      className="p-4 border-b"
-                      style={{ 
-                        backgroundColor: employee.color ? `${employee.color}20` : undefined,
-                        borderLeft: employee.color ? `4px solid ${employee.color}` : undefined
-                      }}
-                    >
-                      <CardTitle className="text-lg flex items-center">
-                        {employee.color && (
-                          <div 
-                            className="w-3 h-3 rounded-full mr-2" 
-                            style={{ backgroundColor: employee.color }} 
-                          />
-                        )}
-                        {employee.firstName} {employee.lastName}
-                      </CardTitle>
-                      <p className="text-sm text-muted-foreground">
-                        Totale ore: {totalHours.toFixed(1)}
-                      </p>
-                    </CardHeader>
-                    <CardContent className="p-4">
-                      {Object.keys(monthlyTemplateUsage).length > 0 ? (
-                        <div className="space-y-2">
-                          {Object.entries(monthlyTemplateUsage).map(([template, count], i) => (
-                            <div key={i} className="flex justify-between items-center">
-                              <span className="font-medium">{template}</span>
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm">{count} turni</span>
-                                <div className="bg-muted w-16 h-2 rounded-full overflow-hidden">
-                                  <div 
-                                    className="h-full rounded-full" 
-                                    style={{ 
-                                      width: `${(count / Object.values(monthlyTemplateUsage).reduce((a, b) => a + b, 0)) * 100}%`,
-                                      backgroundColor: employee.color || '#3B82F6'
-                                    }} 
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-center text-muted-foreground py-4">
-                          Nessun turno questo mese
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-                
-                {employees.length === 0 && (
-                  <div className="text-center p-6 text-gray-500 col-span-full">
                     Nessun dipendente trovato
                   </div>
                 )}
