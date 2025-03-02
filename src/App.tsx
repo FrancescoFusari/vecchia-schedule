@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/hooks/useAuth";
 import { Toaster } from "@/components/ui/toaster";
-import Layout from "@/components/Layout";
+import { Layout } from "@/components/Layout";
 import Login from "@/pages/Login";
 import Calendar from "@/pages/Calendar";
 import Employees from "@/pages/Employees";
