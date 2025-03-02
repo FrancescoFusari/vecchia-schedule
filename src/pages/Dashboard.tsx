@@ -5,7 +5,7 @@ import { TemplateModal } from "@/components/Shifts/TemplateModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, LogOut, Users, Clock, Calendar, PieChart } from "lucide-react";
+import { Plus, LogOut, Users, Clock, Calendar, PieChart, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect } from "react";
 import { Employee, ShiftTemplate, Shift } from "@/lib/types";
 import { employeeService, templateService, shiftService } from "@/lib/supabase";
@@ -17,7 +17,9 @@ import {
   endOfWeek, 
   startOfWeek, 
   parseISO,
-  isSameMonth 
+  isSameMonth,
+  isFirstDayOfMonth,
+  isLastDayOfMonth 
 } from "date-fns";
 import { it } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
@@ -32,6 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 const Dashboard = () => {
   const { signOut } = useAuth();
@@ -258,7 +261,9 @@ const Dashboard = () => {
           weekStart,
           weekEnd,
           hours: totalHours,
-          templateUsage
+          templateUsage,
+          isFirstWeek: isFirstDayOfMonth(weekStart) || weekStart <= start,
+          isLastWeek: isLastDayOfMonth(weekEnd) || weekEnd >= end
         };
       });
       
@@ -301,6 +306,34 @@ const Dashboard = () => {
     end: endOfMonth(currentMonth) 
   }, { weekStartsOn: 1 }); // Monday-based weeks
 
+  // Get current month name and year in Italian
+  const currentMonthName = format(currentMonth, 'MMMM yyyy', { locale: it });
+  
+  // Determine visible weeks for mobile view (show max 2 weeks at a time)
+  const [visibleWeekIndex, setVisibleWeekIndex] = useState(0);
+  const maxVisibleWeeks = isMobile ? 2 : weeks.length;
+  const visibleWeeks = weeks.slice(
+    visibleWeekIndex, 
+    Math.min(visibleWeekIndex + maxVisibleWeeks, weeks.length)
+  );
+  
+  const handleNextWeeks = () => {
+    if (visibleWeekIndex + maxVisibleWeeks < weeks.length) {
+      setVisibleWeekIndex(prevIndex => prevIndex + maxVisibleWeeks);
+    }
+  };
+  
+  const handlePrevWeeks = () => {
+    if (visibleWeekIndex > 0) {
+      setVisibleWeekIndex(prevIndex => Math.max(0, prevIndex - maxVisibleWeeks));
+    }
+  };
+  
+  // Reset visible week when month changes
+  useEffect(() => {
+    setVisibleWeekIndex(0);
+  }, [currentMonth]);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -335,19 +368,19 @@ const Dashboard = () => {
         <TabsList className="grid w-full grid-cols-4 mb-4">
           <TabsTrigger value="employees" className="flex items-center justify-center gap-2">
             <Users className="h-4 w-4" />
-            <span>Dipendenti</span>
+            <span className="hidden sm:inline">Dipendenti</span>
           </TabsTrigger>
           <TabsTrigger value="templates" className="flex items-center justify-center gap-2">
             <Clock className="h-4 w-4" />
-            <span>Template</span>
+            <span className="hidden sm:inline">Template</span>
           </TabsTrigger>
           <TabsTrigger value="hours" className="flex items-center justify-center gap-2">
             <Calendar className="h-4 w-4" />
-            <span>Ore</span>
+            <span className="hidden sm:inline">Ore</span>
           </TabsTrigger>
           <TabsTrigger value="analytics" className="flex items-center justify-center gap-2">
             <PieChart className="h-4 w-4" />
-            <span>Analisi</span>
+            <span className="hidden sm:inline">Analisi</span>
           </TabsTrigger>
         </TabsList>
         
@@ -417,10 +450,12 @@ const Dashboard = () => {
         
         <TabsContent value="hours" className="space-y-4">
           <Card className="border shadow-sm">
-            <CardHeader className="bg-primary/5 px-6 py-4 border-b">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-xl font-semibold text-primary">
-                  Ore del mese: {format(currentMonth, 'MMMM yyyy', { locale: it })}
+            <CardHeader className="bg-primary/5 px-4 py-3 sm:px-6 sm:py-4 border-b">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                <CardTitle className="text-xl font-semibold text-primary flex items-center">
+                  <span className="capitalize">
+                    Ore del mese: {currentMonthName}
+                  </span>
                 </CardTitle>
                 <div className="flex gap-2">
                   <Button 
@@ -432,7 +467,9 @@ const Dashboard = () => {
                       return newDate;
                     })}
                   >
-                    Mese Precedente
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    <span className="hidden sm:inline">Mese Precedente</span>
+                    <span className="sm:hidden">Prec</span>
                   </Button>
                   <Button 
                     variant="outline"
@@ -443,54 +480,98 @@ const Dashboard = () => {
                       return newDate;
                     })}
                   >
-                    Mese Successivo
+                    <span className="hidden sm:inline">Mese Successivo</span>
+                    <span className="sm:hidden">Succ</span>
+                    <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="p-0">
+              {isMobile && weeks.length > maxVisibleWeeks && (
+                <div className="flex justify-between items-center p-2 bg-muted/20 border-b">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={handlePrevWeeks}
+                    disabled={visibleWeekIndex === 0}
+                    className="h-8 px-2"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <div className="text-xs font-medium">
+                    Settimana {visibleWeekIndex/maxVisibleWeeks + 1} di {Math.ceil(weeks.length/maxVisibleWeeks)}
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={handleNextWeeks}
+                    disabled={visibleWeekIndex + maxVisibleWeeks >= weeks.length}
+                    className="h-8 px-2"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/40">
-                      <TableHead className="font-semibold w-[180px]">Dipendente</TableHead>
-                      {weeks.map((week, index) => (
-                        <TableHead key={index} className="text-center font-medium">
-                          {format(week, "dd", { locale: it })} - {format(endOfWeek(week, { weekStartsOn: 1 }), "dd MMM", { locale: it })}
+                      <TableHead className="font-semibold w-[180px] sticky left-0 bg-background z-10 shadow-[1px_0_0_0_#e5e7eb]">
+                        Dipendente
+                      </TableHead>
+                      {visibleWeeks.map((week, index) => (
+                        <TableHead key={index} className="text-center font-medium whitespace-nowrap">
+                          <div className="text-xs">
+                            {format(week, "dd", { locale: it })} - {format(endOfWeek(week, { weekStartsOn: 1 }), "dd MMM", { locale: it })}
+                          </div>
                         </TableHead>
                       ))}
-                      <TableHead className="text-center font-semibold">Totale Mese</TableHead>
+                      <TableHead className="text-center font-semibold whitespace-nowrap sticky right-0 bg-background z-10 shadow-[-1px_0_0_0_#e5e7eb]">
+                        Totale Mese
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {hoursData.map(({ employee, weeklyHours, totalHours }) => (
                       <TableRow key={employee.id} className="hover:bg-muted/30 transition-colors">
-                        <TableCell className="font-medium flex items-center">
-                          {employee.color && (
+                        <TableCell className="font-medium sticky left-0 bg-background z-10 shadow-[1px_0_0_0_#e5e7eb]">
+                          <div className="flex items-center space-x-2">
                             <div 
-                              className="w-3 h-3 rounded-full mr-2" 
-                              style={{ backgroundColor: employee.color }} 
+                              className="w-3 h-3 rounded-full flex-shrink-0" 
+                              style={{ backgroundColor: employee.color || '#9CA3AF' }} 
                             />
-                          )}
-                          {employee.firstName} {employee.lastName}
+                            <span className="truncate">{employee.firstName} {employee.lastName}</span>
+                          </div>
                         </TableCell>
-                        {weeklyHours.map((week, index) => (
-                          <TableCell key={index} className="text-center">
-                            <div className="flex flex-col">
-                              <span className="font-medium">{week.hours.toFixed(1)}</span>
-                              {Object.keys(week.templateUsage).length > 0 && (
-                                <div className="text-xs text-muted-foreground mt-1">
+                        {weeklyHours
+                          .slice(visibleWeekIndex, visibleWeekIndex + maxVisibleWeeks)
+                          .map((week, index) => (
+                            <TableCell key={index} className="text-center p-1 sm:p-4">
+                              <div className="flex flex-col items-center">
+                                <span className="font-medium text-sm sm:text-base">
+                                  {week.hours.toFixed(1)}
+                                </span>
+                                <div className="text-[10px] sm:text-xs text-muted-foreground mt-1 max-w-[110px]">
                                   {Object.entries(week.templateUsage).map(([template, count], i) => (
-                                    <div key={i}>
+                                    <Badge 
+                                      key={i} 
+                                      variant="outline" 
+                                      className="m-0.5 whitespace-nowrap text-[9px] sm:text-xs"
+                                      style={{
+                                        borderColor: employee.color ? `${employee.color}50` : undefined,
+                                        backgroundColor: employee.color ? `${employee.color}15` : undefined
+                                      }}
+                                    >
                                       {template}: {count}
-                                    </div>
+                                    </Badge>
                                   ))}
                                 </div>
-                              )}
-                            </div>
-                          </TableCell>
-                        ))}
-                        <TableCell className="text-center font-bold bg-muted/20">
+                              </div>
+                            </TableCell>
+                          ))}
+                        <TableCell className="text-center font-bold sticky right-0 bg-muted/20 z-10 shadow-[-1px_0_0_0_#e5e7eb]">
                           {totalHours.toFixed(1)}
                         </TableCell>
                       </TableRow>
