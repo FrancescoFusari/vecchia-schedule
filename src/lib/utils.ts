@@ -18,24 +18,15 @@ export function formatDate(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-// Format time (HH:MM) - ensure no seconds are displayed
+// Format time (HH:MM)
 export function formatTime(time: string): string {
-  // If time contains seconds (HH:MM:SS), remove them
-  if (time.includes(':') && time.split(':').length > 2) {
-    const [hours, minutes] = time.split(':');
-    return `${hours}:${minutes}`;
-  }
   return time;
 }
 
 // Calculate shift duration in hours
 export function calculateShiftDuration(startTime: string, endTime: string): number {
-  // Ensure we're only working with HH:MM format
-  const cleanStartTime = formatTime(startTime);
-  const cleanEndTime = formatTime(endTime);
-  
-  const [startHour, startMinute] = cleanStartTime.split(":").map(Number);
-  const [endHour, endMinute] = cleanEndTime.split(":").map(Number);
+  const [startHour, startMinute] = startTime.split(":").map(Number);
+  const [endHour, endMinute] = endTime.split(":").map(Number);
   
   const start = startHour + startMinute / 60;
   const end = endHour + endMinute / 60;
@@ -121,10 +112,6 @@ function isSameDay(date1: Date, date2: Date): boolean {
 
 // Get week start and end dates
 export function getWeekDates(date: Date): { start: Date; end: Date } {
-  if (!date) {
-    date = new Date(); // Provide a default date if date is undefined
-  }
-  
   const day = date.getDay();
   // Adjust for Monday as first day of week (0 is Monday in our system)
   const diff = day === 0 ? 6 : day - 1;
@@ -151,10 +138,10 @@ export function formatEmployeeName(firstName: string, lastName: string): string 
   return `${firstName} ${lastName.charAt(0)}`;
 }
 
-// Format shift display - modified to only show first name and the initial of the last name and ensure no seconds in times
+// Format shift display - modified to only show first name and the initial of the last name
 export function formatShiftDisplay(firstName: string, lastName: string, startTime: string, endTime: string): string {
   const displayName = lastName ? `${firstName} ${lastName.charAt(0)}` : firstName;
-  return `${displayName} ${formatTime(startTime)}-${formatTime(endTime)}`;
+  return `${displayName} ${startTime}-${endTime}`;
 }
 
 // Calculate total hours for an employee in a given period
