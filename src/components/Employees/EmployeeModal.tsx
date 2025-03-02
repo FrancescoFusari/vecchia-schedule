@@ -26,6 +26,7 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
   const [position, setPosition] = useState(employee?.position || "");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   // Reset form when employee changes
   useEffect(() => {
@@ -45,6 +46,7 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
       setPosition("");
     }
     setErrors({});
+    setErrorMessage(null);
   }, [employee]);
   
   const validateForm = () => {
@@ -73,6 +75,8 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
   };
   
   const handleSave = async () => {
+    setErrorMessage(null);
+    
     if (!validateForm()) {
       toast({
         title: "Errore di validazione",
@@ -94,6 +98,7 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
           variant: "destructive",
         });
         setIsSubmitting(false);
+        setErrorMessage("Solo gli amministratori possono gestire i dipendenti.");
         return;
       }
       
@@ -108,12 +113,23 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
         createdAt: employee?.createdAt || new Date().toISOString(),
       };
       
-      onSave(updatedEmployee);
+      await onSave(updatedEmployee);
     } catch (error) {
       console.error("Error saving employee:", error);
+      let message = "Si è verificato un errore durante il salvataggio. Riprova.";
+      
+      if (error instanceof Error) {
+        message = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        // @ts-ignore - handle Supabase specific error shape
+        message = error.message || message;
+      }
+      
+      setErrorMessage(message);
+      
       toast({
         title: "Errore",
-        description: "Si è verificato un errore durante il salvataggio. Riprova.",
+        description: message,
         variant: "destructive",
       });
     } finally {
@@ -135,6 +151,12 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
             {employee ? "Modifica dipendente" : "Aggiungi dipendente"}
           </DialogTitle>
         </DialogHeader>
+        
+        {errorMessage && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <span className="block sm:inline">{errorMessage}</span>
+          </div>
+        )}
         
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">

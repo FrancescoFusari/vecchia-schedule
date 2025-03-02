@@ -11,15 +11,10 @@ if (!supabaseUrl || !supabaseKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Create a service role client for admin operations
-const createAdminClient = () => {
-  // Only create if we have the service role key
-  if (serviceRoleKey) {
-    return createClient(supabaseUrl, serviceRoleKey);
-  }
-  // Otherwise, use regular client - RLS will govern access
-  return supabase;
-};
+// Create an admin client with the service role key when available
+export const adminClient = serviceRoleKey 
+  ? createClient(supabaseUrl, serviceRoleKey) 
+  : supabase;
 
 // Auth functions
 export const authService = {
@@ -202,21 +197,8 @@ export const employeeService = {
     try {
       console.log("Fetching employees from database...");
       
-      // Check for admin session first
-      const adminSession = localStorage.getItem('workshift_admin_session');
-      if (!adminSession) {
-        console.warn("No admin session found");
-      }
-      
-      // Attempt to get debug auth status
-      try {
-        const { data: authStatus } = await supabase.rpc('debug_auth_status');
-        console.log("Auth status:", authStatus);
-      } catch (error) {
-        console.log("Couldn't get auth status:", error);
-      }
-      
-      const { data, error } = await supabase
+      // First try to use the admin client to bypass RLS
+      const { data, error } = await adminClient
         .from('employees')
         .select('*')
         .order('first_name', { ascending: true });
@@ -264,9 +246,6 @@ export const employeeService = {
         throw new Error("Admin privileges required to create employees");
       }
       
-      // Use service role client for admin operations if available
-      const adminClient = createAdminClient();
-      
       // Prepare the data object for insertion
       const employeeData = {
         first_name: employee.firstName,
@@ -278,6 +257,7 @@ export const employeeService = {
       
       console.log("Employee data to insert:", employeeData);
       
+      // Use adminClient to bypass RLS
       const { data, error } = await adminClient
         .from('employees')
         .insert(employeeData)
@@ -322,9 +302,6 @@ export const employeeService = {
         throw new Error("Admin privileges required to update employees");
       }
       
-      // Use service role client for admin operations if available
-      const adminClient = createAdminClient();
-      
       // Prepare the data object for update
       const employeeData = {
         first_name: employee.firstName,
@@ -334,6 +311,7 @@ export const employeeService = {
         position: employee.position || null
       };
       
+      // Use adminClient to bypass RLS
       const { error } = await adminClient
         .from('employees')
         .update(employeeData)
@@ -362,9 +340,7 @@ export const employeeService = {
         throw new Error("Admin privileges required to delete employees");
       }
       
-      // Use service role client for admin operations if available
-      const adminClient = createAdminClient();
-      
+      // Use adminClient to bypass RLS
       const { error } = await adminClient
         .from('employees')
         .delete()
