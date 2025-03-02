@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { Employee, Shift, ShiftTemplate, User } from './types';
 
@@ -77,7 +76,7 @@ export const authService = {
         
         // For admin, we create a hardcoded user object with consistent ID
         const adminUser: User = {
-          id: 'admin-id', // IMPORTANT: This ID must match what's in the get_user_role() function
+          id: 'admin-id', // IMPORTANT: This ID must match what's in the is_admin() function
           username: 'admin',
           email: 'admin@workshift.local',
           role: 'admin',
@@ -198,8 +197,11 @@ export const employeeService = {
     try {
       console.log("Fetching employees from database...");
       
-      // First try to use the admin client to bypass RLS
-      const { data, error } = await adminClient
+      // Check for admin session first to determine which client to use
+      const adminSession = localStorage.getItem('workshift_admin_session');
+      const client = adminSession ? adminClient : supabase;
+      
+      const { data, error } = await client
         .from('employees')
         .select('*')
         .order('first_name', { ascending: true });
@@ -368,74 +370,39 @@ export const shiftService = {
       
       // Check for admin session first
       const adminSession = localStorage.getItem('workshift_admin_session');
+      const client = adminSession ? adminClient : supabase;
       
-      if (adminSession) {
-        // Admin users should use adminClient to bypass RLS
-        let { data, error } = await adminClient
-          .from('shifts')
-          .select('*')
-          .gte('date', startDate)
-          .lte('date', endDate)
-          .order('date', { ascending: true });
-          
-        if (error) {
-          console.error("Error fetching shifts with admin client:", error);
-          throw error;
-        }
+      let { data, error } = await client
+        .from('shifts')
+        .select('*')
+        .gte('date', startDate)
+        .lte('date', endDate)
+        .order('date', { ascending: true });
         
-        if (!data) {
-          console.warn("No shift data returned for admin");
-          return [];
-        }
-        
-        const shifts: Shift[] = data.map(shift => ({
-          id: shift.id,
-          employeeId: shift.employee_id,
-          date: shift.date,
-          startTime: shift.start_time,
-          endTime: shift.end_time,
-          duration: shift.duration,
-          notes: shift.notes || '',
-          createdAt: shift.created_at,
-          updatedAt: shift.updated_at
-        }));
-        
-        console.log(`Admin successfully fetched ${shifts.length} shifts`);
-        return shifts;
-      } else {
-        // Regular users use normal client (RLS will filter to their shifts only)
-        let { data, error } = await supabase
-          .from('shifts')
-          .select('*')
-          .gte('date', startDate)
-          .lte('date', endDate)
-          .order('date', { ascending: true });
-          
-        if (error) {
-          console.error("Error fetching shifts:", error);
-          throw error;
-        }
-        
-        if (!data) {
-          console.warn("No shift data returned for user");
-          return [];
-        }
-        
-        const shifts: Shift[] = data.map(shift => ({
-          id: shift.id,
-          employeeId: shift.employee_id,
-          date: shift.date,
-          startTime: shift.start_time,
-          endTime: shift.end_time,
-          duration: shift.duration,
-          notes: shift.notes || '',
-          createdAt: shift.created_at,
-          updatedAt: shift.updated_at
-        }));
-        
-        console.log(`User successfully fetched ${shifts.length} shifts`);
-        return shifts;
+      if (error) {
+        console.error("Error fetching shifts:", error);
+        throw error;
       }
+      
+      if (!data) {
+        console.warn("No shift data returned");
+        return [];
+      }
+      
+      const shifts: Shift[] = data.map(shift => ({
+        id: shift.id,
+        employeeId: shift.employee_id,
+        date: shift.date,
+        startTime: shift.start_time,
+        endTime: shift.end_time,
+        duration: shift.duration,
+        notes: shift.notes || '',
+        createdAt: shift.created_at,
+        updatedAt: shift.updated_at
+      }));
+      
+      console.log(`Successfully fetched ${shifts.length} shifts`);
+      return shifts;
     } catch (error) {
       console.error("Error fetching shifts:", error);
       console.warn("Using mock shift data as fallback");
@@ -457,29 +424,19 @@ export const shiftService = {
         notes: shift.notes
       };
       
-      // First try using admin client to bypass RLS
-      let { data, error } = await adminClient
+      // Check for admin session first to determine which client to use
+      const adminSession = localStorage.getItem('workshift_admin_session');
+      const client = adminSession ? adminClient : supabase;
+      
+      let { data, error } = await client
         .from('shifts')
         .insert(shiftData)
         .select('*')
         .single();
         
       if (error) {
-        console.error("Error creating shift with admin client:", error);
-        
-        // Fallback to regular client
-        const response = await supabase
-          .from('shifts')
-          .insert(shiftData)
-          .select('*')
-          .single();
-          
-        if (response.error) {
-          console.error("Error creating shift:", response.error);
-          throw response.error;
-        }
-        
-        data = response.data;
+        console.error("Error creating shift:", error);
+        throw error;
       }
       
       if (!data) {
@@ -584,64 +541,38 @@ export const shiftService = {
 export const templateService = {
   getTemplates: async () => {
     try {
-      // Check for admin session first
-      const adminSession = localStorage.getItem('workshift_admin_session');
+      console.log("Fetching shift templates...");
       
-      if (adminSession) {
-        // Admin users should use adminClient to bypass RLS
-        let { data, error } = await adminClient
-          .from('shift_templates')
-          .select('*')
-          .order('name', { ascending: true });
-          
-        if (error) {
-          console.error("Error fetching shift templates with admin client:", error);
-          throw error;
-        }
+      // Check for admin session first to determine which client to use
+      const adminSession = localStorage.getItem('workshift_admin_session');
+      const client = adminSession ? adminClient : supabase;
+      
+      let { data, error } = await client
+        .from('shift_templates')
+        .select('*')
+        .order('name', { ascending: true });
         
-        if (!data || data.length === 0) {
-          console.log("No templates found for admin, returning default templates");
-          return mockData.templates || [];
-        }
-        
-        const templates: ShiftTemplate[] = data.map(template => ({
-          id: template.id,
-          name: template.name,
-          startTime: template.start_time,
-          endTime: template.end_time,
-          duration: template.duration,
-          createdAt: template.created_at
-        }));
-        
-        return templates;
-      } else {
-        // Regular users use normal client (with RLS)
-        let { data, error } = await supabase
-          .from('shift_templates')
-          .select('*')
-          .order('name', { ascending: true });
-          
-        if (error) {
-          console.error("Error fetching shift templates:", error);
-          throw error;
-        }
-        
-        if (!data || data.length === 0) {
-          console.log("No templates found for user, returning default templates");
-          return mockData.templates || [];
-        }
-        
-        const templates: ShiftTemplate[] = data.map(template => ({
-          id: template.id,
-          name: template.name,
-          startTime: template.start_time,
-          endTime: template.end_time,
-          duration: template.duration,
-          createdAt: template.created_at
-        }));
-        
-        return templates;
+      if (error) {
+        console.error("Error fetching shift templates:", error);
+        throw error;
       }
+      
+      if (!data || data.length === 0) {
+        console.log("No templates found, returning default templates");
+        return mockData.templates || [];
+      }
+      
+      const templates: ShiftTemplate[] = data.map(template => ({
+        id: template.id,
+        name: template.name,
+        startTime: template.start_time,
+        endTime: template.end_time,
+        duration: template.duration,
+        createdAt: template.created_at
+      }));
+      
+      console.log(`Successfully fetched ${templates.length} templates`);
+      return templates;
     } catch (error) {
       console.error("Error fetching shift templates:", error);
       return mockData.templates || [];

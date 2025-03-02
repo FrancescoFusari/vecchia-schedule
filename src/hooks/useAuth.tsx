@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { authService, supabase } from "@/lib/supabase";
 import { User } from "@/lib/types";
@@ -114,7 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const isAdmin = () => {
-    return user?.role === "admin";
+    return user?.role === "admin" || user?.id === "admin-id";
   };
 
   return (
