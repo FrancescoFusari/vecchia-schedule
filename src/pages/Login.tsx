@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Info } from "lucide-react";
+import { Check, Info, Loader2 } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 
@@ -18,10 +18,12 @@ export default function Login() {
   const [email, setEmail] = useState("admin@example.com");
   const [password, setPassword] = useState("password");
   const [error, setError] = useState<string | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setIsLoggingIn(true);
     
     try {
       await signIn(email, password);
@@ -33,6 +35,8 @@ export default function Login() {
       } else {
         setError("Si è verificato un errore durante il login. Riprova.");
       }
+    } finally {
+      setIsLoggingIn(false);
     }
   };
   
@@ -78,10 +82,10 @@ export default function Login() {
               </Alert>
             )}
             
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? (
-                <span className="flex items-center">
-                  <span className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-white rounded-full"></span>
+            <Button type="submit" className="w-full" disabled={isLoggingIn || loading}>
+              {isLoggingIn ? (
+                <span className="flex items-center justify-center">
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Accesso in corso...
                 </span>
               ) : (

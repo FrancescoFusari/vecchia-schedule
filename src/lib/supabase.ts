@@ -1,43 +1,61 @@
+
 import { Employee, Shift, User, Role } from './types';
 import { supabase } from '@/integrations/supabase/client';
 
 // Authentication functions
 export const authService = {
   signIn: async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
-    if (error) throw error;
-    
-    // Get user profile from the profiles table
-    if (data.user) {
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', data.user.id)
-        .single();
+    console.log("Attempting to sign in with:", email);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
       
-      if (profileData) {
-        return {
-          data: {
-            user: {
-              id: data.user.id,
-              email: data.user.email || '',
-              user_metadata: {
-                role: profileData.role as Role,
-                firstName: profileData.first_name,
-                lastName: profileData.last_name
-              }
-            }
-          },
-          error: null
-        };
+      if (error) {
+        console.error("Supabase auth error:", error);
+        throw error;
       }
+      
+      // Get user profile from the profiles table
+      if (data.user) {
+        console.log("User authenticated, fetching profile");
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
+        
+        if (profileError) {
+          console.error("Error fetching profile:", profileError);
+        }
+        
+        if (profileData) {
+          console.log("Profile data found:", profileData);
+          return {
+            data: {
+              user: {
+                id: data.user.id,
+                email: data.user.email || '',
+                user_metadata: {
+                  role: profileData.role as Role,
+                  firstName: profileData.first_name,
+                  lastName: profileData.last_name
+                }
+              }
+            },
+            error: null
+          };
+        } else {
+          console.log("No profile found, using auth user data only");
+        }
+      }
+      
+      return { data, error: null };
+    } catch (error) {
+      console.error("Auth service error:", error);
+      return { data: null, error };
     }
-    
-    return { data, error: null };
   },
   
   signOut: async () => {
@@ -51,19 +69,35 @@ export const authService = {
   getCurrentUser: async () => {
     const { data } = await supabase.auth.getUser();
     if (data?.user) {
-      const { data: profileData } = await supabase
+      console.log("Current user found:", data.user);
+      const { data: profileData, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', data.user.id)
         .single();
       
+      if (error) {
+        console.error("Error fetching profile:", error);
+      }
+      
       if (profileData) {
+        console.log("Profile data found:", profileData);
         return {
           id: data.user.id,
           email: data.user.email || '',
           role: profileData.role as Role,
           firstName: profileData.first_name,
           lastName: profileData.last_name
+        };
+      } else {
+        console.log("No profile found for current user");
+        // Fallback to metadata if no profile
+        return {
+          id: data.user.id,
+          email: data.user.email || '',
+          role: (data.user.user_metadata?.role as Role) || 'employee',
+          firstName: data.user.user_metadata?.firstName || '',
+          lastName: data.user.user_metadata?.lastName || ''
         };
       }
     }
