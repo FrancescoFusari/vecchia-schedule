@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -99,6 +100,24 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
         return;
       }
       
+      // Query to get available columns from profiles table
+      const { data: profileColumns, error: columnsError } = await supabase
+        .from('profiles')
+        .select('id, username, first_name, last_name')
+        .limit(1);
+      
+      if (columnsError) {
+        console.error("Error checking profiles table:", columnsError);
+        toast({
+          title: "Errore",
+          description: "Impossibile verificare la struttura della tabella profili.",
+          variant: "destructive",
+        });
+        setIsLoadingUsers(false);
+        return;
+      }
+      
+      // Check if email column exists by trying to fetch it separately
       const { data, error } = await supabase
         .from('profiles')
         .select('id, username, first_name, last_name, email')
@@ -106,18 +125,47 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
       
       if (error) {
         console.error("Error fetching registered users:", error);
-        toast({
-          title: "Errore",
-          description: "Impossibile caricare gli utenti registrati.",
-          variant: "destructive",
-        });
+        
+        // If email column doesn't exist, fetch without it
+        if (error.message.includes('column profiles.email does not exist')) {
+          console.log("Email column not found, fetching without it");
+          
+          const { data: dataWithoutEmail, error: errorWithoutEmail } = await supabase
+            .from('profiles')
+            .select('id, username, first_name, last_name')
+            .order('first_name', { ascending: true });
+            
+          if (errorWithoutEmail) {
+            console.error("Error fetching profiles without email:", errorWithoutEmail);
+            toast({
+              title: "Errore",
+              description: "Impossibile caricare gli utenti registrati.",
+              variant: "destructive",
+            });
+          } else if (dataWithoutEmail) {
+            const users: RegisteredUser[] = dataWithoutEmail.map(user => ({
+              id: user.id,
+              username: user.username || user.first_name.toLowerCase(),
+              firstName: user.first_name,
+              lastName: user.last_name || "",
+              email: null // No email available
+            }));
+            setRegisteredUsers(users);
+          }
+        } else {
+          toast({
+            title: "Errore",
+            description: "Impossibile caricare gli utenti registrati.",
+            variant: "destructive",
+          });
+        }
       } else if (data) {
         const users: RegisteredUser[] = data.map(user => ({
           id: user.id,
           username: user.username || user.first_name.toLowerCase(),
           firstName: user.first_name,
           lastName: user.last_name || "",
-          email: user.email
+          email: user.email || null
         }));
         setRegisteredUsers(users);
       }
@@ -219,7 +267,7 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
   const handleUserChange = (selectedUserId: string) => {
     setUserId(selectedUserId);
     
-    if (selectedUserId) {
+    if (selectedUserId && selectedUserId !== "no-user") {
       const selectedUser = registeredUsers.find(user => user.id === selectedUserId);
       if (selectedUser) {
         setFirstName(selectedUser.firstName);
