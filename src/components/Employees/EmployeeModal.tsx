@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/lib/supabase";
 import { User } from "@/lib/types";
 
-// Predefined colors for employees
 const EMPLOYEE_COLORS = [
   { value: "#F97316", label: "Arancione" },
   { value: "#8B5CF6", label: "Viola" },
@@ -57,14 +55,12 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   
-  // Fetch registered users when the modal opens
   useEffect(() => {
     if (isOpen) {
       fetchRegisteredUsers();
     }
   }, [isOpen]);
   
-  // Reset form when employee changes
   useEffect(() => {
     if (employee) {
       setFirstName(employee.firstName);
@@ -103,7 +99,6 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
         return;
       }
       
-      // Fetch registered users from profiles table
       const { data, error } = await supabase
         .from('profiles')
         .select('id, username, first_name, last_name, email')
@@ -117,7 +112,6 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
           variant: "destructive",
         });
       } else if (data) {
-        // Map the response to our RegisteredUser interface
         const users: RegisteredUser[] = data.map(user => ({
           id: user.id,
           username: user.username || user.first_name.toLowerCase(),
@@ -222,11 +216,9 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
     }
   };
   
-  // Handle user selection
   const handleUserChange = (selectedUserId: string) => {
     setUserId(selectedUserId);
     
-    // If a user is selected, auto-fill the employee details
     if (selectedUserId) {
       const selectedUser = registeredUsers.find(user => user.id === selectedUserId);
       if (selectedUser) {
@@ -264,9 +256,9 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
                   <SelectValue placeholder="Seleziona un utente" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nessun utente (solo dipendente)</SelectItem>
+                  <SelectItem value="no-user">Nessun utente (solo dipendente)</SelectItem>
                   {isLoadingUsers ? (
-                    <SelectItem value="" disabled>Caricamento utenti...</SelectItem>
+                    <SelectItem value="loading" disabled>Caricamento utenti...</SelectItem>
                   ) : (
                     registeredUsers.map((user) => (
                       <SelectItem key={user.id} value={user.id}>
