@@ -31,9 +31,15 @@ export function CalendarHeader({
     return Math.ceil((days + firstDayOfMonth.getDay()) / 7);
   };
   
+  // Get month name with capitalized first letter
+  const getCapitalizedMonth = (date: Date): string => {
+    const month = date.toLocaleString('it', { month: 'long' });
+    return month.charAt(0).toUpperCase() + month.slice(1);
+  };
+  
   // Format title based on view type
   const title = isWeekView 
-    ? `${date.toLocaleString('it', { month: 'long' })} - Week ${getWeekOfMonth(date)}` 
+    ? `${getCapitalizedMonth(date)} - Week ${getWeekOfMonth(date)}` 
     : formatMonthYear(date);
   
   return (
