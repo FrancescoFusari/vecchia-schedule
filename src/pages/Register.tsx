@@ -137,6 +137,11 @@ const Register = () => {
                   required
                 />
               </div>
+              
+              <div className="text-sm text-gray-500 bg-blue-50 p-3 rounded-md">
+                <p className="mb-1 font-medium">Credenziali di demo:</p>
+                <p>Admin: admin / juventus96</p>
+              </div>
             </CardContent>
             
             <CardFooter className="flex flex-col space-y-4">
