@@ -37,6 +37,23 @@ export function CalendarDay({ day, employees, onAddShift, onEditShift }: Calenda
     }
   };
   
+  // Determine if the day is a weekend (Saturday or Sunday)
+  const isWeekend = () => {
+    const dayOfWeek = day.date.getDay();
+    return dayOfWeek === 0 || dayOfWeek === 6; // Sunday or Saturday
+  };
+  
+  // Check if a shift has standard time for the day of week
+  const isStandardTime = (shift: Shift) => {
+    const weekend = isWeekend();
+    
+    if (weekend) {
+      return shift.startTime === "17:00" && shift.endTime === "23:00";
+    } else {
+      return shift.startTime === "12:00" && shift.endTime === "17:00";
+    }
+  };
+  
   return (
     <div
       className={cn(
@@ -92,6 +109,7 @@ export function CalendarDay({ day, employees, onAddShift, onEditShift }: Calenda
               key={shift.id}
               shift={shift}
               employee={employee}
+              isStandardTime={isStandardTime(shift)}
               onClick={() => onEditShift?.(shift)}
             />
           );

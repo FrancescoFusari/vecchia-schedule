@@ -1,5 +1,6 @@
 
 import { MonthlyCalendar } from "@/components/Calendar/MonthlyCalendar";
+import { CalendarLegend } from "@/components/Calendar/CalendarLegend";
 
 const Dashboard = () => {
   return (
@@ -9,6 +10,7 @@ const Dashboard = () => {
         <p className="text-gray-500">Visualizza e gestisci i turni dei dipendenti</p>
       </div>
       
+      <CalendarLegend />
       <MonthlyCalendar />
     </div>
   );
