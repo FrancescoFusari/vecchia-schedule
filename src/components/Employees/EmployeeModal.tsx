@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -92,7 +93,7 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
       const updatedEmployee: Employee = {
         id: employee?.id || generateId(),
         firstName: firstName.trim(),
-        lastName: lastName.trim(),
+        lastName: lastName.trim() || firstName.trim(), // Default lastName to firstName if empty
         email: email.trim() || null,
         username: username.trim() || firstName.trim().toLowerCase(),
         phone: phone.trim() || undefined,
@@ -147,7 +148,7 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="firstName" className="text-right">
-              Nome
+              Nome <span className="text-red-500">*</span>
             </Label>
             <div className="col-span-3">
               <Input
@@ -192,9 +193,13 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
                 onChange={(e) => setUsername(e.target.value)}
                 className={errors.username ? "border-red-500" : ""}
                 disabled={isSubmitting}
+                placeholder={firstName ? firstName.toLowerCase() : ""}
               />
               {errors.username && (
                 <p className="text-red-500 text-sm mt-1">{errors.username}</p>
+              )}
+              {!username && firstName && (
+                <p className="text-gray-500 text-sm mt-1">Verrà utilizzato "{firstName.toLowerCase()}" come username predefinito</p>
               )}
             </div>
           </div>
