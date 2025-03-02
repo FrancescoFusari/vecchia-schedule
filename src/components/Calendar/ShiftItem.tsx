@@ -14,15 +14,16 @@ export function ShiftItem({ shift, employee, onClick }: ShiftItemProps) {
   const { isAdmin } = useAuth();
   const duration = shift.duration;
   
-  // Choose color based on shift duration
-  let bgColor = "bg-blue-100 text-blue-800";
-  if (duration > 8) {
-    bgColor = "bg-purple-100 text-purple-800";
-  } else if (duration > 6) {
-    bgColor = "bg-indigo-100 text-indigo-800";
-  } else if (duration <= 4) {
-    bgColor = "bg-green-100 text-green-800";
-  }
+  // Use employee color with fallback to duration-based colors
+  const employeeColor = employee.color || "#9CA3AF";
+  
+  // Generate color styles based on employee color
+  const bgColor = `bg-opacity-15 text-opacity-90 border border-opacity-20`;
+  const customStyle = {
+    backgroundColor: `${employeeColor}20`, // 20% opacity
+    color: employeeColor,
+    borderColor: `${employeeColor}30`, // 30% opacity
+  };
   
   if (isAdmin() && onClick) {
     return (
@@ -36,6 +37,7 @@ export function ShiftItem({ shift, employee, onClick }: ShiftItemProps) {
                 bgColor,
                 "hover:cursor-pointer hover:brightness-95 transition-all"
               )}
+              style={customStyle}
             >
               <div className="truncate">
                 {formatEmployeeName(employee.firstName, employee.lastName)} {shift.startTime}-{shift.endTime}
@@ -57,6 +59,7 @@ export function ShiftItem({ shift, employee, onClick }: ShiftItemProps) {
         bgColor,
         "cursor-default"
       )}
+      style={customStyle}
     >
       {formatEmployeeName(employee.firstName, employee.lastName)} {shift.startTime}-{shift.endTime}
     </div>

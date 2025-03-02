@@ -9,6 +9,20 @@ import { generateId } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 
+// Predefined colors for employees
+const EMPLOYEE_COLORS = [
+  { value: "#F97316", label: "Arancione" },
+  { value: "#8B5CF6", label: "Viola" },
+  { value: "#0EA5E9", label: "Blu" },
+  { value: "#D946EF", label: "Rosa" },
+  { value: "#10B981", label: "Verde" },
+  { value: "#F43F5E", label: "Rosso" },
+  { value: "#FBBF24", label: "Giallo" },
+  { value: "#6366F1", label: "Indaco" },
+  { value: "#14B8A6", label: "Turchese" },
+  { value: "#9CA3AF", label: "Grigio" }
+];
+
 interface EmployeeModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -24,6 +38,7 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
   const [username, setUsername] = useState(employee?.username || "");
   const [phone, setPhone] = useState(employee?.phone || "");
   const [position, setPosition] = useState(employee?.position || "");
+  const [color, setColor] = useState(employee?.color || EMPLOYEE_COLORS[0].value);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -36,6 +51,7 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
       setUsername(employee.username);
       setPhone(employee.phone || "");
       setPosition(employee.position || "");
+      setColor(employee.color || EMPLOYEE_COLORS[0].value);
     } else {
       setFirstName("");
       setLastName("");
@@ -43,6 +59,7 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
       setUsername("");
       setPhone("");
       setPosition("");
+      setColor(EMPLOYEE_COLORS[0].value);
     }
     setErrors({});
     setErrorMessage(null);
@@ -93,15 +110,20 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
       const updatedEmployee: Employee = {
         id: employee?.id || generateId(),
         firstName: firstName.trim(),
-        lastName: lastName.trim() || "", // Changed to empty string instead of defaulting to firstName
+        lastName: lastName.trim() || "",
         email: email.trim() || null,
         username: username.trim() || firstName.trim().toLowerCase(),
         phone: phone.trim() || undefined,
         position: position.trim() || undefined,
+        color: color,
         createdAt: employee?.createdAt || new Date().toISOString(),
       };
       
       await onSave(updatedEmployee);
+      toast({
+        title: "Salvato",
+        description: employee ? "Dipendente aggiornato con successo." : "Nuovo dipendente aggiunto con successo.",
+      });
     } catch (error) {
       console.error("Error saving employee:", error);
       let message = "Si è verificato un errore durante il salvataggio. Riprova.";
@@ -109,7 +131,7 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
       if (error instanceof Error) {
         message = error.message;
       } else if (typeof error === 'object' && error !== null) {
-        message = error.message || message;
+        message = (error as any).message || message;
       }
       
       setErrorMessage(message);
@@ -179,6 +201,25 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
               {errors.lastName && (
                 <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>
               )}
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="color" className="text-right">
+              Colore
+            </Label>
+            <div className="col-span-3">
+              <div className="grid grid-cols-5 gap-2">
+                {EMPLOYEE_COLORS.map((colorOption) => (
+                  <div
+                    key={colorOption.value}
+                    className={`w-8 h-8 rounded-full cursor-pointer border-2 ${color === colorOption.value ? 'border-black' : 'border-transparent'}`}
+                    style={{ backgroundColor: colorOption.value }}
+                    onClick={() => setColor(colorOption.value)}
+                    title={colorOption.label}
+                  />
+                ))}
+              </div>
             </div>
           </div>
           

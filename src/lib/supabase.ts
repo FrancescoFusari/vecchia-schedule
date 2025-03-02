@@ -226,6 +226,7 @@ export const employeeService = {
         username: emp.email?.split('@')[0] || '',
         phone: emp.phone || '',
         position: emp.position || '',
+        color: emp.color || '',
         createdAt: emp.created_at
       }));
       
@@ -256,7 +257,8 @@ export const employeeService = {
         last_name: employee.lastName,
         email: employee.email,
         phone: employee.phone || null,
-        position: employee.position || null
+        position: employee.position || null,
+        color: employee.color || null
       };
       
       console.log("Employee data to insert:", employeeData);
@@ -285,6 +287,7 @@ export const employeeService = {
         username: data.email?.split('@')[0] || '',
         phone: data.phone || '',
         position: data.position || '',
+        color: data.color || '',
         createdAt: data.created_at
       };
       
@@ -312,7 +315,8 @@ export const employeeService = {
         last_name: employee.lastName,
         email: employee.email,
         phone: employee.phone || null,
-        position: employee.position || null
+        position: employee.position || null,
+        color: employee.color || null
       };
       
       // Use adminClient to bypass RLS
@@ -927,13 +931,13 @@ export const templateService = {
 // Keep the mockData but we'll only use it as a last resort fallback
 export const mockData = {
   employees: [
-    { id: "1", firstName: "Francesco", lastName: "R", email: "francesco.r@example.com", username: "francesco.r", phone: "+39 123 456 7890", position: "Cameriere", createdAt: "2023-01-01" },
-    { id: "2", firstName: "Francesco", lastName: "F", email: "francesco.f@example.com", username: "francesco.f", phone: "+39 123 456 7891", position: "Cuoco", createdAt: "2023-01-01" },
-    { id: "3", firstName: "Emanuele", lastName: "B", email: "emanuele@example.com", username: "emanuele.b", phone: "+39 123 456 7892", position: "Cameriere", createdAt: "2023-01-02" },
-    { id: "4", firstName: "Giulia", lastName: "M", email: "giulia@example.com", username: "giulia.m", phone: "+39 123 456 7893", position: "Hostess", createdAt: "2023-01-03" },
-    { id: "5", firstName: "Cecilia", lastName: "P", email: "cecilia@example.com", username: "cecilia.p", phone: "+39 123 456 7894", position: "Barista", createdAt: "2023-01-04" },
-    { id: "6", firstName: "Samuele", lastName: "G", email: "samuele@example.com", username: "samuele.g", phone: "+39 123 456 7895", position: "Aiuto Cuoco", createdAt: "2023-01-05" },
-    { id: "7", firstName: "Wojtek", lastName: "K", email: "wojtek@example.com", username: "wojtek.k", phone: "+39 123 456 7896", position: "Cameriere", createdAt: "2023-01-06" }
+    { id: "1", firstName: "Francesco", lastName: "R", email: "francesco.r@example.com", username: "francesco.r", phone: "+39 123 456 7890", position: "Cameriere", color: "#F97316", createdAt: "2023-01-01" },
+    { id: "2", firstName: "Francesco", lastName: "F", email: "francesco.f@example.com", username: "francesco.f", phone: "+39 123 456 7891", position: "Cuoco", color: "#8B5CF6", createdAt: "2023-01-01" },
+    { id: "3", firstName: "Emanuele", lastName: "B", email: "emanuele@example.com", username: "emanuele.b", phone: "+39 123 456 7892", position: "Cameriere", color: "#0EA5E9", createdAt: "2023-01-02" },
+    { id: "4", firstName: "Giulia", lastName: "M", email: "giulia@example.com", username: "giulia.m", phone: "+39 123 456 7893", position: "Hostess", color: "#D946EF", createdAt: "2023-01-03" },
+    { id: "5", firstName: "Cecilia", lastName: "P", email: "cecilia@example.com", username: "cecilia.p", phone: "+39 123 456 7894", position: "Barista", color: "#10B981", createdAt: "2023-01-04" },
+    { id: "6", firstName: "Samuele", lastName: "G", email: "samuele@example.com", username: "samuele.g", phone: "+39 123 456 7895", position: "Aiuto Cuoco", color: "#F43F5E", createdAt: "2023-01-05" },
+    { id: "7", firstName: "Wojtek", lastName: "K", email: "wojtek@example.com", username: "wojtek.k", phone: "+39 123 456 7896", position: "Cameriere", color: "#FBBF24", createdAt: "2023-01-06" }
   ],
   
   shifts: [

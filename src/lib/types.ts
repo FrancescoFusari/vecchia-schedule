@@ -17,6 +17,7 @@ export interface Employee {
   username: string; // Keep as required since we'll auto-generate it if empty
   phone?: string;
   position?: string;
+  color?: string;
   createdAt: string;
 }
 
