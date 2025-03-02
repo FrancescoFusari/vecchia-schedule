@@ -1,4 +1,3 @@
-
 import { ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { Shift, CalendarDay } from "./types";
@@ -133,9 +132,10 @@ export function formatEmployeeName(firstName: string, lastName: string): string 
   return `${firstName} ${lastName.charAt(0)}`;
 }
 
-// Format shift display
+// Format shift display - modified to only show first name and the initial of the last name
 export function formatShiftDisplay(firstName: string, lastName: string, startTime: string, endTime: string): string {
-  return `${firstName} ${lastName.charAt(0)} ${startTime}-${endTime}`;
+  const displayName = lastName ? `${firstName} ${lastName.charAt(0)}` : firstName;
+  return `${displayName} ${startTime}-${endTime}`;
 }
 
 // Calculate total hours for an employee in a given period
