@@ -7,23 +7,28 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 const Login = () => {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn } = useAuth();
+  const { signIn, loading } = useAuth();
   const navigate = useNavigate();
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (loading || isLoading) return;
+    
     setIsLoading(true);
     
     try {
-      await signIn(email, password);
+      await signIn(username, password);
       navigate("/");
     } catch (error) {
       console.error("Login error:", error);
+      // Error is handled in the useAuth hook
     } finally {
       setIsLoading(false);
     }
@@ -52,13 +57,12 @@ const Login = () => {
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="username">Username</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="nome@esempio.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="username"
+                  placeholder="nome.utente"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   required
                 />
               </div>
@@ -77,14 +81,22 @@ const Login = () => {
               
               <div className="text-sm text-gray-500 bg-blue-50 p-3 rounded-md">
                 <p className="mb-1 font-medium">Credenziali di demo:</p>
-                <p>Admin: admin@example.com / password</p>
-                <p>Dipendente: employee@example.com / password</p>
+                <p>Admin: admin / juventus96</p>
+                <p>Dipendente: Registra un nuovo account</p>
               </div>
             </CardContent>
-            <CardFooter>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Caricamento..." : "Accedi"}
+            <CardFooter className="flex flex-col space-y-4">
+              <Button type="submit" className="w-full" disabled={isLoading || loading}>
+                {isLoading || loading ? "Caricamento..." : "Accedi"}
               </Button>
+              <div className="text-center w-full">
+                <p className="text-sm text-gray-500">
+                  Non hai un account?{" "}
+                  <Link to="/register" className="text-primary hover:underline">
+                    Registrati
+                  </Link>
+                </p>
+              </div>
             </CardFooter>
           </form>
         </Card>

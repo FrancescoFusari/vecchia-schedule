@@ -1,13 +1,13 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { supabase } from "@/lib/supabase";
-import { User, Role } from "@/lib/types";
+import { authService } from "@/lib/supabase";
+import { User } from "@/lib/types";
 import { toast } from "@/hooks/use-toast";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (username: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   isAdmin: () => boolean;
 }
@@ -17,40 +17,49 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authInitialized, setAuthInitialized] = useState(false);
 
+  // Check for existing session on mount
   useEffect(() => {
-    // Mock authentication state for demo purposes
-    // In a real app, this would check Supabase session
-    const storedUser = localStorage.getItem("workshift_user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
-    
-    // Clean up subscription on unmount
+    const checkSession = async () => {
+      try {
+        const userData = await authService.getCurrentUser();
+        setUser(userData);
+      } catch (error) {
+        console.error("Session check error:", error);
+      } finally {
+        setLoading(false);
+        setAuthInitialized(true);
+      }
+    };
+
+    checkSession();
+
+    // Set up auth state change listener
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session?.user?.id);
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+      } else if (session?.user && event === 'SIGNED_IN') {
+        authService.getCurrentUser().then(userData => {
+          setUser(userData);
+        });
+      }
+    });
+
     return () => {
-      // No-op for mock implementation
+      // Clean up subscription
+      authListener.subscription.unsubscribe();
     };
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (username: string, password: string) => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.auth.signIn(email, password);
+      const { userData } = await authService.signIn(username, password);
       
-      if (error) throw error;
-      
-      if (data && data.user) {
-        const userData: User = {
-          id: data.user.id,
-          email: data.user.email,
-          role: data.user.user_metadata.role as Role,
-          firstName: data.user.user_metadata.firstName,
-          lastName: data.user.user_metadata.lastName
-        };
-        
+      if (userData) {
         setUser(userData);
-        localStorage.setItem("workshift_user", JSON.stringify(userData));
         toast({
           title: "Login effettuato",
           description: `Benvenuto, ${userData.firstName}!`,
@@ -63,6 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: "Credenziali non valide. Riprova.",
         variant: "destructive",
       });
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -71,9 +81,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       setLoading(true);
-      await supabase.auth.signOut();
+      await authService.signOut();
       setUser(null);
-      localStorage.removeItem("workshift_user");
       toast({
         title: "Logout effettuato",
         description: "Hai effettuato il logout con successo.",

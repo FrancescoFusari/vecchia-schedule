@@ -3,7 +3,8 @@ export type Role = "admin" | "employee";
 
 export interface User {
   id: string;
-  email: string;
+  username: string;
+  email: string | null;
   role: Role;
   firstName: string;
   lastName: string;
@@ -13,7 +14,8 @@ export interface Employee {
   id: string;
   firstName: string;
   lastName: string;
-  email: string;
+  email: string | null;
+  username: string;
   phone?: string;
   position?: string;
   createdAt: string;
