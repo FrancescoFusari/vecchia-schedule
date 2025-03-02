@@ -17,11 +17,25 @@ const Employees = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteConfirmEmployeeId, setDeleteConfirmEmployeeId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { isAdmin } = useAuth();
+  const [loadingError, setLoadingError] = useState<string | null>(null);
+  const { isAdmin, user } = useAuth();
   const navigate = useNavigate();
   
   // Check if user is admin, if not redirect to dashboard
   useEffect(() => {
+    if (!user) {
+      // If no user is set yet, wait
+      if (isLoading) return;
+      
+      toast({
+        title: "Accesso negato",
+        description: "Devi effettuare il login per accedere a questa pagina.",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+    
     if (!isAdmin()) {
       toast({
         title: "Accesso negato",
@@ -30,17 +44,21 @@ const Employees = () => {
       });
       navigate("/dashboard");
     }
-  }, [isAdmin, navigate]);
+  }, [isAdmin, navigate, user, isLoading]);
   
   // Load employees
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
         setIsLoading(true);
+        setLoadingError(null);
+        console.log("Fetching employees...");
         const data = await employeeService.getEmployees();
+        console.log("Employees fetched:", data.length);
         setEmployees(data);
       } catch (error) {
         console.error("Error fetching employees:", error);
+        setLoadingError("Si è verificato un errore durante il caricamento dei dipendenti.");
         toast({
           title: "Errore",
           description: "Si è verificato un errore durante il caricamento dei dipendenti.",
@@ -51,8 +69,11 @@ const Employees = () => {
       }
     };
     
-    fetchEmployees();
-  }, []);
+    // Only fetch if user is an admin
+    if (user && isAdmin()) {
+      fetchEmployees();
+    }
+  }, [user, isAdmin]);
   
   const handleAddEmployee = () => {
     setSelectedEmployee(null);
@@ -138,7 +159,16 @@ const Employees = () => {
     }
   };
   
-  // If not admin, don't render anything
+  // If not admin, don't render anything while checking
+  if (!user) {
+    return (
+      <div className="flex justify-center items-center h-[50vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+  
+  // If not admin, don't render the actual content
   if (!isAdmin()) {
     return null;
   }
@@ -160,6 +190,11 @@ const Employees = () => {
       {isLoading ? (
         <div className="flex justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      ) : loadingError ? (
+        <div className="flex justify-center py-8 flex-col items-center">
+          <p className="text-red-500 mb-4">{loadingError}</p>
+          <Button onClick={() => window.location.reload()}>Riprova</Button>
         </div>
       ) : (
         <EmployeeTable

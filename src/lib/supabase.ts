@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { Employee, Shift, ShiftTemplate, User } from './types';
 
@@ -161,13 +162,20 @@ export const authService = {
       const user = data.session.user;
       const userMeta = user.user_metadata;
       
+      // Try to get additional profile data
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+      
       const userData: User = {
         id: user.id,
-        username: userMeta.username || user.email?.split('@')[0] || '',
+        username: userMeta.username || profileData?.username || user.email?.split('@')[0] || '',
         email: user.email,
-        role: (userMeta.role as 'admin' | 'employee') || 'employee',
-        firstName: userMeta.firstName || '',
-        lastName: userMeta.lastName || ''
+        role: (profileData?.role as 'admin' | 'employee') || (userMeta.role as 'admin' | 'employee') || 'employee',
+        firstName: profileData?.first_name || userMeta.firstName || '',
+        lastName: profileData?.last_name || userMeta.lastName || ''
       };
 
       return userData;
@@ -182,6 +190,7 @@ export const authService = {
 export const employeeService = {
   getEmployees: async () => {
     try {
+      console.log("Fetching employees from database...");
       const { data, error } = await supabase
         .from('employees')
         .select('*')
@@ -190,6 +199,11 @@ export const employeeService = {
       if (error) {
         console.error("Error fetching employees:", error);
         throw error;
+      }
+      
+      if (!data) {
+        console.warn("No employee data returned");
+        return [];
       }
       
       // Map the data to match the Employee type
@@ -204,24 +218,32 @@ export const employeeService = {
         createdAt: emp.created_at
       }));
       
+      console.log(`Successfully fetched ${employees.length} employees`);
       return employees;
     } catch (error) {
       console.error("Error fetching employees:", error);
+      // Use mock data only for development/testing purposes
+      console.warn("Using mock employee data as fallback");
       return mockData.employees;
     }
   },
   
   createEmployee: async (employee: Omit<Employee, 'id' | 'createdAt'>) => {
     try {
+      console.log("Creating new employee:", employee.firstName, employee.lastName);
+      
+      // Prepare the data object for insertion
+      const employeeData = {
+        first_name: employee.firstName,
+        last_name: employee.lastName,
+        email: employee.email,
+        phone: employee.phone,
+        position: employee.position
+      };
+      
       const { data, error } = await supabase
         .from('employees')
-        .insert({
-          first_name: employee.firstName,
-          last_name: employee.lastName,
-          email: employee.email,
-          phone: employee.phone,
-          position: employee.position
-        })
+        .insert(employeeData)
         .select('*')
         .single();
         
@@ -230,17 +252,22 @@ export const employeeService = {
         throw error;
       }
       
+      if (!data) {
+        throw new Error("No data returned after creating employee");
+      }
+      
       const newEmployee: Employee = {
         id: data.id,
         firstName: data.first_name,
         lastName: data.last_name,
         email: data.email,
-        username: data.email.split('@')[0],
+        username: data.email?.split('@')[0] || '',
         phone: data.phone || '',
         position: data.position || '',
         createdAt: data.created_at
       };
       
+      console.log("Employee created successfully with ID:", newEmployee.id);
       return newEmployee;
     } catch (error) {
       console.error("Error creating employee:", error);
@@ -250,15 +277,20 @@ export const employeeService = {
   
   updateEmployee: async (employee: Employee) => {
     try {
+      console.log("Updating employee:", employee.id, employee.firstName, employee.lastName);
+      
+      // Prepare the data object for update
+      const employeeData = {
+        first_name: employee.firstName,
+        last_name: employee.lastName,
+        email: employee.email,
+        phone: employee.phone,
+        position: employee.position
+      };
+      
       const { error } = await supabase
         .from('employees')
-        .update({
-          first_name: employee.firstName,
-          last_name: employee.lastName,
-          email: employee.email,
-          phone: employee.phone,
-          position: employee.position
-        })
+        .update(employeeData)
         .eq('id', employee.id);
         
       if (error) {
@@ -266,6 +298,7 @@ export const employeeService = {
         throw error;
       }
       
+      console.log("Employee updated successfully");
       return employee;
     } catch (error) {
       console.error("Error updating employee:", error);
@@ -275,6 +308,8 @@ export const employeeService = {
   
   deleteEmployee: async (employeeId: string) => {
     try {
+      console.log("Deleting employee with ID:", employeeId);
+      
       const { error } = await supabase
         .from('employees')
         .delete()
@@ -285,6 +320,7 @@ export const employeeService = {
         throw error;
       }
       
+      console.log("Employee deleted successfully");
       return true;
     } catch (error) {
       console.error("Error deleting employee:", error);
@@ -296,6 +332,8 @@ export const employeeService = {
 export const shiftService = {
   getShifts: async (startDate: string, endDate: string) => {
     try {
+      console.log(`Fetching shifts between ${startDate} and ${endDate}`);
+      
       const { data, error } = await supabase
         .from('shifts')
         .select('*')
@@ -306,6 +344,11 @@ export const shiftService = {
       if (error) {
         console.error("Error fetching shifts:", error);
         throw error;
+      }
+      
+      if (!data) {
+        console.warn("No shift data returned");
+        return [];
       }
       
       const shifts: Shift[] = data.map(shift => ({
@@ -320,31 +363,42 @@ export const shiftService = {
         updatedAt: shift.updated_at
       }));
       
+      console.log(`Successfully fetched ${shifts.length} shifts`);
       return shifts;
     } catch (error) {
       console.error("Error fetching shifts:", error);
+      console.warn("Using mock shift data as fallback");
       return mockData.shifts;
     }
   },
   
   createShift: async (shift: Omit<Shift, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
+      console.log("Creating new shift:", shift);
+      
+      // Prepare the data object for insertion
+      const shiftData = {
+        employee_id: shift.employeeId,
+        date: shift.date,
+        start_time: shift.startTime,
+        end_time: shift.endTime,
+        duration: shift.duration,
+        notes: shift.notes
+      };
+      
       const { data, error } = await supabase
         .from('shifts')
-        .insert({
-          employee_id: shift.employeeId,
-          date: shift.date,
-          start_time: shift.startTime,
-          end_time: shift.endTime,
-          duration: shift.duration,
-          notes: shift.notes
-        })
+        .insert(shiftData)
         .select('*')
         .single();
         
       if (error) {
         console.error("Error creating shift:", error);
         throw error;
+      }
+      
+      if (!data) {
+        throw new Error("No data returned after creating shift");
       }
       
       const newShift: Shift = {
@@ -359,6 +413,7 @@ export const shiftService = {
         updatedAt: data.updated_at
       };
       
+      console.log("Shift created successfully with ID:", newShift.id);
       return newShift;
     } catch (error) {
       console.error("Error creating shift:", error);
