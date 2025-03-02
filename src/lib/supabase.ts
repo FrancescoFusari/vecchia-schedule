@@ -18,29 +18,38 @@ export const authService = {
       console.log("Admin login attempt");
       
       try {
-        // Check if admin exists
-        const { data: existingAdmin, error: adminCheckError } = await supabase
+        // Admin email is fixed for consistency
+        const adminEmail = "admin_account@example.com";
+        
+        // Check if admin exists in profiles
+        const { data: existingAdminProfile, error: profileCheckError } = await supabase
           .from('profiles')
-          .select('id, username')
+          .select('id, username, role, first_name, last_name')
           .eq('username', 'Admin')
           .single();
         
-        console.log("Existing admin check:", existingAdmin, adminCheckError);
+        console.log("Existing admin profile check:", existingAdminProfile, profileCheckError);
         
-        if (adminCheckError && adminCheckError.code !== 'PGRST116') {
-          console.error("Error checking for admin:", adminCheckError);
-          throw adminCheckError;
+        if (profileCheckError && profileCheckError.code !== 'PGRST116') {
+          console.error("Error checking for admin profile:", profileCheckError);
+          throw profileCheckError;
         }
         
-        let adminId;
+        // Check if admin exists in auth
+        const { data: existingAuth, error: authCheckError } = await supabase.auth.signInWithPassword({
+          email: adminEmail,
+          password: password,
+        });
         
-        // If admin doesn't exist, create one
-        if (!existingAdmin) {
-          console.log("Admin doesn't exist, creating...");
+        console.log("Existing admin auth check:", existingAuth, authCheckError);
+        
+        // If admin doesn't exist in auth, create one
+        if (authCheckError) {
+          console.log("Admin doesn't exist in auth, creating...");
           
           // Create admin user in auth
           const { data: authData, error: authError } = await supabase.auth.signUp({
-            email: `admin_${Date.now()}@example.com`,
+            email: adminEmail,
             password: password,
             options: {
               data: {
@@ -57,44 +66,99 @@ export const authService = {
             throw authError;
           }
           
-          console.log("Admin created:", authData);
-          adminId = authData.user?.id;
+          console.log("Admin auth created:", authData);
           
           // Wait for the trigger to create the profile
           await new Promise(resolve => setTimeout(resolve, 1000));
-        } else {
-          adminId = existingAdmin.id;
-        }
-        
-        // Sign in as admin
-        console.log("Signing in as admin");
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email: `admin_account@example.com`,
-          password: password,
-        });
-        
-        if (signInError) {
-          console.error("Admin login error:", signInError);
-          throw signInError;
-        }
-        
-        console.log("Admin login successful:", signInData);
-        
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('username', 'Admin')
-          .single();
-        
-        return {
-          user: {
-            id: profileData?.id || adminId,
-            username: "Admin",
-            role: "admin" as Role,
-            firstName: "Admin",
-            lastName: ""
+          
+          // Sign in as the newly created admin
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email: adminEmail,
+            password: password,
+          });
+          
+          if (signInError) {
+            console.error("Admin login error after creation:", signInError);
+            throw signInError;
           }
-        };
+          
+          console.log("Admin login successful after creation:", signInData);
+          
+          // Get the freshly created profile
+          const { data: freshProfile } = await supabase
+            .from('profiles')
+            .select('id, username, role, first_name, last_name')
+            .eq('username', 'Admin')
+            .single();
+          
+          console.log("Fresh admin profile:", freshProfile);
+          
+          return {
+            user: {
+              id: freshProfile?.id || authData.user?.id || "",
+              username: "Admin",
+              role: "admin" as Role,
+              firstName: "Admin",
+              lastName: ""
+            }
+          };
+        } else {
+          // Admin exists in auth, login successful
+          console.log("Admin exists, login successful");
+          
+          // If we have a profile, use it
+          if (existingAdminProfile) {
+            return {
+              user: {
+                id: existingAdminProfile.id,
+                username: existingAdminProfile.username,
+                role: existingAdminProfile.role as Role,
+                firstName: existingAdminProfile.first_name,
+                lastName: existingAdminProfile.last_name
+              }
+            };
+          } else {
+            // If no profile, check if we need to create one
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('id, username, role, first_name, last_name')
+              .eq('id', existingAuth.user?.id)
+              .single();
+            
+            if (!profile) {
+              // Create profile if it doesn't exist
+              await supabase
+                .from('profiles')
+                .insert({
+                  id: existingAuth.user?.id,
+                  username: "Admin",
+                  role: "admin",
+                  first_name: "Admin",
+                  last_name: ""
+                });
+              
+              return {
+                user: {
+                  id: existingAuth.user?.id || "",
+                  username: "Admin",
+                  role: "admin" as Role,
+                  firstName: "Admin",
+                  lastName: ""
+                }
+              };
+            }
+            
+            return {
+              user: {
+                id: profile.id,
+                username: profile.username,
+                role: profile.role as Role,
+                firstName: profile.first_name,
+                lastName: profile.last_name
+              }
+            };
+          }
+        }
       } catch (error) {
         console.error("Admin login process error:", error);
         throw error;

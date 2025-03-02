@@ -42,16 +42,22 @@ const Login = () => {
           description: "Accesso effettuato con successo",
         });
         navigate("/");
+      } else {
+        setIsLoading(false);
+        toast({
+          title: "Errore di login",
+          description: "Credenziali non valide. Riprova.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Login error:", error);
+      setIsLoading(false);
       toast({
         title: "Errore di login",
         description: "Credenziali non valide. Riprova.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
   
@@ -85,6 +91,7 @@ const Login = () => {
                   placeholder="Inserisci il tuo username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
+                  disabled={isLoading}
                   required
                 />
               </div>
@@ -97,6 +104,7 @@ const Login = () => {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
                   required
                 />
               </div>
