@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { Employee, Shift, ShiftTemplate, User } from './types';
 
@@ -65,9 +64,17 @@ export const authService = {
     console.log("Sign in attempt:", { username });
     
     try {
+      // Determine if this is the admin login
+      const isAdminLogin = username === 'admin';
+      
+      // Create the email format based on whether it's admin or employee
+      const email = isAdminLogin 
+        ? 'admin@workshift.local' 
+        : `${username}@workshift.local`;
+      
       // Using structured email format
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: `${username}@workshift.local`,
+        email,
         password
       });
       
