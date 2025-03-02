@@ -442,6 +442,8 @@ export const shiftService = {
       return shifts;
     } catch (error) {
       console.error("Error fetching shifts:", error);
+      
+      // Use mock data only for development/testing purposes
       console.warn("Using mock shift data as fallback");
       return mockData.shifts;
     }
@@ -458,57 +460,45 @@ export const shiftService = {
         throw new Error("Admin privileges required to create shifts");
       }
       
-      // Use direct HTTP request with service role key
-      // This ensures we bypass RLS policies completely
-      const url = `${supabaseUrl}/rest/v1/shifts`;
-      
+      // Prepare the data object for insertion
       const shiftData = {
         employee_id: shift.employeeId,
         date: shift.date,
         start_time: shift.startTime,
         end_time: shift.endTime,
         duration: shift.duration,
-        notes: shift.notes
+        notes: shift.notes || null
       };
       
-      console.log("Making direct API call to create shift with service role key:", shiftData);
+      console.log("Creating shift with data:", shiftData);
       
-      // Use the actual service role key from env variable
-      const apiKey = serviceRoleKey || supabaseKey;
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'apikey': apiKey,
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=representation'
-        },
-        body: JSON.stringify(shiftData)
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Error response:", errorData);
-        throw new Error(`Failed to create shift: ${JSON.stringify(errorData)}`);
+      // Use supabase client for the insertion
+      const { data, error } = await supabase
+        .from('shifts')
+        .insert(shiftData)
+        .select()
+        .single();
+        
+      if (error) {
+        console.error("Error creating shift:", error);
+        throw error;
       }
       
-      const data = await response.json();
-      
-      if (!data || !data[0]) {
+      if (!data) {
         throw new Error("No data returned after creating shift");
       }
       
+      // Map the returned data to our Shift type
       const newShift: Shift = {
-        id: data[0].id,
-        employeeId: data[0].employee_id,
-        date: data[0].date,
-        startTime: data[0].start_time,
-        endTime: data[0].end_time,
-        duration: data[0].duration,
-        notes: data[0].notes || '',
-        createdAt: data[0].created_at,
-        updatedAt: data[0].updated_at
+        id: data.id,
+        employeeId: data.employee_id,
+        date: data.date,
+        startTime: data.start_time,
+        endTime: data.end_time,
+        duration: data.duration,
+        notes: data.notes || '',
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
       };
       
       console.log("Shift created successfully with ID:", newShift.id);
@@ -530,34 +520,25 @@ export const shiftService = {
         throw new Error("Admin privileges required to update shifts");
       }
       
-      // Direct HTTP request bypassing RLS
-      const url = `${supabaseUrl}/rest/v1/shifts?id=eq.${shift.id}`;
-      
+      // Prepare the data object for update
       const shiftData = {
         employee_id: shift.employeeId,
         date: shift.date,
         start_time: shift.startTime,
         end_time: shift.endTime,
         duration: shift.duration,
-        notes: shift.notes
+        notes: shift.notes || null
       };
       
-      console.log("Making direct API call to update shift:", shiftData);
-      
-      const response = await fetch(url, {
-        method: 'PATCH',
-        headers: {
-          'apikey': serviceRoleKey || supabaseKey,
-          'Authorization': `Bearer ${serviceRoleKey || supabaseKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(shiftData)
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Error response:", errorData);
-        throw new Error(`Failed to update shift: ${JSON.stringify(errorData)}`);
+      // Use supabase client for the update
+      const { error } = await supabase
+        .from('shifts')
+        .update(shiftData)
+        .eq('id', shift.id);
+        
+      if (error) {
+        console.error("Error updating shift:", error);
+        throw error;
       }
       
       console.log("Shift updated successfully");
@@ -579,24 +560,15 @@ export const shiftService = {
         throw new Error("Admin privileges required to delete shifts");
       }
       
-      // Direct HTTP request bypassing RLS
-      const url = `${supabaseUrl}/rest/v1/shifts?id=eq.${shiftId}`;
-      
-      console.log("Making direct API call to delete shift");
-      
-      const response = await fetch(url, {
-        method: 'DELETE',
-        headers: {
-          'apikey': serviceRoleKey || supabaseKey,
-          'Authorization': `Bearer ${serviceRoleKey || supabaseKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Error response:", errorData);
-        throw new Error(`Failed to delete shift: ${JSON.stringify(errorData)}`);
+      // Use supabase client for the deletion
+      const { error } = await supabase
+        .from('shifts')
+        .delete()
+        .eq('id', shiftId);
+        
+      if (error) {
+        console.error("Error deleting shift:", error);
+        throw error;
       }
       
       console.log("Shift deleted successfully");
