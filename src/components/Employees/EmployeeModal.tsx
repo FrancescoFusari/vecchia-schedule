@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Employee } from "@/lib/types";
 import { generateId } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { toast } from "@/hooks/use-toast";
 
 interface EmployeeModalProps {
   isOpen: boolean;
@@ -23,25 +24,87 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
   const [username, setUsername] = useState(employee?.username || "");
   const [phone, setPhone] = useState(employee?.phone || "");
   const [position, setPosition] = useState(employee?.position || "");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const handleSave = () => {
-    if (!firstName || !lastName || !email || !username) {
-      // Show validation error
+  // Reset form when employee changes
+  useEffect(() => {
+    if (employee) {
+      setFirstName(employee.firstName);
+      setLastName(employee.lastName);
+      setEmail(employee.email || "");
+      setUsername(employee.username);
+      setPhone(employee.phone || "");
+      setPosition(employee.position || "");
+    } else {
+      setFirstName("");
+      setLastName("");
+      setEmail("");
+      setUsername("");
+      setPhone("");
+      setPosition("");
+    }
+    setErrors({});
+  }, [employee]);
+  
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!firstName.trim()) {
+      newErrors.firstName = "Il nome è obbligatorio";
+    }
+    
+    if (!lastName.trim()) {
+      newErrors.lastName = "Il cognome è obbligatorio";
+    }
+    
+    if (!username.trim()) {
+      newErrors.username = "Lo username è obbligatorio";
+    }
+    
+    if (email && !/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = "Inserisci un indirizzo email valido";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+  
+  const handleSave = async () => {
+    if (!validateForm()) {
+      toast({
+        title: "Errore di validazione",
+        description: "Controlla i campi evidenziati e riprova.",
+        variant: "destructive",
+      });
       return;
     }
     
-    const updatedEmployee: Employee = {
-      id: employee?.id || generateId(),
-      firstName,
-      lastName,
-      email,
-      username,
-      phone,
-      position,
-      createdAt: employee?.createdAt || new Date().toISOString(),
-    };
+    setIsSubmitting(true);
     
-    onSave(updatedEmployee);
+    try {
+      const updatedEmployee: Employee = {
+        id: employee?.id || generateId(),
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim() || null,
+        username: username.trim(),
+        phone: phone.trim() || undefined,
+        position: position.trim() || undefined,
+        createdAt: employee?.createdAt || new Date().toISOString(),
+      };
+      
+      onSave(updatedEmployee);
+    } catch (error) {
+      console.error("Error saving employee:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante il salvataggio. Riprova.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
   const handleDelete = () => {
@@ -51,7 +114,7 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
   };
   
   return (
-    <Dialog open={isOpen} onOpenChange={() => onClose()}>
+    <Dialog open={isOpen} onOpenChange={() => !isSubmitting && onClose()}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>
@@ -64,49 +127,73 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
             <Label htmlFor="firstName" className="text-right">
               Nome
             </Label>
-            <Input
-              id="firstName"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              className="col-span-3"
-            />
+            <div className="col-span-3">
+              <Input
+                id="firstName"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className={errors.firstName ? "border-red-500" : ""}
+                disabled={isSubmitting}
+              />
+              {errors.firstName && (
+                <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>
+              )}
+            </div>
           </div>
           
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="lastName" className="text-right">
               Cognome
             </Label>
-            <Input
-              id="lastName"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              className="col-span-3"
-            />
+            <div className="col-span-3">
+              <Input
+                id="lastName"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className={errors.lastName ? "border-red-500" : ""}
+                disabled={isSubmitting}
+              />
+              {errors.lastName && (
+                <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>
+              )}
+            </div>
           </div>
           
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="username" className="text-right">
               Username
             </Label>
-            <Input
-              id="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="col-span-3"
-            />
+            <div className="col-span-3">
+              <Input
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className={errors.username ? "border-red-500" : ""}
+                disabled={isSubmitting}
+              />
+              {errors.username && (
+                <p className="text-red-500 text-sm mt-1">{errors.username}</p>
+              )}
+            </div>
           </div>
           
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="email" className="text-right">
               Email
             </Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="col-span-3"
-            />
+            <div className="col-span-3">
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={errors.email ? "border-red-500" : ""}
+                disabled={isSubmitting}
+              />
+              {errors.email && (
+                <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+              )}
+            </div>
           </div>
           
           <div className="grid grid-cols-4 items-center gap-4">
@@ -118,6 +205,7 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               className="col-span-3"
+              disabled={isSubmitting}
             />
           </div>
           
@@ -130,6 +218,7 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
               value={position}
               onChange={(e) => setPosition(e.target.value)}
               className="col-span-3"
+              disabled={isSubmitting}
             />
           </div>
         </div>
@@ -138,7 +227,7 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
           {employee && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive">Elimina</Button>
+                <Button variant="destructive" disabled={isSubmitting}>Elimina</Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
@@ -158,10 +247,19 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
           )}
           
           <div>
-            <Button variant="outline" onClick={onClose} className="mr-2">
+            <Button variant="outline" onClick={onClose} className="mr-2" disabled={isSubmitting}>
               Annulla
             </Button>
-            <Button onClick={handleSave}>Salva</Button>
+            <Button onClick={handleSave} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <span className="animate-spin mr-2">⏳</span>
+                  Salvataggio...
+                </>
+              ) : (
+                "Salva"
+              )}
+            </Button>
           </div>
         </DialogFooter>
       </DialogContent>

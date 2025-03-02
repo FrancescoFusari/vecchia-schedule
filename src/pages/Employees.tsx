@@ -60,7 +60,7 @@ const Employees = () => {
   };
   
   const handleEditEmployee = (employee: Employee) => {
-    setSelectedEmployee(employee);
+    setSelectedEmployee({...employee});
     setIsModalOpen(true);
   };
   
@@ -118,9 +118,21 @@ const Employees = () => {
       handleModalClose();
     } catch (error) {
       console.error("Error saving employee:", error);
+      
+      // More specific error handling
+      let errorMessage = "Si è verificato un errore durante il salvataggio del dipendente.";
+      
+      if (error instanceof Error) {
+        if (error.message.includes("duplicate key")) {
+          errorMessage = "Un dipendente con questo username o email esiste già.";
+        } else if (error.message.includes("validation")) {
+          errorMessage = "I dati inseriti non sono validi. Controlla tutti i campi obbligatori.";
+        }
+      }
+      
       toast({
         title: "Errore",
-        description: "Si è verificato un errore durante il salvataggio del dipendente.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
