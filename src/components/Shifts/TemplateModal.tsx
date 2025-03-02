@@ -72,7 +72,7 @@ export function TemplateModal({ isOpen, onClose, template, onSave, onDelete }: T
       if (prev.includes(dayIndex)) {
         return prev.filter(d => d !== dayIndex);
       } else {
-        return [...prev, dayIndex];
+        return [...prev, dayIndex].sort((a, b) => a - b);
       }
     });
   };
@@ -93,6 +93,7 @@ export function TemplateModal({ isOpen, onClose, template, onSave, onDelete }: T
         createdAt: template?.createdAt || new Date().toISOString()
       };
       
+      console.log("Saving template with days:", updatedTemplate.daysOfWeek);
       await onSave(updatedTemplate);
     } catch (error) {
       console.error("Error saving template:", error);

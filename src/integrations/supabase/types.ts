@@ -69,6 +69,7 @@ export type Database = {
       shift_templates: {
         Row: {
           created_at: string
+          days_of_week: number[] | null
           duration: number
           end_time: string
           id: string
@@ -77,6 +78,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          days_of_week?: number[] | null
           duration: number
           end_time: string
           id?: string
@@ -85,6 +87,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          days_of_week?: number[] | null
           duration?: number
           end_time?: string
           id?: string

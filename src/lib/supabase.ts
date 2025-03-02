@@ -691,6 +691,7 @@ export const templateService = {
         startTime: template.start_time,
         endTime: template.end_time,
         duration: template.duration,
+        daysOfWeek: template.days_of_week || undefined,
         createdAt: template.created_at
       }));
       
@@ -723,7 +724,8 @@ export const templateService = {
         name: template.name,
         start_time: template.startTime,
         end_time: template.endTime,
-        duration: template.duration
+        duration: template.duration,
+        days_of_week: template.daysOfWeek || null
       };
       
       // When using the service role key, we need to use it instead of the regular client
@@ -760,6 +762,7 @@ export const templateService = {
           startTime: data.start_time,
           endTime: data.end_time,
           duration: data.duration,
+          daysOfWeek: data.days_of_week || undefined,
           createdAt: data.created_at
         };
         
@@ -792,6 +795,7 @@ export const templateService = {
           startTime: data.start_time,
           endTime: data.end_time,
           duration: data.duration,
+          daysOfWeek: data.days_of_week || undefined,
           createdAt: data.created_at
         };
         
@@ -820,7 +824,8 @@ export const templateService = {
         name: template.name,
         start_time: template.startTime,
         end_time: template.endTime,
-        duration: template.duration
+        duration: template.duration,
+        days_of_week: template.daysOfWeek || null
       };
       
       // When using the service role key, we need to use it instead of the regular client

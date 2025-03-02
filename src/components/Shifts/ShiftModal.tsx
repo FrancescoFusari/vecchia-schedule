@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -202,6 +202,26 @@ export function ShiftModal({
     }
   };
   
+  const filteredTemplates = useMemo(() => {
+    if (!templates) return [];
+    
+    return templates.filter(template => {
+      if (!template.daysOfWeek || template.daysOfWeek.length === 0) {
+        return true;
+      }
+      
+      if (date) {
+        const dateObj = new Date(date);
+        let dayOfWeek = dateObj.getDay();
+        dayOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        
+        return template.daysOfWeek.includes(dayOfWeek);
+      }
+      
+      return true;
+    });
+  }, [templates, date]);
+  
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !isSubmitting && !open && onClose()}>
       <DialogContent className="sm:max-w-[425px]">
@@ -266,7 +286,7 @@ export function ShiftModal({
                 <SelectValue placeholder="Seleziona template" />
               </SelectTrigger>
               <SelectContent>
-                {templates.map((template) => (
+                {filteredTemplates.map((template) => (
                   <SelectItem key={template.id} value={template.id}>
                     {template.name} ({template.startTime}-{template.endTime})
                   </SelectItem>
