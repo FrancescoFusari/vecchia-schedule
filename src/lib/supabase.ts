@@ -458,7 +458,8 @@ export const shiftService = {
         throw new Error("Admin privileges required to create shifts");
       }
       
-      // Direct HTTP request bypassing RLS
+      // Use direct HTTP request with service role key
+      // This ensures we bypass RLS policies completely
       const url = `${supabaseUrl}/rest/v1/shifts`;
       
       const shiftData = {
@@ -470,13 +471,16 @@ export const shiftService = {
         notes: shift.notes
       };
       
-      console.log("Making direct API call to create shift:", shiftData);
+      console.log("Making direct API call to create shift with service role key:", shiftData);
+      
+      // Use the actual service role key from env variable
+      const apiKey = serviceRoleKey || supabaseKey;
       
       const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'apikey': serviceRoleKey || supabaseKey,
-          'Authorization': `Bearer ${serviceRoleKey || supabaseKey}`,
+          'apikey': apiKey,
+          'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
           'Prefer': 'return=representation'
         },
