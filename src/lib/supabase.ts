@@ -715,6 +715,9 @@ export const templateService = {
         throw new Error("Admin privileges required to create templates");
       }
       
+      // Parse the admin session to get the admin user
+      const adminUser = JSON.parse(adminSession);
+      
       // Prepare the data object for insertion
       const templateData = {
         name: template.name,
@@ -723,34 +726,78 @@ export const templateService = {
         duration: template.duration
       };
       
-      // Use adminClient to bypass RLS
-      const { data, error } = await adminClient
-        .from('shift_templates')
-        .insert(templateData)
-        .select('*')
-        .single();
+      // When using the service role key, we need to use it instead of the regular client
+      if (serviceRoleKey) {
+        console.log("Using service role key for admin operation");
         
-      if (error) {
-        console.error("Error creating template in database:", error);
-        throw error;
+        // Create a temporary admin client for this specific request
+        const tempAdminClient = createClient(supabaseUrl, serviceRoleKey, {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false
+          }
+        });
+        
+        const { data, error } = await tempAdminClient
+          .from('shift_templates')
+          .insert(templateData)
+          .select('*')
+          .single();
+          
+        if (error) {
+          console.error("Error creating template in database:", error);
+          throw error;
+        }
+        
+        if (!data) {
+          throw new Error("No data returned after creating template");
+        }
+        
+        // Map the data to our ShiftTemplate type
+        const newTemplate: ShiftTemplate = {
+          id: data.id,
+          name: data.name,
+          startTime: data.start_time,
+          endTime: data.end_time,
+          duration: data.duration,
+          createdAt: data.created_at
+        };
+        
+        console.log("Template created successfully in database with ID:", newTemplate.id);
+        return newTemplate;
+      } else {
+        // Fallback to using the adminClient with the admin user's auth
+        console.warn("Service role key not available, using adminClient");
+        
+        // Set authorization header with admin token if available
+        const { data, error } = await adminClient
+          .from('shift_templates')
+          .insert(templateData)
+          .select('*')
+          .single();
+          
+        if (error) {
+          console.error("Error creating template in database:", error);
+          throw error;
+        }
+        
+        if (!data) {
+          throw new Error("No data returned after creating template");
+        }
+        
+        // Map the data to our ShiftTemplate type
+        const newTemplate: ShiftTemplate = {
+          id: data.id,
+          name: data.name,
+          startTime: data.start_time,
+          endTime: data.end_time,
+          duration: data.duration,
+          createdAt: data.created_at
+        };
+        
+        console.log("Template created successfully in database with ID:", newTemplate.id);
+        return newTemplate;
       }
-      
-      if (!data) {
-        throw new Error("No data returned after creating template");
-      }
-      
-      // Map the data to our ShiftTemplate type
-      const newTemplate: ShiftTemplate = {
-        id: data.id,
-        name: data.name,
-        startTime: data.start_time,
-        endTime: data.end_time,
-        duration: data.duration,
-        createdAt: data.created_at
-      };
-      
-      console.log("Template created successfully in database with ID:", newTemplate.id);
-      return newTemplate;
     } catch (error) {
       console.error("Error creating template:", error);
       throw error;
@@ -776,15 +823,38 @@ export const templateService = {
         duration: template.duration
       };
       
-      // Use adminClient to bypass RLS
-      const { error } = await adminClient
-        .from('shift_templates')
-        .update(templateData)
-        .eq('id', template.id);
+      // When using the service role key, we need to use it instead of the regular client
+      if (serviceRoleKey) {
+        console.log("Using service role key for admin operation");
         
-      if (error) {
-        console.error("Error updating template in database:", error);
-        throw error;
+        // Create a temporary admin client for this specific request
+        const tempAdminClient = createClient(supabaseUrl, serviceRoleKey, {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false
+          }
+        });
+        
+        const { error } = await tempAdminClient
+          .from('shift_templates')
+          .update(templateData)
+          .eq('id', template.id);
+          
+        if (error) {
+          console.error("Error updating template in database:", error);
+          throw error;
+        }
+      } else {
+        // Fallback to using the adminClient
+        const { error } = await adminClient
+          .from('shift_templates')
+          .update(templateData)
+          .eq('id', template.id);
+          
+        if (error) {
+          console.error("Error updating template in database:", error);
+          throw error;
+        }
       }
       
       console.log("Template updated successfully in database");
@@ -806,15 +876,38 @@ export const templateService = {
         throw new Error("Admin privileges required to delete templates");
       }
       
-      // Use adminClient to bypass RLS
-      const { error } = await adminClient
-        .from('shift_templates')
-        .delete()
-        .eq('id', templateId);
+      // When using the service role key, we need to use it instead of the regular client
+      if (serviceRoleKey) {
+        console.log("Using service role key for admin operation");
         
-      if (error) {
-        console.error("Error deleting template from database:", error);
-        throw error;
+        // Create a temporary admin client for this specific request
+        const tempAdminClient = createClient(supabaseUrl, serviceRoleKey, {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false
+          }
+        });
+        
+        const { error } = await tempAdminClient
+          .from('shift_templates')
+          .delete()
+          .eq('id', templateId);
+          
+        if (error) {
+          console.error("Error deleting template from database:", error);
+          throw error;
+        }
+      } else {
+        // Fallback to using the adminClient 
+        const { error } = await adminClient
+          .from('shift_templates')
+          .delete()
+          .eq('id', templateId);
+          
+        if (error) {
+          console.error("Error deleting template from database:", error);
+          throw error;
+        }
       }
       
       console.log("Template deleted successfully from database");
