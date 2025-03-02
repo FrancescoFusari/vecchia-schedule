@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { authService, supabase } from "@/lib/supabase";
 import { User } from "@/lib/types";
@@ -17,11 +16,20 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [authInitialized, setAuthInitialized] = useState(false);
 
   useEffect(() => {
     const checkSession = async () => {
       try {
+        // First check for admin session
+        const adminSession = localStorage.getItem('workshift_admin_session');
+        if (adminSession) {
+          console.log("Found admin session in localStorage");
+          setUser(JSON.parse(adminSession));
+          setLoading(false);
+          return;
+        }
+        
+        // Otherwise check Supabase session
         const userData = await authService.getCurrentUser();
         console.log("Session check result:", userData ? "User logged in" : "No user");
         setUser(userData);
@@ -29,7 +37,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error("Session check error:", error);
       } finally {
         setLoading(false);
-        setAuthInitialized(true);
       }
     };
 

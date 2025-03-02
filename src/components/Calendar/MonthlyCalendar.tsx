@@ -6,13 +6,15 @@ import { DAYS_OF_WEEK } from "@/lib/constants";
 import { getCalendarDays, formatDate } from "@/lib/utils";
 import { Shift, Employee } from "@/lib/types";
 import { useAuth } from "@/hooks/useAuth";
-import { employeeService, shiftService, adminClient } from "@/lib/supabase";
+import { employeeService, shiftService } from "@/lib/supabase";
 import { ShiftModal } from "../Shifts/ShiftModal";
 import { HoursSummary } from "../Reports/HoursSummary";
 import { toast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 export function MonthlyCalendar() {
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, user, loading } = useAuth();
+  const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -22,8 +24,23 @@ export function MonthlyCalendar() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
+  // Check authentication
+  useEffect(() => {
+    if (!loading && !user) {
+      toast({
+        title: "Accesso richiesto",
+        description: "Devi effettuare l'accesso per visualizzare il calendario.",
+        variant: "destructive",
+      });
+      navigate("/login");
+    }
+  }, [user, loading, navigate]);
+  
   // Load data
   useEffect(() => {
+    // Don't fetch data if not authenticated
+    if (!user) return;
+    
     const fetchData = async () => {
       try {
         setIsLoading(true);
@@ -67,7 +84,7 @@ export function MonthlyCalendar() {
     };
     
     fetchData();
-  }, [currentDate]);
+  }, [currentDate, user]);
   
   // Update calendar when month changes or when shifts change
   useEffect(() => {
@@ -162,6 +179,20 @@ export function MonthlyCalendar() {
       });
     }
   };
+  
+  // If loading auth, show loading indicator
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+  
+  // If not authenticated, don't render anything (will redirect in effect)
+  if (!user) {
+    return null;
+  }
   
   return (
     <div className="space-y-6 animate-fade-in">
