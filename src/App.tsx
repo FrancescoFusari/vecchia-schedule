@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Calendar from "./pages/Calendar";
 import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import { Layout } from "./components/Layout";
 
@@ -67,6 +68,7 @@ const App = () => (
                   </ProtectedRoute>
                 } 
               />
+              <Route path="profile" element={<Profile />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />

@@ -1,7 +1,7 @@
 
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, Users } from "lucide-react";
+import { CalendarDays, Users, User } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -18,6 +18,9 @@ export function Navbar() {
 
   // Only show dashboard for admin users
   const showDashboard = isAdmin();
+  
+  // Show profile for regular users
+  const showProfile = !showDashboard;
 
   return (
     <nav className={`bg-white shadow-sm ${isMobile ? 'fixed bottom-0 left-0 right-0 z-50 border-t' : 'border-b'}`}>
@@ -55,6 +58,20 @@ export function Navbar() {
                 >
                   <Users className={isMobile ? "h-4 w-4 mb-1" : "mr-2 h-4 w-4"} />
                   <span className={isMobile ? "text-[10px] leading-tight" : ""}>Dashboard</span>
+                </Button>
+              </Link>
+            )}
+            
+            {/* Show profile link for regular users */}
+            {showProfile && (
+              <Link to="/profile">
+                <Button
+                  variant={isActive("/profile") ? "default" : "ghost"}
+                  size={isMobile ? "mobileNav" : "sm"}
+                  className={`flex ${isMobile ? 'flex-col h-auto w-full' : 'items-center'}`}
+                >
+                  <User className={isMobile ? "h-4 w-4 mb-1" : "mr-2 h-4 w-4"} />
+                  <span className={isMobile ? "text-[10px] leading-tight" : ""}>Profilo</span>
                 </Button>
               </Link>
             )}
