@@ -20,11 +20,12 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
   const [firstName, setFirstName] = useState(employee?.firstName || "");
   const [lastName, setLastName] = useState(employee?.lastName || "");
   const [email, setEmail] = useState(employee?.email || "");
+  const [username, setUsername] = useState(employee?.username || "");
   const [phone, setPhone] = useState(employee?.phone || "");
   const [position, setPosition] = useState(employee?.position || "");
   
   const handleSave = () => {
-    if (!firstName || !lastName || !email) {
+    if (!firstName || !lastName || !email || !username) {
       // Show validation error
       return;
     }
@@ -34,6 +35,7 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
       firstName,
       lastName,
       email,
+      username,
       phone,
       position,
       createdAt: employee?.createdAt || new Date().toISOString(),
@@ -78,6 +80,18 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
               id="lastName"
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
+              className="col-span-3"
+            />
+          </div>
+          
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="username" className="text-right">
+              Username
+            </Label>
+            <Input
+              id="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               className="col-span-3"
             />
           </div>
