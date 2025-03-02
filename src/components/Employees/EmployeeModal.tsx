@@ -58,12 +58,14 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
       newErrors.lastName = "Il cognome è obbligatorio";
     }
     
-    if (!username.trim()) {
-      newErrors.username = "Lo username è obbligatorio";
+    if (!email || !email.trim()) {
+      newErrors.email = "L'email è obbligatoria";
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = "Inserisci un indirizzo email valido";
     }
     
-    if (email && !/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = "Inserisci un indirizzo email valido";
+    if (!username.trim()) {
+      newErrors.username = "Lo username è obbligatorio";
     }
     
     setErrors(newErrors);
@@ -87,7 +89,7 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
         id: employee?.id || generateId(),
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        email: email.trim() || null,
+        email: email.trim(),
         username: username.trim(),
         phone: phone.trim() || undefined,
         position: position.trim() || undefined,

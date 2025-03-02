@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { Employee, Shift, ShiftTemplate, User } from './types';
 
@@ -69,9 +68,9 @@ export const authService = {
       if (username === 'admin' && password === 'juventus96') {
         console.log("Admin login detected, using hardcoded admin credentials");
         
-        // For admin, we create a hardcoded user object
+        // For admin, we create a hardcoded user object with consistent ID
         const adminUser: User = {
-          id: 'admin-id',
+          id: 'admin-id', // IMPORTANT: This ID must match what's in the get_user_role() function
           username: 'admin',
           email: 'admin@workshift.local',
           role: 'admin',
@@ -222,6 +221,12 @@ export const employeeService = {
       return employees;
     } catch (error) {
       console.error("Error fetching employees:", error);
+      // Check if the user has an admin session
+      const adminSession = localStorage.getItem('workshift_admin_session');
+      if (!adminSession) {
+        console.warn("No admin session found - this may be causing RLS permission issues");
+      }
+      
       // Use mock data only for development/testing purposes
       console.warn("Using mock employee data as fallback");
       return mockData.employees;
@@ -231,6 +236,12 @@ export const employeeService = {
   createEmployee: async (employee: Omit<Employee, 'id' | 'createdAt'>) => {
     try {
       console.log("Creating new employee:", employee.firstName, employee.lastName);
+      
+      // Check admin session first
+      const adminSession = localStorage.getItem('workshift_admin_session');
+      if (!adminSession) {
+        throw new Error("Admin privileges required to create employees");
+      }
       
       // Prepare the data object for insertion
       const employeeData = {

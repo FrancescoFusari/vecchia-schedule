@@ -4,7 +4,7 @@ import { Employee } from "@/lib/types";
 import { EmployeeTable } from "@/components/Employees/EmployeeTable";
 import { EmployeeModal } from "@/components/Employees/EmployeeModal";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import { employeeService } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -17,6 +17,7 @@ const Employees = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteConfirmEmployeeId, setDeleteConfirmEmployeeId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [loadingError, setLoadingError] = useState<string | null>(null);
   const { isAdmin, user } = useAuth();
   const navigate = useNavigate();
@@ -47,33 +48,39 @@ const Employees = () => {
   }, [isAdmin, navigate, user, isLoading]);
   
   // Load employees
+  const fetchEmployees = async () => {
+    try {
+      setIsLoading(true);
+      setLoadingError(null);
+      console.log("Fetching employees...");
+      const data = await employeeService.getEmployees();
+      console.log("Employees fetched:", data.length);
+      setEmployees(data);
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+      setLoadingError("Si è verificato un errore durante il caricamento dei dipendenti.");
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante il caricamento dei dipendenti.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+  
   useEffect(() => {
-    const fetchEmployees = async () => {
-      try {
-        setIsLoading(true);
-        setLoadingError(null);
-        console.log("Fetching employees...");
-        const data = await employeeService.getEmployees();
-        console.log("Employees fetched:", data.length);
-        setEmployees(data);
-      } catch (error) {
-        console.error("Error fetching employees:", error);
-        setLoadingError("Si è verificato un errore durante il caricamento dei dipendenti.");
-        toast({
-          title: "Errore",
-          description: "Si è verificato un errore durante il caricamento dei dipendenti.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
     // Only fetch if user is an admin
     if (user && isAdmin()) {
       fetchEmployees();
     }
   }, [user, isAdmin]);
+  
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    fetchEmployees();
+  };
   
   const handleAddEmployee = () => {
     setSelectedEmployee(null);
@@ -148,6 +155,8 @@ const Employees = () => {
           errorMessage = "Un dipendente con questo username o email esiste già.";
         } else if (error.message.includes("validation")) {
           errorMessage = "I dati inseriti non sono validi. Controlla tutti i campi obbligatori.";
+        } else if (error.message.includes("Admin privileges")) {
+          errorMessage = "Solo gli amministratori possono gestire i dipendenti.";
         }
       }
       
@@ -181,10 +190,22 @@ const Employees = () => {
           <p className="text-gray-500">Visualizza, aggiungi e gestisci dipendenti</p>
         </div>
         
-        <Button onClick={handleAddEmployee}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nuovo Dipendente
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleRefresh} 
+            disabled={isRefreshing || isLoading}
+            className="flex items-center gap-1"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Aggiorna
+          </Button>
+          
+          <Button onClick={handleAddEmployee}>
+            <Plus className="h-4 w-4 mr-2" />
+            Nuovo Dipendente
+          </Button>
+        </div>
       </div>
       
       {isLoading ? (
