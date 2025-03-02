@@ -1,8 +1,8 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { supabase } from "@/lib/supabase";
 import { User, Role } from "@/lib/types";
 import { toast } from "@/hooks/use-toast";
+import { authService } from "@/lib/supabase";
 
 interface AuthContextType {
   user: User | null;
@@ -19,24 +19,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Mock authentication state for demo purposes
-    // In a real app, this would check Supabase session
-    const storedUser = localStorage.getItem("workshift_user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
+    // Check for current user on mount
+    const checkUser = async () => {
+      try {
+        const currentUser = await authService.getCurrentUser();
+        setUser(currentUser);
+      } catch (error) {
+        console.error("Error checking user:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkUser();
+    
+    // Set up auth state listener
+    const { data } = authService.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN" || event === "USER_UPDATED") {
+        const currentUser = await authService.getCurrentUser();
+        setUser(currentUser);
+      } else if (event === "SIGNED_OUT") {
+        setUser(null);
+      }
+    });
     
     // Clean up subscription on unmount
     return () => {
-      // No-op for mock implementation
+      data.subscription.unsubscribe();
     };
   }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.auth.signIn(email, password);
+      const { data, error } = await authService.signIn(email, password);
       
       if (error) throw error;
       
@@ -50,7 +66,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         };
         
         setUser(userData);
-        localStorage.setItem("workshift_user", JSON.stringify(userData));
         toast({
           title: "Login effettuato",
           description: `Benvenuto, ${userData.firstName}!`,
@@ -63,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: "Credenziali non valide. Riprova.",
         variant: "destructive",
       });
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -71,9 +87,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       setLoading(true);
-      await supabase.auth.signOut();
+      await authService.signOut();
       setUser(null);
-      localStorage.removeItem("workshift_user");
       toast({
         title: "Logout effettuato",
         description: "Hai effettuato il logout con successo.",

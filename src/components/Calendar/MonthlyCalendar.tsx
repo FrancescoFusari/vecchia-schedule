@@ -6,12 +6,14 @@ import { DAYS_OF_WEEK } from "@/lib/constants";
 import { getCalendarDays } from "@/lib/utils";
 import { Shift, Employee } from "@/lib/types";
 import { useAuth } from "@/hooks/useAuth";
-import { mockData } from "@/lib/supabase";
+import { employeeService, shiftService } from "@/lib/supabase";
 import { ShiftModal } from "../Shifts/ShiftModal";
 import { HoursSummary } from "../Reports/HoursSummary";
+import { useToast } from "@/hooks/use-toast";
 
 export function MonthlyCalendar() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
+  const { toast } = useToast();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -19,13 +21,42 @@ export function MonthlyCalendar() {
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [isAddingShift, setIsAddingShift] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Load data
   useEffect(() => {
-    // In a real app, this would fetch from Supabase
-    setShifts(mockData.shifts);
-    setEmployees(mockData.employees);
-  }, []);
+    async function loadData() {
+      try {
+        setIsLoading(true);
+        
+        // Load employees
+        const employeeData = await employeeService.getAll();
+        setEmployees(employeeData);
+        
+        // Load shifts (all for admin, only user's for employees)
+        let shiftData: Shift[];
+        if (isAdmin()) {
+          shiftData = await shiftService.getAll();
+        } else if (user) {
+          shiftData = await shiftService.getEmployeeShifts(user.id);
+        } else {
+          shiftData = [];
+        }
+        setShifts(shiftData);
+      } catch (error) {
+        console.error("Error loading data:", error);
+        toast({
+          title: "Errore di caricamento",
+          description: "Si è verificato un errore durante il caricamento dei dati.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    loadData();
+  }, [isAdmin, user, toast]);
   
   // Update calendar when month changes or when shifts change
   useEffect(() => {
@@ -71,22 +102,64 @@ export function MonthlyCalendar() {
     setIsAddingShift(false);
   };
   
-  const handleSaveShift = (shift: Shift) => {
-    if (selectedShift) {
-      // Update existing shift
-      setShifts(prev => prev.map(s => s.id === shift.id ? shift : s));
-    } else {
-      // Add new shift
-      setShifts(prev => [...prev, shift]);
+  const handleSaveShift = async (shift: Shift) => {
+    try {
+      if (selectedShift) {
+        // Update existing shift
+        const updatedShift = await shiftService.update(shift);
+        setShifts(prev => prev.map(s => s.id === shift.id ? updatedShift : s));
+        toast({
+          title: "Turno aggiornato",
+          description: "Il turno è stato aggiornato con successo.",
+        });
+      } else {
+        // Add new shift
+        const newShift = await shiftService.create(shift);
+        setShifts(prev => [...prev, newShift]);
+        toast({
+          title: "Turno aggiunto",
+          description: "Il nuovo turno è stato aggiunto con successo.",
+        });
+      }
+    } catch (error) {
+      console.error("Error saving shift:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante il salvataggio del turno.",
+        variant: "destructive",
+      });
     }
     
     handleShiftModalClose();
   };
   
-  const handleDeleteShift = (shiftId: string) => {
-    setShifts(prev => prev.filter(s => s.id !== shiftId));
+  const handleDeleteShift = async (shiftId: string) => {
+    try {
+      await shiftService.delete(shiftId);
+      setShifts(prev => prev.filter(s => s.id !== shiftId));
+      toast({
+        title: "Turno eliminato",
+        description: "Il turno è stato eliminato con successo.",
+      });
+    } catch (error) {
+      console.error("Error deleting shift:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante l'eliminazione del turno.",
+        variant: "destructive",
+      });
+    }
+    
     handleShiftModalClose();
   };
+  
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-60">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-6 animate-fade-in">

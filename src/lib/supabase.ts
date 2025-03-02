@@ -1,62 +1,282 @@
 
-// This file is a placeholder for Supabase integration
-// You'll need to replace this with actual Supabase client configuration
-// after connecting to Supabase through the Lovable integration
+import { createClient } from '@supabase/supabase-js';
+import { Employee, Shift, User, Role } from './types';
 
-export const supabase = {
-  // Placeholder for actual Supabase client
-  auth: {
-    signIn: async (email: string, password: string) => {
-      console.log("Sign in attempt", { email, password });
-      // Mock login success
-      if (email === "admin@example.com" && password === "password") {
-        return { 
-          data: { 
-            user: { 
-              id: "1", 
-              email, 
-              user_metadata: { 
-                role: "admin",
-                firstName: "Admin",
-                lastName: "User" 
-              } 
-            } 
-          }, 
-          error: null 
+// Initialize the Supabase client
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Authentication functions
+export const authService = {
+  signIn: async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    
+    if (error) throw error;
+    
+    // Get user profile from the profiles table
+    if (data.user) {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+      
+      if (profileData) {
+        return {
+          data: {
+            user: {
+              id: data.user.id,
+              email: data.user.email || '',
+              user_metadata: {
+                role: profileData.role as Role,
+                firstName: profileData.first_name,
+                lastName: profileData.last_name
+              }
+            }
+          },
+          error: null
         };
       }
-      
-      if (email === "employee@example.com" && password === "password") {
-        return { 
-          data: { 
-            user: { 
-              id: "2", 
-              email, 
-              user_metadata: { 
-                role: "employee",
-                firstName: "Employee",
-                lastName: "User" 
-              } 
-            } 
-          }, 
-          error: null 
-        };
-      }
-      
-      return { data: null, error: new Error("Invalid credentials") };
-    },
-    signOut: async () => {
-      console.log("Sign out");
-      return { error: null };
-    },
-    onAuthStateChange: (callback: any) => {
-      // No-op for now
-      return { data: { subscription: { unsubscribe: () => {} } } };
     }
+    
+    return { data, error: null };
+  },
+  
+  signOut: async () => {
+    return await supabase.auth.signOut();
+  },
+  
+  onAuthStateChange: (callback: (event: any, session: any) => void) => {
+    return supabase.auth.onAuthStateChange(callback);
+  },
+  
+  getCurrentUser: async () => {
+    const { data } = await supabase.auth.getUser();
+    if (data?.user) {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+      
+      if (profileData) {
+        return {
+          id: data.user.id,
+          email: data.user.email || '',
+          role: profileData.role as Role,
+          firstName: profileData.first_name,
+          lastName: profileData.last_name
+        };
+      }
+    }
+    return null;
   }
 };
 
-// This is a placeholder for demo purposes - in a real app, you'd use Supabase
+// Data service for employees
+export const employeeService = {
+  getAll: async (): Promise<Employee[]> => {
+    const { data, error } = await supabase
+      .from('employees')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    return data.map((item: any) => ({
+      id: item.id,
+      firstName: item.first_name,
+      lastName: item.last_name,
+      email: item.email,
+      phone: item.phone,
+      position: item.position,
+      createdAt: item.created_at
+    }));
+  },
+  
+  create: async (employee: Omit<Employee, 'id' | 'createdAt'>): Promise<Employee> => {
+    const { data, error } = await supabase
+      .from('employees')
+      .insert({
+        first_name: employee.firstName,
+        last_name: employee.lastName,
+        email: employee.email,
+        phone: employee.phone,
+        position: employee.position
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    return {
+      id: data.id,
+      firstName: data.first_name,
+      lastName: data.last_name,
+      email: data.email,
+      phone: data.phone,
+      position: data.position,
+      createdAt: data.created_at
+    };
+  },
+  
+  update: async (employee: Employee): Promise<Employee> => {
+    const { data, error } = await supabase
+      .from('employees')
+      .update({
+        first_name: employee.firstName,
+        last_name: employee.lastName,
+        email: employee.email,
+        phone: employee.phone,
+        position: employee.position
+      })
+      .eq('id', employee.id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    return {
+      id: data.id,
+      firstName: data.first_name,
+      lastName: data.last_name,
+      email: data.email,
+      phone: data.phone,
+      position: data.position,
+      createdAt: data.created_at
+    };
+  },
+  
+  delete: async (id: string): Promise<void> => {
+    const { error } = await supabase
+      .from('employees')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+  }
+};
+
+// Data service for shifts
+export const shiftService = {
+  getAll: async (): Promise<Shift[]> => {
+    const { data, error } = await supabase
+      .from('shifts')
+      .select('*')
+      .order('date', { ascending: true });
+    
+    if (error) throw error;
+    
+    return data.map((item: any) => ({
+      id: item.id,
+      employeeId: item.employee_id,
+      date: item.date,
+      startTime: item.start_time,
+      endTime: item.end_time,
+      duration: item.duration,
+      notes: item.notes,
+      createdAt: item.created_at,
+      updatedAt: item.updated_at
+    }));
+  },
+  
+  getEmployeeShifts: async (employeeId: string): Promise<Shift[]> => {
+    const { data, error } = await supabase
+      .from('shifts')
+      .select('*')
+      .eq('employee_id', employeeId)
+      .order('date', { ascending: true });
+    
+    if (error) throw error;
+    
+    return data.map((item: any) => ({
+      id: item.id,
+      employeeId: item.employee_id,
+      date: item.date,
+      startTime: item.start_time,
+      endTime: item.end_time,
+      duration: item.duration,
+      notes: item.notes,
+      createdAt: item.created_at,
+      updatedAt: item.updated_at
+    }));
+  },
+  
+  create: async (shift: Omit<Shift, 'id' | 'createdAt' | 'updatedAt'>): Promise<Shift> => {
+    const { data, error } = await supabase
+      .from('shifts')
+      .insert({
+        employee_id: shift.employeeId,
+        date: shift.date,
+        start_time: shift.startTime,
+        end_time: shift.endTime,
+        duration: shift.duration,
+        notes: shift.notes
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    return {
+      id: data.id,
+      employeeId: data.employee_id,
+      date: data.date,
+      startTime: data.start_time,
+      endTime: data.end_time,
+      duration: data.duration,
+      notes: data.notes,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    };
+  },
+  
+  update: async (shift: Shift): Promise<Shift> => {
+    const { data, error } = await supabase
+      .from('shifts')
+      .update({
+        employee_id: shift.employeeId,
+        date: shift.date,
+        start_time: shift.startTime,
+        end_time: shift.endTime,
+        duration: shift.duration,
+        notes: shift.notes
+      })
+      .eq('id', shift.id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    return {
+      id: data.id,
+      employeeId: data.employee_id,
+      date: data.date,
+      startTime: data.start_time,
+      endTime: data.end_time,
+      duration: data.duration,
+      notes: data.notes,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    };
+  },
+  
+  delete: async (id: string): Promise<void> => {
+    const { error } = await supabase
+      .from('shifts')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+  }
+};
+
+// Export mock data for fallback or development purposes
 export const mockData = {
   employees: [
     { id: "1", firstName: "Francesco", lastName: "R", email: "francesco.r@example.com", phone: "+39 123 456 7890", position: "Cameriere", createdAt: "2023-01-01" },
