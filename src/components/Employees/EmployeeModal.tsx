@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -28,7 +27,6 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
-  // Reset form when employee changes
   useEffect(() => {
     if (employee) {
       setFirstName(employee.firstName);
@@ -56,18 +54,8 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
       newErrors.firstName = "Il nome è obbligatorio";
     }
     
-    if (!lastName.trim()) {
-      newErrors.lastName = "Il cognome è obbligatorio";
-    }
-    
-    if (!email || !email.trim()) {
-      newErrors.email = "L'email è obbligatoria";
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
+    if (email && email.trim() && !/\S+@\S+\.\S+/.test(email)) {
       newErrors.email = "Inserisci un indirizzo email valido";
-    }
-    
-    if (!username.trim()) {
-      newErrors.username = "Lo username è obbligatorio";
     }
     
     setErrors(newErrors);
@@ -89,7 +77,6 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
     setIsSubmitting(true);
     
     try {
-      // Check if admin session exists
       const adminSession = localStorage.getItem('workshift_admin_session');
       if (!adminSession) {
         toast({
@@ -106,8 +93,8 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
         id: employee?.id || generateId(),
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        email: email.trim(),
-        username: username.trim(),
+        email: email.trim() || null,
+        username: username.trim() || firstName.trim().toLowerCase(),
         phone: phone.trim() || undefined,
         position: position.trim() || undefined,
         createdAt: employee?.createdAt || new Date().toISOString(),
@@ -121,7 +108,6 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
       if (error instanceof Error) {
         message = error.message;
       } else if (typeof error === 'object' && error !== null) {
-        // @ts-ignore - handle Supabase specific error shape
         message = error.message || message;
       }
       

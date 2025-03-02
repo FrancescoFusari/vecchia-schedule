@@ -15,7 +15,7 @@ export interface Employee {
   firstName: string;
   lastName: string;
   email: string | null;
-  username: string;
+  username: string; // Keep as required since we'll auto-generate it if empty
   phone?: string;
   position?: string;
   createdAt: string;
