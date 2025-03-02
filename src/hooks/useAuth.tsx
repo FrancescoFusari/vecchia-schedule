@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { authService, supabase } from "@/lib/supabase";
 import { User } from "@/lib/types";
@@ -22,6 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const checkSession = async () => {
       try {
         const userData = await authService.getCurrentUser();
+        console.log("Session check result:", userData ? "User logged in" : "No user");
         setUser(userData);
       } catch (error) {
         console.error("Session check error:", error);
@@ -52,14 +54,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (username: string, password: string) => {
     try {
       setLoading(true);
+      console.log("Attempting to sign in with username:", username);
+      
+      // Directly try authentication with the provided credentials
       const { userData } = await authService.signIn(username, password);
       
       if (userData) {
+        console.log("Login successful:", userData);
         setUser(userData);
         toast({
           title: "Login effettuato",
-          description: `Benvenuto, ${userData.firstName}!`,
+          description: `Benvenuto, ${userData.firstName || username}!`,
         });
+      } else {
+        console.error("No user data returned from login");
+        throw new Error("Login failed - no user data returned");
       }
     } catch (error) {
       console.error("Error signing in:", error);

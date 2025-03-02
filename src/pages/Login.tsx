@@ -34,16 +34,29 @@ const Login = () => {
     try {
       setIsLoggingIn(true);
       setLoginError(null);
-      console.log("Login attempt with credentials:", { username, password: '****' });
+      
+      // Log login attempt without exposing password
+      console.log("Login attempt with username:", username);
+      
       await signIn(username, password);
       // Redirect will happen automatically due to the useEffect above
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login failed:', error);
-      setLoginError('Invalid credentials. Please try again.');
+      
+      // Provide a more detailed error message based on the error
+      let errorMessage = 'Invalid credentials. Please try again.';
+      
+      if (error.message && error.message.includes('Database error')) {
+        errorMessage = 'Database error. Please try again or contact support.';
+      } else if (error.message && error.message.includes('Invalid login')) {
+        errorMessage = 'Invalid username or password. Please check your credentials.';
+      }
+      
+      setLoginError(errorMessage);
       
       toast({
         title: "Login Failed",
-        description: "Invalid username or password. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -103,9 +116,10 @@ const Login = () => {
             </Button>
           </form>
           
-          <div className="mt-4 text-center text-sm text-muted-foreground">
-            <p>Credenziali di demo:</p>
-            <p className="font-medium">Admin: admin / juventus96</p>
+          <div className="mt-4 text-center text-sm">
+            <p className="text-muted-foreground">Credenziali di demo:</p>
+            <p className="font-medium">Username: <span className="font-bold">admin</span></p>
+            <p className="font-medium">Password: <span className="font-bold">juventus96</span></p>
           </div>
         </CardContent>
         <CardFooter className="flex flex-col">
