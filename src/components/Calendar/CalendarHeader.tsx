@@ -22,8 +22,18 @@ export function CalendarHeader({
   isWeekView = false,
   onViewChange 
 }: CalendarHeaderProps) {
+  // Get the week number and format title
+  const getWeekOfMonth = (date: Date): number => {
+    const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+    // Calculate days from the beginning of the month
+    const days = Math.floor((date.getTime() - firstDayOfMonth.getTime()) / (24 * 60 * 60 * 1000));
+    // Get the week number (add 1 because we want to start from week 1)
+    return Math.ceil((days + firstDayOfMonth.getDay()) / 7);
+  };
+  
+  // Format title based on view type
   const title = isWeekView 
-    ? `Settimana di ${formatMonthYear(date)}` 
+    ? `${date.toLocaleString('it', { month: 'long' })} - Week ${getWeekOfMonth(date)}` 
     : formatMonthYear(date);
   
   return (
