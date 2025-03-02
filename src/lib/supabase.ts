@@ -368,9 +368,48 @@ export const shiftService = {
     try {
       console.log(`Fetching shifts between ${startDate} and ${endDate}`);
       
-      // Always use adminClient for fetching shifts - this bypasses RLS issues
-      // when users are first loading the page or aren't fully authenticated yet
-      const { data, error } = await adminClient
+      // Try to get the authenticated admin session
+      const adminSession = localStorage.getItem('workshift_admin_session');
+      
+      if (adminSession) {
+        console.log("Admin session found, fetching shifts as admin");
+        
+        // Direct HTTP request bypassing RLS for admin
+        const url = `${supabaseUrl}/rest/v1/shifts?select=*&date=gte.${startDate}&date=lte.${endDate}&order=date.asc`;
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'apikey': serviceRoleKey || supabaseKey,
+            'Authorization': `Bearer ${serviceRoleKey || supabaseKey}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch shifts: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        const shifts: Shift[] = data.map(shift => ({
+          id: shift.id,
+          employeeId: shift.employee_id,
+          date: shift.date,
+          startTime: shift.start_time,
+          endTime: shift.end_time,
+          duration: shift.duration,
+          notes: shift.notes || '',
+          createdAt: shift.created_at,
+          updatedAt: shift.updated_at
+        }));
+        
+        console.log(`Successfully fetched ${shifts.length} shifts as admin`);
+        return shifts;
+      }
+      
+      // If not admin, use standard client
+      const { data, error } = await supabase
         .from('shifts')
         .select('*')
         .gte('date', startDate)
@@ -412,8 +451,16 @@ export const shiftService = {
     try {
       console.log("Creating new shift:", shift);
       
-      // ALWAYS use the adminClient for shift operations - this is critical
-      // The RLS policies we've set rely on the is_admin() function
+      // Check for admin session
+      const adminSession = localStorage.getItem('workshift_admin_session');
+      
+      if (!adminSession) {
+        throw new Error("Admin privileges required to create shifts");
+      }
+      
+      // Direct HTTP request bypassing RLS
+      const url = `${supabaseUrl}/rest/v1/shifts`;
+      
       const shiftData = {
         employee_id: shift.employeeId,
         date: shift.date,
@@ -423,33 +470,41 @@ export const shiftService = {
         notes: shift.notes
       };
       
-      console.log("Using admin client for shift creation");
+      console.log("Making direct API call to create shift:", shiftData);
       
-      const { data, error } = await adminClient
-        .from('shifts')
-        .insert(shiftData)
-        .select('*')
-        .single();
-        
-      if (error) {
-        console.error("Error creating shift:", error);
-        throw error;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'apikey': serviceRoleKey || supabaseKey,
+          'Authorization': `Bearer ${serviceRoleKey || supabaseKey}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify(shiftData)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Error response:", errorData);
+        throw new Error(`Failed to create shift: ${JSON.stringify(errorData)}`);
       }
       
-      if (!data) {
+      const data = await response.json();
+      
+      if (!data || !data[0]) {
         throw new Error("No data returned after creating shift");
       }
       
       const newShift: Shift = {
-        id: data.id,
-        employeeId: data.employee_id,
-        date: data.date,
-        startTime: data.start_time,
-        endTime: data.end_time,
-        duration: data.duration,
-        notes: data.notes || '',
-        createdAt: data.created_at,
-        updatedAt: data.updated_at
+        id: data[0].id,
+        employeeId: data[0].employee_id,
+        date: data[0].date,
+        startTime: data[0].start_time,
+        endTime: data[0].end_time,
+        duration: data[0].duration,
+        notes: data[0].notes || '',
+        createdAt: data[0].created_at,
+        updatedAt: data[0].updated_at
       };
       
       console.log("Shift created successfully with ID:", newShift.id);
@@ -464,22 +519,41 @@ export const shiftService = {
     try {
       console.log("Updating shift:", shift.id);
       
-      // ALWAYS use the adminClient for shift operations
-      const { error } = await adminClient
-        .from('shifts')
-        .update({
-          employee_id: shift.employeeId,
-          date: shift.date,
-          start_time: shift.startTime,
-          end_time: shift.endTime,
-          duration: shift.duration,
-          notes: shift.notes
-        })
-        .eq('id', shift.id);
-        
-      if (error) {
-        console.error("Error updating shift:", error);
-        throw error;
+      // Check for admin session
+      const adminSession = localStorage.getItem('workshift_admin_session');
+      
+      if (!adminSession) {
+        throw new Error("Admin privileges required to update shifts");
+      }
+      
+      // Direct HTTP request bypassing RLS
+      const url = `${supabaseUrl}/rest/v1/shifts?id=eq.${shift.id}`;
+      
+      const shiftData = {
+        employee_id: shift.employeeId,
+        date: shift.date,
+        start_time: shift.startTime,
+        end_time: shift.endTime,
+        duration: shift.duration,
+        notes: shift.notes
+      };
+      
+      console.log("Making direct API call to update shift:", shiftData);
+      
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'apikey': serviceRoleKey || supabaseKey,
+          'Authorization': `Bearer ${serviceRoleKey || supabaseKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(shiftData)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Error response:", errorData);
+        throw new Error(`Failed to update shift: ${JSON.stringify(errorData)}`);
       }
       
       console.log("Shift updated successfully");
@@ -494,15 +568,31 @@ export const shiftService = {
     try {
       console.log("Deleting shift with ID:", shiftId);
       
-      // ALWAYS use the adminClient for shift operations
-      const { error } = await adminClient
-        .from('shifts')
-        .delete()
-        .eq('id', shiftId);
-        
-      if (error) {
-        console.error("Error deleting shift:", error);
-        throw error;
+      // Check for admin session
+      const adminSession = localStorage.getItem('workshift_admin_session');
+      
+      if (!adminSession) {
+        throw new Error("Admin privileges required to delete shifts");
+      }
+      
+      // Direct HTTP request bypassing RLS
+      const url = `${supabaseUrl}/rest/v1/shifts?id=eq.${shiftId}`;
+      
+      console.log("Making direct API call to delete shift");
+      
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'apikey': serviceRoleKey || supabaseKey,
+          'Authorization': `Bearer ${serviceRoleKey || supabaseKey}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Error response:", errorData);
+        throw new Error(`Failed to delete shift: ${JSON.stringify(errorData)}`);
       }
       
       console.log("Shift deleted successfully");

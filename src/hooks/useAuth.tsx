@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { authService, supabase } from "@/lib/supabase";
 import { User } from "@/lib/types";
@@ -114,8 +113,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // This function should match the logic in the is_admin() SQL function
+  // This function should be absolutely reliable for admin check
   const isAdmin = () => {
+    // Direct check for admin session in localStorage
+    const adminSession = localStorage.getItem('workshift_admin_session');
+    if (adminSession) {
+      return true;
+    }
+    
+    // Fallback to role check for the current user
     return user?.role === "admin" || user?.id === "admin-id";
   };
 

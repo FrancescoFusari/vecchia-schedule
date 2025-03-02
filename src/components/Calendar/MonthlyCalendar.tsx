@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { CalendarHeader } from "./CalendarHeader";
 import { CalendarDay } from "./CalendarDay";
@@ -10,7 +11,6 @@ import { ShiftModal } from "../Shifts/ShiftModal";
 import { HoursSummary } from "../Reports/HoursSummary";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { AdminPanel } from "@/components/ui/alert";
 
 export function MonthlyCalendar() {
   const { isAdmin, user, loading } = useAuth();
