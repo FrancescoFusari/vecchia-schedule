@@ -1,12 +1,12 @@
 
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, Users, LogOut, Clock } from "lucide-react";
+import { CalendarDays, Users } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export function Navbar() {
-  const { user, signOut, isAdmin } = useAuth();
+  const { user } = useAuth();
   const location = useLocation();
   const isMobile = useIsMobile();
 
@@ -42,42 +42,16 @@ export function Navbar() {
               </Button>
             </Link>
 
-            {isAdmin() && (
-              <>
-                <Link to="/employees">
-                  <Button
-                    variant={isActive("/employees") ? "default" : "ghost"}
-                    size={isMobile ? "mobileNav" : "sm"}
-                    className={`flex ${isMobile ? 'flex-col h-auto w-full' : 'items-center'}`}
-                  >
-                    <Users className={isMobile ? "h-4 w-4 mb-1" : "mr-2 h-4 w-4"} />
-                    <span className={isMobile ? "text-[10px] leading-tight" : ""}>Dipendenti</span>
-                  </Button>
-                </Link>
-                
-                <Link to="/templates">
-                  <Button
-                    variant={isActive("/templates") ? "default" : "ghost"}
-                    size={isMobile ? "mobileNav" : "sm"}
-                    className={`flex ${isMobile ? 'flex-col h-auto w-full' : 'items-center'}`}
-                  >
-                    <Clock className={isMobile ? "h-4 w-4 mb-1" : "mr-2 h-4 w-4"} />
-                    <span className={isMobile ? "text-[10px] leading-tight" : ""}>Template</span>
-                  </Button>
-                </Link>
-              </>
-            )}
-
-            {/* Logout button */}
-            <Button
-              variant="ghost"
-              size={isMobile ? "mobileNav" : "sm"}
-              className={`flex ${isMobile ? 'flex-col h-auto w-full text-destructive' : 'items-center text-destructive'}`}
-              onClick={() => signOut()}
-            >
-              <LogOut className={isMobile ? "h-4 w-4 mb-1" : "mr-2 h-4 w-4"} />
-              <span className={isMobile ? "text-[10px] leading-tight" : ""}>Logout</span>
-            </Button>
+            <Link to="/dashboard">
+              <Button
+                variant={isActive("/dashboard") ? "default" : "ghost"}
+                size={isMobile ? "mobileNav" : "sm"}
+                className={`flex ${isMobile ? 'flex-col h-auto w-full' : 'items-center'}`}
+              >
+                <Users className={isMobile ? "h-4 w-4 mb-1" : "mr-2 h-4 w-4"} />
+                <span className={isMobile ? "text-[10px] leading-tight" : ""}>Dashboard</span>
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

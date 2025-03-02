@@ -8,9 +8,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Calendar from "./pages/Calendar";
 import Dashboard from "./pages/Dashboard";
-import Employees from "./pages/Employees";
-import Templates from "./pages/Templates";
 import NotFound from "./pages/NotFound";
 import { Layout } from "./components/Layout";
 
@@ -59,20 +58,12 @@ const App = () => (
                 </ProtectedRoute>
               }
             >
-              <Route index element={<Dashboard />} />
+              <Route index element={<Calendar />} />
               <Route 
-                path="employees" 
+                path="dashboard" 
                 element={
                   <ProtectedRoute adminOnly>
-                    <Employees />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="templates" 
-                element={
-                  <ProtectedRoute adminOnly>
-                    <Templates />
+                    <Dashboard />
                   </ProtectedRoute>
                 } 
               />
