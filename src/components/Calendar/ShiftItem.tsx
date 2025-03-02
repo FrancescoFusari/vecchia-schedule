@@ -1,6 +1,6 @@
 
 import { Shift, Employee } from "@/lib/types";
-import { cn, formatEmployeeName } from "@/lib/utils";
+import { cn, formatEmployeeName, formatTime } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -40,7 +40,7 @@ export function ShiftItem({ shift, employee, onClick }: ShiftItemProps) {
               style={customStyle}
             >
               <div className="truncate">
-                {formatEmployeeName(employee.firstName, employee.lastName)} {shift.startTime}-{shift.endTime}
+                {formatEmployeeName(employee.firstName, employee.lastName)} {formatTime(shift.startTime)}-{formatTime(shift.endTime)}
               </div>
             </div>
           </TooltipTrigger>
@@ -61,7 +61,7 @@ export function ShiftItem({ shift, employee, onClick }: ShiftItemProps) {
       )}
       style={customStyle}
     >
-      {formatEmployeeName(employee.firstName, employee.lastName)} {shift.startTime}-{shift.endTime}
+      {formatEmployeeName(employee.firstName, employee.lastName)} {formatTime(shift.startTime)}-{formatTime(shift.endTime)}
     </div>
   );
 }

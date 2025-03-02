@@ -1,4 +1,3 @@
-
 import { ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { Shift, CalendarDay } from "./types";
@@ -18,15 +17,24 @@ export function formatDate(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-// Format time (HH:MM)
+// Format time (HH:MM) - ensure no seconds are displayed
 export function formatTime(time: string): string {
+  // If time contains seconds (HH:MM:SS), remove them
+  if (time.includes(':') && time.split(':').length > 2) {
+    const [hours, minutes] = time.split(':');
+    return `${hours}:${minutes}`;
+  }
   return time;
 }
 
 // Calculate shift duration in hours
 export function calculateShiftDuration(startTime: string, endTime: string): number {
-  const [startHour, startMinute] = startTime.split(":").map(Number);
-  const [endHour, endMinute] = endTime.split(":").map(Number);
+  // Ensure we're only working with HH:MM format
+  const cleanStartTime = formatTime(startTime);
+  const cleanEndTime = formatTime(endTime);
+  
+  const [startHour, startMinute] = cleanStartTime.split(":").map(Number);
+  const [endHour, endMinute] = cleanEndTime.split(":").map(Number);
   
   const start = startHour + startMinute / 60;
   const end = endHour + endMinute / 60;
@@ -138,10 +146,10 @@ export function formatEmployeeName(firstName: string, lastName: string): string 
   return `${firstName} ${lastName.charAt(0)}`;
 }
 
-// Format shift display - modified to only show first name and the initial of the last name
+// Format shift display - modified to only show first name and the initial of the last name and ensure no seconds in times
 export function formatShiftDisplay(firstName: string, lastName: string, startTime: string, endTime: string): string {
   const displayName = lastName ? `${firstName} ${lastName.charAt(0)}` : firstName;
-  return `${displayName} ${startTime}-${endTime}`;
+  return `${displayName} ${formatTime(startTime)}-${formatTime(endTime)}`;
 }
 
 // Calculate total hours for an employee in a given period
