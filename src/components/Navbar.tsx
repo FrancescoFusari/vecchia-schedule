@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export function Navbar() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const location = useLocation();
   const isMobile = useIsMobile();
 
@@ -15,6 +15,9 @@ export function Navbar() {
   };
   
   if (!user) return null;
+
+  // Only show dashboard for admin users
+  const showDashboard = isAdmin();
 
   return (
     <nav className={`bg-white shadow-sm ${isMobile ? 'fixed bottom-0 left-0 right-0 z-50 border-t' : 'border-b'}`}>
@@ -42,16 +45,19 @@ export function Navbar() {
               </Button>
             </Link>
 
-            <Link to="/dashboard">
-              <Button
-                variant={isActive("/dashboard") ? "default" : "ghost"}
-                size={isMobile ? "mobileNav" : "sm"}
-                className={`flex ${isMobile ? 'flex-col h-auto w-full' : 'items-center'}`}
-              >
-                <Users className={isMobile ? "h-4 w-4 mb-1" : "mr-2 h-4 w-4"} />
-                <span className={isMobile ? "text-[10px] leading-tight" : ""}>Dashboard</span>
-              </Button>
-            </Link>
+            {/* Only render dashboard link for admin users */}
+            {showDashboard && (
+              <Link to="/dashboard">
+                <Button
+                  variant={isActive("/dashboard") ? "default" : "ghost"}
+                  size={isMobile ? "mobileNav" : "sm"}
+                  className={`flex ${isMobile ? 'flex-col h-auto w-full' : 'items-center'}`}
+                >
+                  <Users className={isMobile ? "h-4 w-4 mb-1" : "mr-2 h-4 w-4"} />
+                  <span className={isMobile ? "text-[10px] leading-tight" : ""}>Dashboard</span>
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </div>
