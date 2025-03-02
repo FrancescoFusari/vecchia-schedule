@@ -19,12 +19,30 @@ const Login = () => {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!username || !password) {
+      toast({
+        title: "Errore",
+        description: "Username e password sono richiesti",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
       console.log("Attempting login with:", username);
-      await signIn(username, password);
-      navigate("/");
+      const result = await signIn(username, password);
+      console.log("Login result:", result);
+      
+      if (result) {
+        toast({
+          title: "Login effettuato",
+          description: "Accesso effettuato con successo",
+        });
+        navigate("/");
+      }
     } catch (error) {
       console.error("Login error:", error);
       toast({

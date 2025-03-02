@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { User, Role } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -7,7 +6,7 @@ import { authService } from "@/lib/supabase";
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signIn: (username: string, password: string) => Promise<void>;
+  signIn: (username: string, password: string) => Promise<User | null>;
   register: (username: string, firstName: string, lastName: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   isAdmin: () => boolean;
@@ -55,35 +54,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const signIn = async (username: string, password: string) => {
+  const signIn = async (username: string, password: string): Promise<User | null> => {
     try {
       setLoading(true);
       console.log("Attempting to sign in user:", username);
-      const { data, error } = await authService.signIn(username, password);
+      const { user: userData } = await authService.signIn(username, password);
       
-      if (error) {
-        console.error("Sign in error:", error);
-        throw error;
-      }
-      
-      console.log("Sign in success, data:", data);
-      
-      if (data && data.user) {
-        const userData: User = {
-          id: data.user.id,
-          username: data.user.user_metadata.username,
-          role: data.user.user_metadata.role as Role,
-          firstName: data.user.user_metadata.firstName,
-          lastName: data.user.user_metadata.lastName
-        };
-        
+      if (userData) {
         console.log("Setting user data:", userData);
         setUser(userData);
         toast({
           title: "Login effettuato",
-          description: `Benvenuto, ${userData.firstName}!`,
+          description: `Benvenuto, ${userData.firstName || userData.username}!`,
         });
+        return userData;
       }
+      return null;
     } catch (error) {
       console.error("Error signing in:", error);
       toast({
