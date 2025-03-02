@@ -24,6 +24,9 @@ const Employees = () => {
   
   // Check if user is admin, if not redirect to dashboard
   useEffect(() => {
+    // Make sure admin session exists in localStorage
+    const adminSession = localStorage.getItem('workshift_admin_session');
+    
     if (!user) {
       // If no user is set yet, wait
       if (isLoading) return;
@@ -37,7 +40,7 @@ const Employees = () => {
       return;
     }
     
-    if (!isAdmin()) {
+    if (!isAdmin() || !adminSession) {
       toast({
         title: "Accesso negato",
         description: "Solo gli amministratori possono accedere a questa pagina.",
@@ -53,15 +56,28 @@ const Employees = () => {
       setIsLoading(true);
       setLoadingError(null);
       console.log("Fetching employees...");
+      
+      // Verify admin session exists
+      const adminSession = localStorage.getItem('workshift_admin_session');
+      if (!adminSession) {
+        throw new Error("Admin session non trovata. Effettua nuovamente il login come amministratore.");
+      }
+      
       const data = await employeeService.getEmployees();
       console.log("Employees fetched:", data.length);
       setEmployees(data);
     } catch (error) {
       console.error("Error fetching employees:", error);
-      setLoadingError("Si è verificato un errore durante il caricamento dei dipendenti.");
+      let errorMessage = "Si è verificato un errore durante il caricamento dei dipendenti.";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      setLoadingError(errorMessage);
       toast({
         title: "Errore",
-        description: "Si è verificato un errore durante il caricamento dei dipendenti.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -72,7 +88,8 @@ const Employees = () => {
   
   useEffect(() => {
     // Only fetch if user is an admin
-    if (user && isAdmin()) {
+    const adminSession = localStorage.getItem('workshift_admin_session');
+    if (user && isAdmin() && adminSession) {
       fetchEmployees();
     }
   }, [user, isAdmin]);
@@ -99,6 +116,12 @@ const Employees = () => {
   const confirmDeleteEmployee = async () => {
     if (deleteConfirmEmployeeId) {
       try {
+        // Verify admin session exists
+        const adminSession = localStorage.getItem('workshift_admin_session');
+        if (!adminSession) {
+          throw new Error("Admin session non trovata. Effettua nuovamente il login come amministratore.");
+        }
+        
         await employeeService.deleteEmployee(deleteConfirmEmployeeId);
         setEmployees(prev => prev.filter(e => e.id !== deleteConfirmEmployeeId));
         toast({
@@ -107,9 +130,15 @@ const Employees = () => {
         });
       } catch (error) {
         console.error("Error deleting employee:", error);
+        let errorMessage = "Si è verificato un errore durante l'eliminazione del dipendente.";
+        
+        if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+        
         toast({
           title: "Errore",
-          description: "Si è verificato un errore durante l'eliminazione del dipendente.",
+          description: errorMessage,
           variant: "destructive",
         });
       } finally {
@@ -125,6 +154,12 @@ const Employees = () => {
   
   const handleSaveEmployee = async (employee: Employee) => {
     try {
+      // Verify admin session exists
+      const adminSession = localStorage.getItem('workshift_admin_session');
+      if (!adminSession) {
+        throw new Error("Admin session non trovata. Effettua nuovamente il login come amministratore.");
+      }
+      
       if (selectedEmployee) {
         // Update existing employee
         const updatedEmployee = await employeeService.updateEmployee(employee);
@@ -157,6 +192,8 @@ const Employees = () => {
           errorMessage = "I dati inseriti non sono validi. Controlla tutti i campi obbligatori.";
         } else if (error.message.includes("Admin privileges")) {
           errorMessage = "Solo gli amministratori possono gestire i dipendenti.";
+        } else {
+          errorMessage = error.message;
         }
       }
       

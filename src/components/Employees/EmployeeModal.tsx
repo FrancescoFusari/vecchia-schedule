@@ -85,6 +85,18 @@ export function EmployeeModal({ isOpen, onClose, employee, onSave, onDelete }: E
     setIsSubmitting(true);
     
     try {
+      // Check if admin session exists
+      const adminSession = localStorage.getItem('workshift_admin_session');
+      if (!adminSession) {
+        toast({
+          title: "Accesso negato",
+          description: "Solo gli amministratori possono gestire i dipendenti.",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
       const updatedEmployee: Employee = {
         id: employee?.id || generateId(),
         firstName: firstName.trim(),

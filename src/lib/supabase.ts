@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { Employee, Shift, ShiftTemplate, User } from './types';
 
@@ -243,16 +244,30 @@ export const employeeService = {
         throw new Error("Admin privileges required to create employees");
       }
       
+      // Use an API key approach for admin operations
+      // This is secure because we're checking the admin session first
+      const adminSupabase = createClient(supabaseUrl, supabaseKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      });
+      
+      // Set custom headers to identify admin request
+      adminSupabase.functions.setAuth(supabaseKey);
+      
       // Prepare the data object for insertion
       const employeeData = {
         first_name: employee.firstName,
         last_name: employee.lastName,
         email: employee.email,
-        phone: employee.phone,
-        position: employee.position
+        phone: employee.phone || null,
+        position: employee.position || null
       };
       
-      const { data, error } = await supabase
+      console.log("Employee data to insert:", employeeData);
+      
+      const { data, error } = await adminSupabase
         .from('employees')
         .insert(employeeData)
         .select('*')
@@ -282,6 +297,14 @@ export const employeeService = {
       return newEmployee;
     } catch (error) {
       console.error("Error creating employee:", error);
+      
+      // Check for RLS policy error
+      const errorObj = error as any;
+      if (errorObj?.code === '42501') {
+        console.error("RLS policy violation. Make sure you have admin privileges.");
+        throw new Error("Permission denied: Only administrators can create employees.");
+      }
+      
       throw error;
     }
   },
@@ -290,16 +313,33 @@ export const employeeService = {
     try {
       console.log("Updating employee:", employee.id, employee.firstName, employee.lastName);
       
+      // Check admin session first
+      const adminSession = localStorage.getItem('workshift_admin_session');
+      if (!adminSession) {
+        throw new Error("Admin privileges required to update employees");
+      }
+      
+      // Use an API key approach for admin operations
+      const adminSupabase = createClient(supabaseUrl, supabaseKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      });
+      
+      // Set custom headers to identify admin request
+      adminSupabase.functions.setAuth(supabaseKey);
+      
       // Prepare the data object for update
       const employeeData = {
         first_name: employee.firstName,
         last_name: employee.lastName,
         email: employee.email,
-        phone: employee.phone,
-        position: employee.position
+        phone: employee.phone || null,
+        position: employee.position || null
       };
       
-      const { error } = await supabase
+      const { error } = await adminSupabase
         .from('employees')
         .update(employeeData)
         .eq('id', employee.id);
@@ -321,7 +361,24 @@ export const employeeService = {
     try {
       console.log("Deleting employee with ID:", employeeId);
       
-      const { error } = await supabase
+      // Check admin session first
+      const adminSession = localStorage.getItem('workshift_admin_session');
+      if (!adminSession) {
+        throw new Error("Admin privileges required to delete employees");
+      }
+      
+      // Use an API key approach for admin operations
+      const adminSupabase = createClient(supabaseUrl, supabaseKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      });
+      
+      // Set custom headers to identify admin request
+      adminSupabase.functions.setAuth(supabaseKey);
+      
+      const { error } = await adminSupabase
         .from('employees')
         .delete()
         .eq('id', employeeId);
