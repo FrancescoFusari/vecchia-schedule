@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { EmployeeTable } from "@/components/Employees/EmployeeTable";
 import { EmployeeModal } from "@/components/Employees/EmployeeModal";
@@ -79,7 +80,11 @@ const Dashboard = () => {
         const start = startOfMonth(currentMonth);
         const end = endOfMonth(currentMonth);
         
-        const shiftData = await shiftService.getShiftsByDateRange(start, end);
+        // Fix #1: Change getShiftsByDateRange to getShifts
+        const shiftData = await shiftService.getShifts(
+          start.toISOString().split('T')[0], // Format as YYYY-MM-DD string
+          end.toISOString().split('T')[0]    // Format as YYYY-MM-DD string
+        );
         setShifts(shiftData);
       } catch (error) {
         console.error("Error fetching shifts:", error);
@@ -214,7 +219,7 @@ const Dashboard = () => {
             new Date(shift.date) <= weekEnd
         );
         
-        const totalHours = employeeShifts.reduce((sum, shift) => sum + parseFloat(shift.duration), 0);
+        const totalHours = employeeShifts.reduce((sum, shift) => sum + parseFloat(shift.duration.toString()), 0);
         return {
           weekStart,
           weekEnd,
