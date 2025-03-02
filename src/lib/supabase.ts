@@ -472,8 +472,9 @@ export const shiftService = {
       
       console.log("Creating shift with data:", shiftData);
       
-      // Use supabase client for the insertion
-      const { data, error } = await supabase
+      // Use adminClient instead of supabase for admin operations
+      // This ensures we bypass RLS policies properly
+      const { data, error } = await adminClient
         .from('shifts')
         .insert(shiftData)
         .select()
@@ -530,8 +531,8 @@ export const shiftService = {
         notes: shift.notes || null
       };
       
-      // Use supabase client for the update
-      const { error } = await supabase
+      // Use adminClient instead of supabase
+      const { error } = await adminClient
         .from('shifts')
         .update(shiftData)
         .eq('id', shift.id);
@@ -560,8 +561,8 @@ export const shiftService = {
         throw new Error("Admin privileges required to delete shifts");
       }
       
-      // Use supabase client for the deletion
-      const { error } = await supabase
+      // Use adminClient instead of supabase
+      const { error } = await adminClient
         .from('shifts')
         .delete()
         .eq('id', shiftId);
