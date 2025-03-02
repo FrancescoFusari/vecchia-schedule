@@ -1,12 +1,5 @@
-
-import { createClient } from '@supabase/supabase-js';
 import { Employee, Shift, User, Role } from './types';
-
-// Initialize the Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { supabase } from '@/integrations/supabase/client';
 
 // Authentication functions
 export const authService = {
