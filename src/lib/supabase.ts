@@ -9,45 +9,86 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Authentication functions
 export const authService = {
-  signIn: async (email: string, password: string) => {
-    console.log("Auth service: signing in with", email);
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+  // Sign in with username and password
+  signIn: async (username: string, password: string) => {
+    console.log("Auth service: signing in with username:", username);
     
-    console.log("Auth response:", data, error);
-    
-    if (error) {
-      console.error("Auth error:", error);
-      throw error;
-    }
-    
-    // Get user profile from the profiles table
-    if (data.user) {
-      console.log("Fetching user profile for", data.user.id);
-      const { data: profileData, error: profileError } = await supabase
+    // First, check if it's the admin
+    if (username.toLowerCase() === "admin" && password === "juventus96") {
+      // Special admin login
+      const { data: existingAdmin, error: adminCheckError } = await supabase
         .from('profiles')
-        .select('*')
-        .eq('id', data.user.id)
+        .select('id')
+        .eq('username', 'Admin')
         .single();
       
-      console.log("Profile data:", profileData, profileError);
-      
-      if (profileError) {
-        console.error("Profile fetch error:", profileError);
+      if (adminCheckError && adminCheckError.code !== 'PGRST116') {
+        console.error("Error checking for admin:", adminCheckError);
+        throw adminCheckError;
       }
       
-      if (profileData) {
+      // If admin doesn't exist, create one
+      if (!existingAdmin) {
+        // Create admin user in auth
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: `admin_${Date.now()}@example.com`,
+          password: password,
+          options: {
+            data: {
+              firstName: "Admin",
+              lastName: "",
+              role: "admin",
+              username: "Admin"
+            }
+          }
+        });
+        
+        if (authError) {
+          console.error("Admin creation error:", authError);
+          throw authError;
+        }
+        
+        // Wait a moment for the trigger to create the profile
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Return admin data
         return {
           data: {
             user: {
-              id: data.user.id,
-              email: data.user.email || '',
+              id: authData.user?.id,
+              email: authData.user?.email,
               user_metadata: {
-                role: profileData.role as Role,
-                firstName: profileData.first_name,
-                lastName: profileData.last_name
+                role: "admin",
+                firstName: "Admin",
+                lastName: "",
+                username: "Admin"
+              }
+            }
+          },
+          error: null
+        };
+      } else {
+        // Admin exists, sign in normally with a temp email format
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: `admin_account@example.com`,
+          password: password,
+        });
+        
+        if (error) {
+          console.error("Admin login error:", error);
+          throw error;
+        }
+        
+        return {
+          data: {
+            user: {
+              id: existingAdmin.id,
+              email: "",
+              user_metadata: {
+                role: "admin",
+                firstName: "Admin",
+                lastName: "",
+                username: "Admin"
               }
             }
           },
@@ -56,7 +97,95 @@ export const authService = {
       }
     }
     
-    return { data, error: null };
+    // Regular user sign in
+    // First try to find if the user exists by username
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('username', username)
+      .single();
+    
+    if (profileError && profileError.code !== 'PGRST116') {
+      console.error("Error finding user by username:", profileError);
+      throw profileError;
+    }
+    
+    if (!profileData) {
+      console.error("User not found with username:", username);
+      throw new Error("User not found");
+    }
+    
+    // We found the user, now try to sign in with their ID
+    const { data: authUser, error: authError } = await supabase.auth.signInWithPassword({
+      email: profileData.email || `${username.toLowerCase()}@example.com`,
+      password: password,
+    });
+    
+    if (authError) {
+      console.error("Authentication error:", authError);
+      throw authError;
+    }
+    
+    console.log("Login successful:", profileData);
+    
+    return {
+      data: {
+        user: {
+          id: profileData.id,
+          email: profileData.email || "",
+          user_metadata: {
+            role: profileData.role,
+            firstName: profileData.first_name,
+            lastName: profileData.last_name,
+            username: profileData.username
+          }
+        }
+      },
+      error: null
+    };
+  },
+  
+  // Register a new employee
+  register: async (username: string, firstName: string, lastName: string, password: string) => {
+    console.log("Registering new employee:", username);
+    
+    // Check if username already exists
+    const { data: existingUser, error: checkError } = await supabase
+      .from('profiles')
+      .select('username')
+      .eq('username', username)
+      .single();
+    
+    if (existingUser) {
+      console.error("Username already exists:", username);
+      throw new Error("Username already exists");
+    }
+    
+    // Create the user in auth
+    const { data, error } = await supabase.auth.signUp({
+      email: `${username.toLowerCase()}@example.com`,
+      password: password,
+      options: {
+        data: {
+          firstName,
+          lastName,
+          role: "employee",
+          username
+        }
+      }
+    });
+    
+    if (error) {
+      console.error("Registration error:", error);
+      throw error;
+    }
+    
+    console.log("Registration successful:", data);
+    
+    return {
+      data,
+      error: null
+    };
   },
   
   signOut: async () => {
@@ -79,7 +208,7 @@ export const authService = {
       if (profileData) {
         return {
           id: data.user.id,
-          email: data.user.email || '',
+          username: profileData.username || data.user.email || '',
           role: profileData.role as Role,
           firstName: profileData.first_name,
           lastName: profileData.last_name
