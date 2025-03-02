@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { Employee, Shift, ShiftTemplate, User } from './types';
 
@@ -38,23 +39,21 @@ export const authService = {
       }
 
       // Create the employee profile
-      const { data: profileData, error: profileError } = await supabase
+      const { error: profileError } = await supabase
         .from('employees')
         .insert({
           id: authData.user.id,
           username,
-          firstName,
-          lastName,
-          role: 'employee',
-          createdAt: new Date().toISOString()
-        })
-        .select()
-        .single();
+          first_name: firstName,
+          last_name: lastName,
+          email: `${username}@workshift.local`,
+          created_at: new Date().toISOString()
+        });
 
       if (profileError) throw profileError;
 
       console.log("Employee registered successfully:", authData.user.id);
-      return { user: authData.user, profile: profileData };
+      return { user: authData.user };
     } catch (error) {
       console.error("Error registering employee:", error);
       throw error;
@@ -85,7 +84,7 @@ export const authService = {
       
       if (data.user.user_metadata.role === 'admin') {
         const { data: adminData } = await supabase
-          .from('admins')
+          .from('profiles')
           .select('*')
           .eq('id', data.user.id)
           .single();
@@ -200,10 +199,23 @@ export const employeeService = {
       const { data, error } = await supabase
         .from('employees')
         .select('*')
-        .order('firstName', { ascending: true });
+        .order('first_name', { ascending: true });
         
       if (error) throw error;
-      return data as Employee[];
+      
+      // Map the data to match the Employee type
+      const employees: Employee[] = data.map(emp => ({
+        id: emp.id,
+        firstName: emp.first_name,
+        lastName: emp.last_name,
+        email: emp.email,
+        username: emp.username || emp.email?.split('@')[0] || '',
+        phone: emp.phone || '',
+        position: emp.position || '',
+        createdAt: emp.created_at
+      }));
+      
+      return employees;
     } catch (error) {
       console.error("Error fetching employees:", error);
       return mockData.employees;

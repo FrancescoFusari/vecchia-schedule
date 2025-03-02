@@ -48,11 +48,11 @@ const Register = () => {
         description: "Il tuo account è stato creato con successo. Ora puoi accedere.",
       });
       navigate("/login");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Registration error:", error);
       toast({
         title: "Errore di registrazione",
-        description: "Si è verificato un errore durante la registrazione. Riprova più tardi.",
+        description: error.message || "Si è verificato un errore durante la registrazione. Riprova più tardi.",
         variant: "destructive",
       });
     } finally {
