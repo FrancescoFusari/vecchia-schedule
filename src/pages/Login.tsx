@@ -1,15 +1,14 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Info, Loader2 } from "lucide-react";
+import { Check, Info } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { authService } from "@/lib/supabase";
 
 export default function Login() {
   const { signIn, loading } = useAuth();
@@ -19,102 +18,21 @@ export default function Login() {
   const [email, setEmail] = useState("admin@example.com");
   const [password, setPassword] = useState("password");
   const [error, setError] = useState<string | null>(null);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [creatingDemoAccounts, setCreatingDemoAccounts] = useState(false);
-  
-  // Check if the demo accounts exist and create them if necessary
-  useEffect(() => {
-    const setupDemoAccounts = async () => {
-      try {
-        setCreatingDemoAccounts(true);
-        
-        // Create demo admin account
-        const { error: adminError } = await authService.createUser(
-          "admin@example.com", 
-          "password", 
-          {
-            firstName: "Admin",
-            lastName: "User",
-            role: "admin"
-          }
-        );
-
-        if (adminError && !adminError.message?.includes("already exists")) {
-          console.error("Error creating admin demo account:", adminError);
-          toast({
-            title: "Attenzione",
-            description: "Errore nella creazione dell'account admin demo. Riprova più tardi.",
-            variant: "destructive",
-          });
-        }
-
-        // Create demo employee account
-        const { error: employeeError } = await authService.createUser(
-          "employee@example.com", 
-          "password", 
-          {
-            firstName: "Employee",
-            lastName: "User",
-            role: "employee"
-          }
-        );
-
-        if (employeeError && !employeeError.message?.includes("already exists")) {
-          console.error("Error creating employee demo account:", employeeError);
-          toast({
-            title: "Attenzione",
-            description: "Errore nella creazione dell'account employee demo. Riprova più tardi.",
-            variant: "destructive",
-          });
-        }
-      } catch (err) {
-        console.error("Error setting up demo accounts:", err);
-        toast({
-          title: "Errore",
-          description: "Si è verificato un errore durante la configurazione degli account demo.",
-          variant: "destructive",
-        });
-      } finally {
-        setCreatingDemoAccounts(false);
-      }
-    };
-
-    setupDemoAccounts();
-  }, [toast]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setIsLoggingIn(true);
     
     try {
       await signIn(email, password);
-      toast({
-        title: "Benvenuto",
-        description: "Login effettuato con successo!"
-      });
       navigate("/");
     } catch (err) {
       console.error("Login error:", err);
       if (err instanceof Error) {
-        // Handle specific error messages
-        if (err.message.includes("Email not confirmed")) {
-          setError("L'email non è confermata. Controlla la tua casella di posta.");
-        } else if (err.message.includes("Invalid login credentials")) {
-          setError("Credenziali di accesso non valide. Controlla email e password.");
-        } else {
-          setError(err.message);
-        }
+        setError(err.message);
       } else {
         setError("Si è verificato un errore durante il login. Riprova.");
       }
-      toast({
-        title: "Errore di login",
-        description: "Credenziali non valide o utente non trovato.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoggingIn(false);
     }
   };
   
@@ -160,16 +78,11 @@ export default function Login() {
               </Alert>
             )}
             
-            <Button type="submit" className="w-full" disabled={isLoggingIn || loading || creatingDemoAccounts}>
-              {isLoggingIn ? (
-                <span className="flex items-center justify-center">
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? (
+                <span className="flex items-center">
+                  <span className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-white rounded-full"></span>
                   Accesso in corso...
-                </span>
-              ) : creatingDemoAccounts ? (
-                <span className="flex items-center justify-center">
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Preparazione account demo...
                 </span>
               ) : (
                 "Accedi"

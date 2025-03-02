@@ -1,26 +1,38 @@
 
-import { Shift } from "@/lib/types";
+import { Shift, Employee } from "@/lib/types";
+import { cn, formatEmployeeName } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ShiftItemProps {
   shift: Shift;
-  employeeName: string;
+  employee: Employee;
   onClick?: () => void;
-  isClickable?: boolean;
 }
 
-export function ShiftItem({ shift, employeeName, onClick, isClickable }: ShiftItemProps) {
+export function ShiftItem({ shift, employee, onClick }: ShiftItemProps) {
+  const { isAdmin } = useAuth();
+  const duration = shift.duration;
+  
+  // Choose color based on shift duration
+  let bgColor = "bg-blue-100 text-blue-800";
+  if (duration > 8) {
+    bgColor = "bg-purple-100 text-purple-800";
+  } else if (duration > 6) {
+    bgColor = "bg-indigo-100 text-indigo-800";
+  } else if (duration <= 4) {
+    bgColor = "bg-green-100 text-green-800";
+  }
+  
   return (
     <div
-      className={`text-xs p-1 rounded bg-gray-100 border border-gray-200 
-      ${isClickable ? "cursor-pointer hover:bg-gray-200" : ""}`}
-      onClick={onClick}
+      onClick={isAdmin() ? onClick : undefined}
+      className={cn(
+        "shift-item px-2 py-1 mb-1 rounded-md text-xs font-medium truncate cursor-default",
+        bgColor,
+        isAdmin() && "hover:cursor-pointer"
+      )}
     >
-      <div className="font-medium text-gray-900 truncate">{employeeName}</div>
-      <div className="text-gray-600">
-        {shift.startTime} - {shift.endTime}
-      </div>
+      {formatEmployeeName(employee.firstName, employee.lastName)} {shift.startTime}-{shift.endTime}
     </div>
   );
 }
-
-export default ShiftItem;

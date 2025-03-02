@@ -35,7 +35,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     // Set up auth state listener
     const { data } = authService.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event, session);
       if (event === "SIGNED_IN" || event === "USER_UPDATED") {
         const currentUser = await authService.getCurrentUser();
         setUser(currentUser);
@@ -53,35 +52,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
-      console.log("Attempting to sign in with:", email);
       const { data, error } = await authService.signIn(email, password);
       
-      if (error) {
-        console.error("Sign in error:", error);
-        throw error;
-      }
+      if (error) throw error;
       
       if (data && data.user) {
-        console.log("Sign in successful, user data:", data.user);
         const userData: User = {
           id: data.user.id,
           email: data.user.email,
-          role: data.user.user_metadata?.role as Role || 'employee',
-          firstName: data.user.user_metadata?.firstName || '',
-          lastName: data.user.user_metadata?.lastName || ''
+          role: data.user.user_metadata.role as Role,
+          firstName: data.user.user_metadata.firstName,
+          lastName: data.user.user_metadata.lastName
         };
         
         setUser(userData);
         toast({
           title: "Login effettuato",
-          description: `Benvenuto, ${userData.firstName || 'Utente'}!`,
+          description: `Benvenuto, ${userData.firstName}!`,
         });
-      } else {
-        console.error("No user data received after sign in");
-        throw new Error("Credenziali non valide o utente non trovato");
       }
     } catch (error) {
-      console.error("Error during sign in process:", error);
+      console.error("Error signing in:", error);
       toast({
         title: "Errore di login",
         description: "Credenziali non valide. Riprova.",

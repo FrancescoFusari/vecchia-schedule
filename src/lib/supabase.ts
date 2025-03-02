@@ -1,123 +1,63 @@
-
 import { Employee, Shift, User, Role } from './types';
 import { supabase } from '@/integrations/supabase/client';
 
-class AuthService {
-  constructor() {}
-
-  async createUser(email: string, password: string, userData: {firstName: string, lastName: string, role: 'admin' | 'employee'}) {
-    try {
-      // First check if user already exists
-      const { data: existingUsers } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', email)
-        .maybeSingle();
-
-      // If user already exists, just return success
-      if (existingUsers) {
-        return { data: existingUsers, error: null };
-      }
-
-      // For direct usage without email confirmation, we need to use the service role
-      // which we'll handle through a serverless function
-      const { data, error } = await fetch('/api/create-demo-user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-          userData
-        }),
-      }).then(res => res.json());
-
-      return { data, error };
-    } catch (error) {
-      console.error("Error creating user:", error);
-      return { data: null, error: error as any };
-    }
-  }
-
-  async signIn(email: string, password: string) {
-    console.log("Attempting to sign in with:", email);
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      
-      if (error) {
-        console.error("Supabase auth error:", error);
-        throw error;
-      }
-      
-      // Get user profile from the profiles table
-      if (data.user) {
-        console.log("User authenticated, fetching profile");
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.user.id)
-          .single();
-        
-        if (profileError) {
-          console.error("Error fetching profile:", profileError);
-        }
-        
-        if (profileData) {
-          console.log("Profile data found:", profileData);
-          return {
-            data: {
-              user: {
-                id: data.user.id,
-                email: data.user.email || '',
-                user_metadata: {
-                  role: profileData.role as Role,
-                  firstName: profileData.first_name,
-                  lastName: profileData.last_name
-                }
-              }
-            },
-            error: null
-          };
-        } else {
-          console.log("No profile found, using auth user data only");
-        }
-      }
-      
-      return { data, error: null };
-    } catch (error) {
-      console.error("Auth service error:", error);
-      return { data: null, error };
-    }
-  }
-
-  signOut() {
-    return supabase.auth.signOut();
-  }
-
-  onAuthStateChange(callback: (event: any, session: any) => void) {
-    return supabase.auth.onAuthStateChange(callback);
-  }
-
-  async getCurrentUser() {
-    const { data } = await supabase.auth.getUser();
-    if (data?.user) {
-      console.log("Current user found:", data.user);
-      const { data: profileData, error } = await supabase
+// Authentication functions
+export const authService = {
+  signIn: async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    
+    if (error) throw error;
+    
+    // Get user profile from the profiles table
+    if (data.user) {
+      const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', data.user.id)
         .single();
       
-      if (error) {
-        console.error("Error fetching profile:", error);
+      if (profileData) {
+        return {
+          data: {
+            user: {
+              id: data.user.id,
+              email: data.user.email || '',
+              user_metadata: {
+                role: profileData.role as Role,
+                firstName: profileData.first_name,
+                lastName: profileData.last_name
+              }
+            }
+          },
+          error: null
+        };
       }
+    }
+    
+    return { data, error: null };
+  },
+  
+  signOut: async () => {
+    return await supabase.auth.signOut();
+  },
+  
+  onAuthStateChange: (callback: (event: any, session: any) => void) => {
+    return supabase.auth.onAuthStateChange(callback);
+  },
+  
+  getCurrentUser: async () => {
+    const { data } = await supabase.auth.getUser();
+    if (data?.user) {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
       
       if (profileData) {
-        console.log("Profile data found:", profileData);
         return {
           id: data.user.id,
           email: data.user.email || '',
@@ -125,24 +65,13 @@ class AuthService {
           firstName: profileData.first_name,
           lastName: profileData.last_name
         };
-      } else {
-        console.log("No profile found for current user");
-        // Fallback to metadata if no profile
-        return {
-          id: data.user.id,
-          email: data.user.email || '',
-          role: (data.user.user_metadata?.role as Role) || 'employee',
-          firstName: data.user.user_metadata?.firstName || '',
-          lastName: data.user.user_metadata?.lastName || ''
-        };
       }
     }
     return null;
   }
-}
+};
 
-export const authService = new AuthService();
-
+// Data service for employees
 export const employeeService = {
   getAll: async (): Promise<Employee[]> => {
     const { data, error } = await supabase
@@ -226,6 +155,7 @@ export const employeeService = {
   }
 };
 
+// Data service for shifts
 export const shiftService = {
   getAll: async (): Promise<Shift[]> => {
     const { data, error } = await supabase
@@ -339,6 +269,7 @@ export const shiftService = {
   }
 };
 
+// Export mock data for fallback or development purposes
 export const mockData = {
   employees: [
     { id: "1", firstName: "Francesco", lastName: "R", email: "francesco.r@example.com", phone: "+39 123 456 7890", position: "Cameriere", createdAt: "2023-01-01" },
@@ -350,18 +281,25 @@ export const mockData = {
     { id: "7", firstName: "Wojtek", lastName: "K", email: "wojtek@example.com", phone: "+39 123 456 7896", position: "Cameriere", createdAt: "2023-01-06" }
   ],
   
+  // Generate some shifts for February 2024 based on the image
   shifts: [
+    // Feb 1 (Saturday)
     { id: "s1", employeeId: "1", date: "2024-02-01", startTime: "17:00", endTime: "23:30", duration: 6.5, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
     { id: "s2", employeeId: "2", date: "2024-02-01", startTime: "12:00", endTime: "23:30", duration: 11.5, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
     { id: "s3", employeeId: "3", date: "2024-02-01", startTime: "16:00", endTime: "23:30", duration: 7.5, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
     { id: "s4", employeeId: "4", date: "2024-02-01", startTime: "12:00", endTime: "23:30", duration: 11.5, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
     
+    // Feb 2 (Sunday)
     { id: "s5", employeeId: "2", date: "2024-02-02", startTime: "17:00", endTime: "23:00", duration: 6, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
     { id: "s6", employeeId: "3", date: "2024-02-02", startTime: "12:00", endTime: "23:00", duration: 11, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
     { id: "s7", employeeId: "6", date: "2024-02-02", startTime: "12:00", endTime: "20:00", duration: 8, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
     
+    // More shifts for week 1
     { id: "s8", employeeId: "1", date: "2024-02-03", startTime: "17:00", endTime: "23:00", duration: 6, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
     { id: "s9", employeeId: "2", date: "2024-02-03", startTime: "17:00", endTime: "23:00", duration: 6, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
-    { id: "s10", employeeId: "3", date: "2024-02-03", startTime: "12:00", endTime: "23:00", duration: 11, createdAt: "2024-01-15", updatedAt: "2024-01-15" }
+    { id: "s10", employeeId: "3", date: "2024-02-03", startTime: "12:00", endTime: "23:00", duration: 11, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
+    
+    // And many more shifts... (in a real app, these would come from Supabase)
+    // For now this is just sample data to demonstrate the UI
   ]
 };
