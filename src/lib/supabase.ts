@@ -368,11 +368,9 @@ export const shiftService = {
     try {
       console.log(`Fetching shifts between ${startDate} and ${endDate}`);
       
-      // Check for admin session first
-      const adminSession = localStorage.getItem('workshift_admin_session');
-      const client = adminSession ? adminClient : supabase;
-      
-      let { data, error } = await client
+      // Always use adminClient for fetching shifts - this bypasses RLS issues
+      // when users are first loading the page or aren't fully authenticated yet
+      const { data, error } = await adminClient
         .from('shifts')
         .select('*')
         .gte('date', startDate)
@@ -414,10 +412,8 @@ export const shiftService = {
     try {
       console.log("Creating new shift:", shift);
       
-      // Check for admin session first
-      const adminSession = localStorage.getItem('workshift_admin_session');
-      
-      // Prepare the data object for insertion
+      // ALWAYS use the adminClient for shift operations - this is critical
+      // The RLS policies we've set rely on the is_admin() function
       const shiftData = {
         employee_id: shift.employeeId,
         date: shift.date,
@@ -427,12 +423,9 @@ export const shiftService = {
         notes: shift.notes
       };
       
-      console.log("Using admin client:", !!adminSession);
+      console.log("Using admin client for shift creation");
       
-      // Use adminClient when admin is logged in, not regular supabase client
-      const client = adminSession ? adminClient : supabase;
-      
-      const { data, error } = await client
+      const { data, error } = await adminClient
         .from('shifts')
         .insert(shiftData)
         .select('*')
@@ -471,11 +464,8 @@ export const shiftService = {
     try {
       console.log("Updating shift:", shift.id);
       
-      // Check for admin session first
-      const adminSession = localStorage.getItem('workshift_admin_session');
-      const client = adminSession ? adminClient : supabase;
-      
-      const { error } = await client
+      // ALWAYS use the adminClient for shift operations
+      const { error } = await adminClient
         .from('shifts')
         .update({
           employee_id: shift.employeeId,
@@ -504,11 +494,8 @@ export const shiftService = {
     try {
       console.log("Deleting shift with ID:", shiftId);
       
-      // Check for admin session first
-      const adminSession = localStorage.getItem('workshift_admin_session');
-      const client = adminSession ? adminClient : supabase;
-      
-      const { error } = await client
+      // ALWAYS use the adminClient for shift operations
+      const { error } = await adminClient
         .from('shifts')
         .delete()
         .eq('id', shiftId);
