@@ -13,6 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import { shiftService } from "@/lib/supabase";
 import { v4 as uuidv4 } from "uuid";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
 interface ShiftAssignmentModalProps {
   isOpen: boolean;
@@ -154,30 +155,62 @@ export const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
           <TabsContent value="weekday" className="space-y-4 mt-2">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {dayLabels.map((day, index) => (
-                <div className="flex items-center space-x-2" key={index}>
+                <div 
+                  className={cn(
+                    "flex items-center space-x-2 p-2 rounded-md transition-colors",
+                    weekdays.includes(index) ? "bg-primary/10" : ""
+                  )} 
+                  key={index}
+                >
                   <Checkbox 
                     id={`day-${index}`} 
                     checked={weekdays.includes(index)}
                     onCheckedChange={() => handleWeekdayToggle(index)}
                   />
-                  <Label htmlFor={`day-${index}`}>{day}</Label>
+                  <Label 
+                    htmlFor={`day-${index}`}
+                    className={cn(
+                      weekdays.includes(index) ? "font-medium text-primary" : ""
+                    )}
+                  >
+                    {day}
+                  </Label>
                 </div>
               ))}
             </div>
           </TabsContent>
           
           <TabsContent value="specific">
-            <Calendar
-              mode="multiple"
-              selected={selectedDays}
-              onSelect={setSelectedDays as any}
-              className="rounded-md border my-2"
-              locale={it}
-              month={currentMonth}
-              captionLayout="dropdown-buttons"
-              fromMonth={startOfMonth(currentMonth)}
-              toMonth={endOfMonth(currentMonth)}
-            />
+            <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm my-2">
+              <Calendar
+                mode="multiple"
+                selected={selectedDays}
+                onSelect={setSelectedDays as any}
+                className="w-full"
+                locale={it}
+                month={currentMonth}
+                captionLayout="dropdown-buttons"
+                fromMonth={startOfMonth(currentMonth)}
+                toMonth={endOfMonth(currentMonth)}
+                classNames={{
+                  day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+                  day_today: "bg-accent text-accent-foreground font-bold",
+                  day: cn(
+                    "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-primary/10 focus:bg-primary/10 transition-colors"
+                  ),
+                  caption: "flex justify-center pt-1 relative items-center mb-3",
+                  caption_label: "text-base font-medium text-gray-800",
+                  head_cell: "text-muted-foreground rounded-md w-9 font-medium text-[0.8rem] uppercase",
+                  cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-primary/5 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                  month: "space-y-4 rounded-lg"
+                }}
+              />
+            </div>
+            {selectedDays.length > 0 && (
+              <div className="mt-2 p-2 bg-muted rounded-md text-sm">
+                <p className="font-medium">Giorni selezionati: {selectedDays.length}</p>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
         
@@ -209,8 +242,12 @@ export const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
           <Button 
             onClick={handleSaveAssignments} 
             disabled={(!selectedDays.length && !weekdays.length) || !selectedTemplate || isSubmitting}
+            className={cn(
+              "transition-all duration-200",
+              (selectedDays.length > 0 || weekdays.length > 0) && selectedTemplate ? "bg-primary hover:bg-primary/90" : ""
+            )}
           >
-            {isSubmitting ? "Assegnazione..." : "Assegna turni"}
+            {isSubmitting ? "Assegnazione..." : `Assegna ${selectedDays.length + weekdays.length > 0 ? (selectedDays.length + weekdays.length) : ""} turni`}
           </Button>
         </DialogFooter>
       </DialogContent>
