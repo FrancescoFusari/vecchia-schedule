@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { CalendarHeader } from "./CalendarHeader";
 import { DAYS_OF_WEEK } from "@/lib/constants";
@@ -10,6 +11,8 @@ import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { HoursSummary } from "../Reports/HoursSummary";
+import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronUp, BarChart } from "lucide-react";
 
 interface WeeklyCalendarProps {
   onViewChange?: (isWeekView: boolean) => void;
@@ -41,6 +44,8 @@ export function WeeklyCalendar({
     start: new Date(),
     end: new Date()
   });
+  // New state for expanded week analysis
+  const [expandedWeek, setExpandedWeek] = useState<boolean>(false);
 
   // Check authentication
   useEffect(() => {
@@ -192,6 +197,10 @@ export function WeeklyCalendar({
     }
   };
 
+  const toggleExpandedWeek = () => {
+    setExpandedWeek(!expandedWeek);
+  };
+
   const getShiftsByDayAndTime = () => {
     const shiftsByDay: Record<number, Record<string, Shift[]>> = {};
 
@@ -285,9 +294,34 @@ export function WeeklyCalendar({
       <CalendarHeader date={currentDate} onPrevMonth={handlePrevWeek} onNextMonth={handleNextWeek} onToday={handleToday} isWeekView={true} onViewChange={handleViewToggle} />
       
       {/* Admin information banner */}
-      {isAdmin() && (
+      {isAdmin && (
         <div className="bg-amber-50 border border-amber-200 p-3 rounded-md text-amber-800 text-sm">
           <p>Sei in modalità amministratore. Puoi aggiungere o modificare i turni cliccando su una cella del calendario.</p>
+        </div>
+      )}
+      
+      {/* Week summary toggle button */}
+      <div className="flex justify-start">
+        <Button 
+          onClick={toggleExpandedWeek} 
+          variant="outline" 
+          size="sm"
+          className="gap-1 bg-primary/5 border-primary/20 hover:bg-primary/10"
+        >
+          <BarChart className="h-4 w-4" />
+          Riepilogo Ore Settimanali
+          {expandedWeek ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </Button>
+      </div>
+      
+      {/* Expanded week summary */}
+      {expandedWeek && (
+        <div className="animate-in slide-in-from-top-5 duration-300">
+          <HoursSummary 
+            shifts={shifts} 
+            employees={employees} 
+            currentDate={currentDate} 
+          />
         </div>
       )}
       
@@ -482,8 +516,6 @@ export function WeeklyCalendar({
           )}
         </>
       )}
-      
-      {/* Hours summary */}
       
       {/* Shift modal for adding/editing shifts */}
       {(isAddingShift || selectedShift) && (

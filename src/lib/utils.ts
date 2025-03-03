@@ -10,6 +10,8 @@ export function cn(...inputs: ClassValue[]) {
 
 // Format a date as YYYY-MM-DD in a timezone-safe way
 export function formatDate(date: Date): string {
+  if (!date) return '';
+  
   // Use this method for timezone-safe date formatting without changing the date
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -120,6 +122,10 @@ function isSameDay(date1: Date, date2: Date): boolean {
 
 // Get week start and end dates
 export function getWeekDates(date: Date): { start: Date; end: Date } {
+  if (!date) {
+    date = new Date(); // Default to current date if null/undefined
+  }
+  
   const day = date.getDay();
   // Adjust for Monday as first day of week (0 is Monday in our system)
   const diff = day === 0 ? 6 : day - 1;
