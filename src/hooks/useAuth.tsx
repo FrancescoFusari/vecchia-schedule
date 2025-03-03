@@ -1,7 +1,9 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { authService, supabase } from "@/lib/supabase";
 import { User } from "@/lib/types";
 import { toast } from "@/hooks/use-toast";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface AuthContextType {
   user: User | null;
@@ -16,7 +18,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const location = useLocation();
 
+  // Protected routes that require authentication
+  const protectedRoutes = ['/', '/dashboard', '/profile', '/employees', '/templates', '/communications'];
+  
   useEffect(() => {
     const checkSession = async () => {
       try {
@@ -48,6 +55,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Also clear admin session on sign out
         localStorage.removeItem('workshift_admin_session');
         setUser(null);
+        
+        // Redirect to login page when signed out
+        navigate('/login');
       } else if (session?.user && event === 'SIGNED_IN') {
         authService.getCurrentUser().then(userData => {
           setUser(userData);
@@ -58,7 +68,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
+
+  // Check if the current route requires authentication and redirect if needed
+  useEffect(() => {
+    if (!loading) {
+      const isProtectedRoute = protectedRoutes.some(route => 
+        location.pathname === route || 
+        (route !== '/' && location.pathname.startsWith(route))
+      );
+      
+      if (isProtectedRoute && !user) {
+        console.log('Unauthorized access to protected route, redirecting to login');
+        navigate('/login');
+      }
+    }
+  }, [user, loading, location.pathname, navigate]);
 
   const signIn = async (username: string, password: string) => {
     try {
@@ -101,6 +126,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Logout effettuato",
         description: "Hai effettuato il logout con successo.",
       });
+      
+      // Explicitly navigate to login page after sign out
+      navigate('/login');
     } catch (error) {
       console.error("Error signing out:", error);
       toast({

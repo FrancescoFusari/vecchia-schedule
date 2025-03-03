@@ -1,12 +1,12 @@
 
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, Users, User, MessageSquare } from "lucide-react";
+import { CalendarDays, Users, User, MessageSquare, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export function Navbar() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, signOut } = useAuth();
   const location = useLocation();
   const isMobile = useIsMobile();
 
@@ -21,6 +21,10 @@ export function Navbar() {
   
   // Show profile for regular users
   const showProfile = !showDashboard;
+
+  const handleLogout = () => {
+    signOut();
+  };
 
   return (
     <nav className={`bg-white shadow-sm ${isMobile ? 'fixed bottom-0 left-0 right-0 z-50 border-t' : 'border-b'}`}>
@@ -86,6 +90,19 @@ export function Navbar() {
                   <span className={isMobile ? "text-[10px] leading-tight" : ""}>Profilo</span>
                 </Button>
               </Link>
+            )}
+            
+            {/* Add logout button if not on mobile */}
+            {!isMobile && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="flex items-center text-red-500 hover:bg-red-50 hover:text-red-600 ml-2"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Logout</span>
+              </Button>
             )}
           </div>
         </div>
