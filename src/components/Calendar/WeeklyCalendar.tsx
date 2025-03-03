@@ -11,7 +11,8 @@ import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { HoursSummary } from "../Reports/HoursSummary";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, BarChart } from "lucide-react";
+import { ChevronDown, ChevronUp, BarChart, ChevronLeft, ChevronRight } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface WeeklyCalendarProps {
   onViewChange?: (isWeekView: boolean) => void;
@@ -46,6 +47,8 @@ export function WeeklyCalendar({
   const [expandedWeek, setExpandedWeek] = useState<boolean>(false);
   const touchStartX = useRef<number | null>(null);
   const [isSwiping, setIsSwiping] = useState(false);
+  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -109,9 +112,25 @@ export function WeeklyCalendar({
     const threshold = 50;
 
     if (diff > threshold) {
-      handleNextWeek();
+      setSwipeDirection('left');
+      setIsTransitioning(true);
+      
+      setTimeout(() => {
+        handleNextWeek();
+        setIsTransitioning(false);
+        setSwipeDirection(null);
+      }, 300);
     } else if (diff < -threshold) {
-      handlePrevWeek();
+      setSwipeDirection('right');
+      setIsTransitioning(true);
+      
+      setTimeout(() => {
+        handlePrevWeek();
+        setIsTransitioning(false);
+        setSwipeDirection(null);
+      }, 300);
+    } else {
+      setSwipeDirection(null);
     }
     
     touchStartX.current = null;
