@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { CalendarHeader } from "./CalendarHeader";
 import { DAYS_OF_WEEK } from "@/lib/constants";
@@ -44,10 +43,8 @@ export function WeeklyCalendar({
     start: new Date(),
     end: new Date()
   });
-  // New state for expanded week analysis
   const [expandedWeek, setExpandedWeek] = useState<boolean>(false);
 
-  // Check authentication
   useEffect(() => {
     if (!loading && !user) {
       toast({
@@ -59,24 +56,19 @@ export function WeeklyCalendar({
     }
   }, [user, loading, navigate]);
 
-  // Load data
   useEffect(() => {
-    // Don't fetch data if not authenticated
     if (!user) return;
     const fetchData = async () => {
       try {
         setIsLoading(true);
         setHasError(false);
 
-        // Get employees
         const employeeData = await employeeService.getEmployees();
         setEmployees(employeeData);
 
-        // Get week dates
         const weekRange = getWeekDates(currentDate);
         setWeekDates(weekRange);
 
-        // Format dates for API
         const formattedStartDate = formatDate(weekRange.start);
         const formattedEndDate = formatDate(weekRange.end);
         console.log(`Fetching shifts from ${formattedStartDate} to ${formattedEndDate}`);
@@ -137,7 +129,6 @@ export function WeeklyCalendar({
   const handleSaveShift = async (shift: Shift) => {
     try {
       if (selectedShift) {
-        // Update existing shift
         const updatedShift = await shiftService.updateShift(shift);
         setShifts(prev => prev.map(s => s.id === updatedShift.id ? updatedShift : s));
         toast({
@@ -145,7 +136,6 @@ export function WeeklyCalendar({
           description: "Il turno è stato aggiornato con successo."
         });
       } else {
-        // Add new shift
         const newShift = await shiftService.createShift(shift);
         setShifts(prev => [...prev, newShift]);
         toast({
@@ -204,7 +194,6 @@ export function WeeklyCalendar({
   const getShiftsByDayAndTime = () => {
     const shiftsByDay: Record<number, Record<string, Shift[]>> = {};
 
-    // Initialize empty arrays for each day and shift time
     for (let day = 0; day < 7; day++) {
       shiftsByDay[day] = {};
       getUniqueShiftTimes().forEach(time => {
@@ -212,10 +201,8 @@ export function WeeklyCalendar({
       });
     }
 
-    // Populate with shifts
     shifts.forEach(shift => {
       const shiftDate = new Date(shift.date);
-      // Get day of week (0 = Monday, ..., 6 = Sunday)
       let dayOfWeek = shiftDate.getDay();
       dayOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
       if (shiftsByDay[dayOfWeek][shift.startTime]) {
@@ -225,25 +212,20 @@ export function WeeklyCalendar({
     return shiftsByDay;
   };
 
-  // Get shifts grouped by day only (for mobile view)
   const getShiftsByDay = () => {
     const shiftsByDay: Record<number, Shift[]> = {};
 
-    // Initialize empty arrays for each day
     for (let day = 0; day < 7; day++) {
       shiftsByDay[day] = [];
     }
 
-    // Populate with shifts
     shifts.forEach(shift => {
       const shiftDate = new Date(shift.date);
-      // Get day of week (0 = Monday, ..., 6 = Sunday)
       let dayOfWeek = shiftDate.getDay();
       dayOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
       shiftsByDay[dayOfWeek].push(shift);
     });
 
-    // Sort shifts by start time
     for (let day = 0; day < 7; day++) {
       shiftsByDay[day].sort((a, b) => {
         return a.startTime.localeCompare(b.startTime);
@@ -256,7 +238,6 @@ export function WeeklyCalendar({
     return employees.find(emp => emp.id === id);
   };
 
-  // Get formatted dates for the week
   const getFormattedDates = () => {
     const dates = [];
     const start = new Date(weekDates.start);
@@ -276,45 +257,41 @@ export function WeeklyCalendar({
   const shiftsByDayAndTime = getShiftsByDayAndTime();
   const shiftsByDay = getShiftsByDay();
 
-  // If loading auth, show loading indicator
   if (loading) {
     return <div className="flex justify-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>;
   }
 
-  // If not authenticated, don't render anything (will redirect in effect)
   if (!user) {
     return null;
   }
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Calendar header with navigation */}
       <CalendarHeader date={currentDate} onPrevMonth={handlePrevWeek} onNextMonth={handleNextWeek} onToday={handleToday} isWeekView={true} onViewChange={handleViewToggle} />
       
-      {/* Admin information banner */}
-      {isAdmin && (
+      {isAdmin() && (
         <div className="bg-amber-50 border border-amber-200 p-3 rounded-md text-amber-800 text-sm">
           <p>Sei in modalità amministratore. Puoi aggiungere o modificare i turni cliccando su una cella del calendario.</p>
         </div>
       )}
       
-      {/* Week summary toggle button */}
-      <div className="flex justify-start">
-        <Button 
-          onClick={toggleExpandedWeek} 
-          variant="outline" 
-          size="sm"
-          className="gap-1 bg-primary/5 border-primary/20 hover:bg-primary/10"
-        >
-          <BarChart className="h-4 w-4" />
-          Riepilogo Ore Settimanali
-          {expandedWeek ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </Button>
-      </div>
+      {isAdmin() && (
+        <div className="flex justify-start">
+          <Button 
+            onClick={toggleExpandedWeek} 
+            variant="outline" 
+            size="sm"
+            className="gap-1 bg-primary/5 border-primary/20 hover:bg-primary/10"
+          >
+            <BarChart className="h-4 w-4" />
+            Riepilogo Ore Settimanali
+            {expandedWeek ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
+        </div>
+      )}
       
-      {/* Expanded week summary */}
       {expandedWeek && (
         <div className="animate-in slide-in-from-top-5 duration-300">
           <HoursSummary 
@@ -325,24 +302,20 @@ export function WeeklyCalendar({
         </div>
       )}
       
-      {/* Error banner */}
       {hasError && (
         <div className="bg-red-50 border border-red-200 p-3 rounded-md text-red-800 text-sm">
           Si è verificato un errore durante il caricamento dei dati. Prova ad aggiornare la pagina.
         </div>
       )}
       
-      {/* Weekly view */}
       {isLoading ? (
         <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
       ) : (
         <>
-          {/* Desktop view - horizontal days, vertical time slots */}
           {!isMobile && (
             <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
-              {/* Day headers */}
               <div className="grid grid-cols-8 border-b border-gray-200">
                 <div className="py-2 text-center font-semibold text-sm border-r border-gray-200">
                   Orario
@@ -360,7 +333,6 @@ export function WeeklyCalendar({
                 ))}
               </div>
               
-              {/* Time slots and shifts */}
               <div className="divide-y divide-gray-200">
                 {getUniqueShiftTimes().length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
@@ -369,14 +341,12 @@ export function WeeklyCalendar({
                 ) : (
                   getUniqueShiftTimes().map(time => (
                     <div key={time} className="grid grid-cols-8">
-                      {/* Time slot */}
                       <div className="p-2 text-xs font-medium text-gray-700 bg-gray-50 border-r border-gray-200 flex items-center justify-center">
                         {formatTime(time)}
                       </div>
                       
-                      {/* Days */}
                       {Array.from({ length: 7 }).map((_, dayIndex) => {
-                        const isWeekend = dayIndex > 4; // Friday and Saturday are weekend
+                        const isWeekend = dayIndex > 4;
                         const shifts = shiftsByDayAndTime[dayIndex][time] || [];
                         return (
                           <div 
@@ -394,14 +364,11 @@ export function WeeklyCalendar({
                                 const employee = getEmployeeById(shift.employeeId);
                                 if (!employee) return null;
 
-                                // Use employee color with fallback
                                 const employeeColor = employee.color || "#9CA3AF";
-
-                                // Generate color styles based on employee color
                                 const customStyle = {
-                                  backgroundColor: `${employeeColor}20`, // 20% opacity
+                                  backgroundColor: `${employeeColor}20`,
                                   color: employeeColor,
-                                  borderColor: `${employeeColor}30` // 30% opacity
+                                  borderColor: `${employeeColor}30`
                                 };
                                 return (
                                   <div 
@@ -430,17 +397,15 @@ export function WeeklyCalendar({
             </div>
           )}
           
-          {/* Mobile view - vertical days */}
           {isMobile && (
             <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200 divide-y divide-gray-200">
               {DAYS_OF_WEEK.map((day, dayIndex) => {
-                const isWeekend = dayIndex > 4; // Friday and Saturday are weekend
+                const isWeekend = dayIndex > 4;
                 const shifts = shiftsByDay[dayIndex] || [];
                 const formattedDate = formattedDates[dayIndex];
                 const isToday = formattedDate.isToday;
                 return (
                   <div key={day} className={`${isWeekend ? "bg-amber-50/30" : ""}`}>
-                    {/* Day header */}
                     <div 
                       className={`px-4 py-3 flex justify-between items-center ${isToday ? "bg-primary/10" : ""}`} 
                       onClick={() => {
@@ -469,7 +434,6 @@ export function WeeklyCalendar({
                       )}
                     </div>
                     
-                    {/* Shifts */}
                     <div className="px-4 py-2 space-y-2">
                       {shifts.length === 0 ? (
                         <div className="text-sm text-gray-500 py-2">Nessun turno</div>
@@ -478,14 +442,11 @@ export function WeeklyCalendar({
                           const employee = getEmployeeById(shift.employeeId);
                           if (!employee) return null;
 
-                          // Use employee color with fallback
                           const employeeColor = employee.color || "#9CA3AF";
-
-                          // Generate color styles based on employee color
                           const customStyle = {
-                            backgroundColor: `${employeeColor}20`, // 20% opacity
+                            backgroundColor: `${employeeColor}20`,
                             color: employeeColor,
-                            borderColor: `${employeeColor}30` // 30% opacity
+                            borderColor: `${employeeColor}30`
                           };
                           return (
                             <div 
@@ -517,7 +478,6 @@ export function WeeklyCalendar({
         </>
       )}
       
-      {/* Shift modal for adding/editing shifts */}
       {(isAddingShift || selectedShift) && (
         <ShiftModal 
           isOpen={isAddingShift || !!selectedShift} 
