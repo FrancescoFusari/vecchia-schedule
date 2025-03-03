@@ -1,7 +1,7 @@
 
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, Users, User } from "lucide-react";
+import { CalendarDays, Users, User, MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -45,6 +45,18 @@ export function Navbar() {
               >
                 <CalendarDays className={isMobile ? "h-4 w-4 mb-1" : "mr-2 h-4 w-4"} />
                 <span className={isMobile ? "text-[10px] leading-tight" : ""}>Calendario</span>
+              </Button>
+            </Link>
+
+            {/* Communications link for all users */}
+            <Link to="/communications">
+              <Button
+                variant={isActive("/communications") ? "default" : "ghost"}
+                size={isMobile ? "mobileNav" : "sm"}
+                className={`flex ${isMobile ? 'flex-col h-auto w-full' : 'items-center'}`}
+              >
+                <MessageSquare className={isMobile ? "h-4 w-4 mb-1" : "mr-2 h-4 w-4"} />
+                <span className={isMobile ? "text-[10px] leading-tight" : ""}>Comunicazioni</span>
               </Button>
             </Link>
 

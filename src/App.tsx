@@ -1,91 +1,48 @@
-
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { TooltipProvider } from "@/components/ui/tooltip";
-
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Calendar from "./pages/Calendar";
-import Dashboard from "./pages/Dashboard";
-import Profile from "./pages/Profile";
-import NotFound from "./pages/NotFound";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { ThemeProvider } from "@/components/ui/theme-provider";
 import { Layout } from "./components/Layout";
+import { Calendar } from "./pages/Calendar";
+import { Dashboard } from "./pages/Dashboard";
+import { Employees } from "./pages/Employees";
+import { Templates } from "./pages/Templates";
+import { Profile } from "./pages/Profile";
+import { Login } from "./pages/Login";
+import { Register } from "./pages/Register";
+import { NotFound } from "./pages/NotFound";
+import { AuthProvider } from "@/hooks/useAuth";
+import { Toaster } from "@/components/ui/toaster";
+
+import Communications from "./pages/Communications";
 
 const queryClient = new QueryClient();
 
-// Protected route component
-const ProtectedRoute = ({ children, adminOnly = false }: { children: JSX.Element, adminOnly?: boolean }) => {
-  const { user, loading, isAdmin } = useAuth();
-  
-  if (loading) {
-    // Show loading state
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-primary">Caricamento...</div>
-      </div>
-    );
-  }
-  
-  if (!user) {
-    // Redirect to login if not authenticated
-    return <Navigate to="/login" replace />;
-  }
-  
-  if (adminOnly && !isAdmin()) {
-    // Redirect to dashboard if not admin
-    return <Navigate to="/" replace />;
-  }
-  
-  return children;
-};
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Layout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Calendar />} />
-              <Route 
-                path="dashboard" 
-                element={
-                  <ProtectedRoute adminOnly>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="profile" 
-                element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                } 
-              />
-            </Route>
-            
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="light">
+        <Router>
+          <AuthProvider>
+            <Routes>
+              <Route path="/" element={<Layout />}>
+                <Route index element={<Calendar />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/employees" element={<Employees />} />
+                <Route path="/templates" element={<Templates />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/communications" element={<Communications />} />
+                <Route path="*" element={<NotFound />} />
+              </Route>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+            </Routes>
+          </AuthProvider>
+        </Router>
         <Toaster />
-        <Sonner />
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;
