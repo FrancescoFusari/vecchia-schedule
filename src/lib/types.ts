@@ -73,3 +73,30 @@ export interface Message {
   createdAt: string;
   readBy: string[];
 }
+
+// New interfaces to fix TypeScript errors
+
+export interface CalendarDay {
+  date: Date;
+  isCurrentMonth: boolean;
+  isToday: boolean;
+  shifts: Shift[];
+}
+
+export interface WeekSummary {
+  employeeId: string;
+  firstName: string;
+  lastName: string;
+  totalHours: number;
+  weekStart: Date;
+  weekEnd: Date;
+}
+
+export interface MonthSummary {
+  employeeId: string;
+  firstName: string;
+  lastName: string;
+  totalHours: number;
+  month: number;
+  year: number;
+}
