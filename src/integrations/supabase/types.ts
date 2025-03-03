@@ -179,6 +179,83 @@ export type Database = {
           },
         ]
       }
+      week_template_shifts: {
+        Row: {
+          created_at: string
+          date: string
+          duration: number
+          employee_id: string
+          end_time: string
+          id: string
+          notes: string | null
+          start_time: string
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          duration: number
+          employee_id: string
+          end_time: string
+          id?: string
+          notes?: string | null
+          start_time: string
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          duration?: number
+          employee_id?: string
+          end_time?: string
+          id?: string
+          notes?: string | null
+          start_time?: string
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "week_template_shifts_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "week_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      week_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          end_date: string
+          id: string
+          name: string
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          end_date: string
+          id?: string
+          name: string
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          end_date?: string
+          id?: string
+          name?: string
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
