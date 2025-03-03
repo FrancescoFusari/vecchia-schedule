@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, TouchEvent } from "react";
+import { useState, useEffect } from "react";
 import { CalendarHeader } from "./CalendarHeader";
 import { DAYS_OF_WEEK } from "@/lib/constants";
 import { formatDate, getWeekDates, formatMonthYear, formatTime } from "@/lib/utils";
@@ -11,8 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { HoursSummary } from "../Reports/HoursSummary";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, BarChart, ChevronLeft, ChevronRight } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { ChevronDown, ChevronUp, BarChart } from "lucide-react";
 
 interface WeeklyCalendarProps {
   onViewChange?: (isWeekView: boolean) => void;
@@ -45,10 +44,6 @@ export function WeeklyCalendar({
     end: new Date()
   });
   const [expandedWeek, setExpandedWeek] = useState<boolean>(false);
-  const touchStartX = useRef<number | null>(null);
-  const [isSwiping, setIsSwiping] = useState(false);
-  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
-  const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -93,49 +88,6 @@ export function WeeklyCalendar({
     };
     fetchData();
   }, [currentDate, user]);
-
-  const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
-    touchStartX.current = e.touches[0].clientX;
-    setIsSwiping(true);
-  };
-
-  const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
-    if (!isSwiping || touchStartX.current === null) return;
-    e.preventDefault();
-  };
-
-  const handleTouchEnd = (e: TouchEvent<HTMLDivElement>) => {
-    if (!isSwiping || touchStartX.current === null) return;
-    
-    const touchEndX = e.changedTouches[0].clientX;
-    const diff = touchStartX.current - touchEndX;
-    const threshold = 50;
-
-    if (diff > threshold) {
-      setSwipeDirection('left');
-      setIsTransitioning(true);
-      
-      setTimeout(() => {
-        handleNextWeek();
-        setIsTransitioning(false);
-        setSwipeDirection(null);
-      }, 300);
-    } else if (diff < -threshold) {
-      setSwipeDirection('right');
-      setIsTransitioning(true);
-      
-      setTimeout(() => {
-        handlePrevWeek();
-        setIsTransitioning(false);
-        setSwipeDirection(null);
-      }, 300);
-    } else {
-      setSwipeDirection(null);
-    }
-    
-    touchStartX.current = null;
-    setIsSwiping(false);
-  };
 
   const handlePrevWeek = () => {
     setCurrentDate(prev => {
@@ -340,7 +292,7 @@ export function WeeklyCalendar({
         </div>
       )}
       
-      {expandedWeek && isAdmin() && (
+      {expandedWeek && (
         <div className="animate-in slide-in-from-top-5 duration-300">
           <HoursSummary 
             shifts={shifts} 
@@ -446,16 +398,7 @@ export function WeeklyCalendar({
           )}
           
           {isMobile && (
-            <div 
-              className="bg-white rounded-lg shadow overflow-hidden border border-gray-200 divide-y divide-gray-200"
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-            >
-              <div className="px-4 py-2 bg-gray-50 flex justify-center items-center text-sm text-gray-500">
-                <span>← Scorri per cambiare settimana →</span>
-              </div>
-              
+            <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200 divide-y divide-gray-200">
               {DAYS_OF_WEEK.map((day, dayIndex) => {
                 const isWeekend = dayIndex > 4;
                 const shifts = shiftsByDay[dayIndex] || [];
