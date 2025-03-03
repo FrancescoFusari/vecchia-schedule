@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { EmployeeTable } from "@/components/Employees/EmployeeTable";
 import { EmployeeModal } from "@/components/Employees/EmployeeModal";
 import { TemplateModal } from "@/components/Shifts/TemplateModal";
+import { ShiftAssignmentModal } from "@/components/Shifts/ShiftAssignmentModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -50,6 +51,9 @@ const Dashboard = () => {
   
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [shifts, setShifts] = useState<Shift[]>([]);
+  
+  const [isShiftAssignmentModalOpen, setIsShiftAssignmentModalOpen] = useState(false);
+  const [employeeForShiftAssignment, setEmployeeForShiftAssignment] = useState<Employee | null>(null);
   
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -119,6 +123,11 @@ const Dashboard = () => {
   const handleEditEmployee = (employee: Employee) => {
     setSelectedEmployee(employee);
     setIsEmployeeModalOpen(true);
+  };
+  
+  const handleEmployeeClick = (employee: Employee) => {
+    setEmployeeForShiftAssignment(employee);
+    setIsShiftAssignmentModalOpen(true);
   };
   
   const handleSaveEmployee = async (employee: Employee) => {
@@ -375,6 +384,7 @@ const Dashboard = () => {
             employees={employees}
             onEdit={handleEditEmployee}
             onDelete={handleDeleteEmployee}
+            onRowClick={handleEmployeeClick}
           />
           
           <EmployeeModal
@@ -383,6 +393,15 @@ const Dashboard = () => {
             employee={selectedEmployee}
             onSave={handleSaveEmployee}
             onDelete={handleDeleteEmployee}
+          />
+          
+          <ShiftAssignmentModal
+            isOpen={isShiftAssignmentModalOpen}
+            onClose={() => setIsShiftAssignmentModalOpen(false)}
+            employee={employeeForShiftAssignment}
+            templates={templates}
+            currentMonth={currentMonth}
+            onShiftsAdded={handleShiftsAdded}
           />
         </TabsContent>
         

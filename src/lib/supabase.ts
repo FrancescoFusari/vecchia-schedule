@@ -641,6 +641,30 @@ export const shiftService = {
       console.error("Error deleting shift:", error);
       throw error;
     }
+  },
+  
+  async createShifts(shifts: Shift[]): Promise<void> {
+    try {
+      // Format shifts for Supabase insert
+      const formattedShifts = shifts.map(shift => ({
+        id: shift.id,
+        employee_id: shift.employeeId,
+        date: shift.date,
+        start_time: shift.startTime,
+        end_time: shift.endTime,
+        duration: shift.duration,
+        notes: shift.notes,
+      }));
+      
+      const { error } = await supabase
+        .from("shifts")
+        .insert(formattedShifts);
+      
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error creating shifts:", error);
+      throw error;
+    }
   }
 };
 
