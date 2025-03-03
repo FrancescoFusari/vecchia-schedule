@@ -1,8 +1,7 @@
 
 import React, { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageList } from "@/components/Communications/MessageList";
 import { NewMessageForm } from "@/components/Communications/NewMessageForm";
@@ -28,10 +27,7 @@ export default function Communications() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Comunicazioni di servizio</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {isAdmin() ? (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
