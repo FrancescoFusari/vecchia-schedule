@@ -9,6 +9,9 @@ import { employeeService, shiftService } from "@/lib/supabase";
 import { ShiftModal } from "../Shifts/ShiftModal";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronUp, BarChart } from "lucide-react";
+import { HoursSummary } from "../Reports/HoursSummary";
 
 interface MonthlyCalendarProps {
   onViewChange?: (isWeekView: boolean) => void;
@@ -27,6 +30,7 @@ export function MonthlyCalendar({ onViewChange }: MonthlyCalendarProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [currentDayOfWeek, setCurrentDayOfWeek] = useState<number | undefined>(undefined);
+  const [expandedMonth, setExpandedMonth] = useState<boolean>(false);
   
   useEffect(() => {
     if (!loading && !user) {
@@ -178,6 +182,10 @@ export function MonthlyCalendar({ onViewChange }: MonthlyCalendarProps) {
     }
   };
   
+  const toggleExpandedMonth = () => {
+    setExpandedMonth(!expandedMonth);
+  };
+  
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -204,6 +212,29 @@ export function MonthlyCalendar({ onViewChange }: MonthlyCalendarProps) {
       {isAdmin() && (
         <div className="bg-amber-50 border border-amber-200 p-3 rounded-md text-amber-800 text-sm">
           <strong>Modalità Admin:</strong> Puoi aggiungere, modificare ed eliminare i turni cliccando sul calendario.
+        </div>
+      )}
+      
+      <div className="flex justify-start">
+        <Button 
+          onClick={toggleExpandedMonth} 
+          variant="outline" 
+          size="sm"
+          className="gap-1 bg-primary/5 border-primary/20 hover:bg-primary/10"
+        >
+          <BarChart className="h-4 w-4" />
+          Riepilogo Ore Mensili
+          {expandedMonth ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </Button>
+      </div>
+      
+      {expandedMonth && (
+        <div className="animate-in slide-in-from-top-5 duration-300">
+          <HoursSummary 
+            shifts={shifts} 
+            employees={employees} 
+            currentDate={currentDate} 
+          />
         </div>
       )}
       
