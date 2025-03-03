@@ -1,9 +1,11 @@
 
+export type Role = "admin" | "employee";
+
 export interface User {
   id: string;
   username: string;
   email: string | null;
-  role: 'admin' | 'employee';
+  role: Role;
   firstName: string;
   lastName: string;
 }
@@ -12,22 +14,22 @@ export interface Employee {
   id: string;
   firstName: string;
   lastName: string;
-  email: string;
-  username: string;
+  email: string | null;
+  username: string; // Keep as required since we'll auto-generate it if empty
   phone?: string;
   position?: string;
   color?: string;
-  userId?: string;
+  userId?: string; // Link to registered user
   createdAt: string;
 }
 
 export interface Shift {
   id: string;
   employeeId: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  duration: number;
+  date: string; // ISO format
+  startTime: string; // HH:MM format
+  endTime: string; // HH:MM format
+  duration: number; // in hours
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -36,45 +38,12 @@ export interface Shift {
 export interface ShiftTemplate {
   id: string;
   name: string;
-  startTime: string;
-  endTime: string;
-  duration: number;
-  daysOfWeek?: number[];
+  startTime: string; // HH:MM format
+  endTime: string; // HH:MM format
+  duration: number; // in hours
+  daysOfWeek?: number[]; // 0 for Monday, 1 for Tuesday, ... 6 for Sunday
   createdAt: string;
 }
-
-export interface WeekTemplate {
-  id: string;
-  name: string;
-  description: string;
-  startDate: string;
-  endDate: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface WeekTemplateShift {
-  id: string;
-  templateId: string;
-  employeeId: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  duration: number;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface Message {
-  id: string;
-  senderId: string;
-  content: string;
-  createdAt: string;
-  readBy: string[];
-}
-
-// New interfaces to fix TypeScript errors
 
 export interface CalendarDay {
   date: Date;
