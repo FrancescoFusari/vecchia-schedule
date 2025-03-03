@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, TouchEvent } from "react";
 import { CalendarHeader } from "./CalendarHeader";
 import { DAYS_OF_WEEK } from "@/lib/constants";
 import { formatDate, getWeekDates, formatMonthYear, formatTime } from "@/lib/utils";
@@ -44,6 +44,8 @@ export function WeeklyCalendar({
     end: new Date()
   });
   const [expandedWeek, setExpandedWeek] = useState<boolean>(false);
+  const touchStartX = useRef<number | null>(null);
+  const [isSwiping, setIsSwiping] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -88,6 +90,33 @@ export function WeeklyCalendar({
     };
     fetchData();
   }, [currentDate, user]);
+
+  const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
+    touchStartX.current = e.touches[0].clientX;
+    setIsSwiping(true);
+  };
+
+  const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
+    if (!isSwiping || touchStartX.current === null) return;
+    e.preventDefault();
+  };
+
+  const handleTouchEnd = (e: TouchEvent<HTMLDivElement>) => {
+    if (!isSwiping || touchStartX.current === null) return;
+    
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX.current - touchEndX;
+    const threshold = 50;
+
+    if (diff > threshold) {
+      handleNextWeek();
+    } else if (diff < -threshold) {
+      handlePrevWeek();
+    }
+    
+    touchStartX.current = null;
+    setIsSwiping(false);
+  };
 
   const handlePrevWeek = () => {
     setCurrentDate(prev => {
@@ -292,7 +321,7 @@ export function WeeklyCalendar({
         </div>
       )}
       
-      {expandedWeek && (
+      {expandedWeek && isAdmin() && (
         <div className="animate-in slide-in-from-top-5 duration-300">
           <HoursSummary 
             shifts={shifts} 
@@ -398,7 +427,16 @@ export function WeeklyCalendar({
           )}
           
           {isMobile && (
-            <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200 divide-y divide-gray-200">
+            <div 
+              className="bg-white rounded-lg shadow overflow-hidden border border-gray-200 divide-y divide-gray-200"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              <div className="px-4 py-2 bg-gray-50 flex justify-center items-center text-sm text-gray-500">
+                <span>← Scorri per cambiare settimana →</span>
+              </div>
+              
               {DAYS_OF_WEEK.map((day, dayIndex) => {
                 const isWeekend = dayIndex > 4;
                 const shifts = shiftsByDay[dayIndex] || [];
