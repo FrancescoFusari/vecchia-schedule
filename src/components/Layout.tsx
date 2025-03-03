@@ -15,7 +15,7 @@ export function Layout() {
       </main>
       <footer className={`border-t border-gray-200 bg-white py-4 ${isMobile ? 'pb-20' : ''}`}>
         <div className="container text-center text-sm text-gray-500">
-          © {new Date().getFullYear()} WorkShift - Gestione turni e orari
+          © {new Date().getFullYear()} La Vecchia Signora - Pizzeria - Trattoria - Forno a Legna
         </div>
       </footer>
       <Toaster />

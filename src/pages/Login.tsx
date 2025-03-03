@@ -76,9 +76,12 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Work Shift</CardTitle>
+          <div className="flex justify-center mb-4">
+            <img src="/lovable-uploads/5cec7ef1-53d9-4fab-ba62-9a1137e84da9.png" alt="La Vecchia Signora" className="h-20" />
+          </div>
+          <CardTitle className="text-2xl font-bold text-center">La Vecchia Signora</CardTitle>
           <CardDescription className="text-center">
-            Inserisci le tue credenziali per accedere
+            Sistema di gestione turni
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -124,7 +127,7 @@ const Login = () => {
         </CardContent>
         <CardFooter className="flex flex-col">
           <p className="text-xs text-center text-muted-foreground">
-            Questa è un'applicazione di gestione turni. Se non hai un account, contatta l'amministratore.
+            Pizzeria - Trattoria - Forno a Legna
           </p>
         </CardFooter>
       </Card>

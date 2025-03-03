@@ -29,8 +29,8 @@ export function Navbar() {
           {!isMobile && (
             <div className="flex space-x-1">
               <Link to="/" className="flex items-center text-lg font-semibold text-primary">
-                <CalendarDays className="mr-2 h-6 w-6" />
-                WorkShift
+                <img src="/lovable-uploads/5cec7ef1-53d9-4fab-ba62-9a1137e84da9.png" alt="La Vecchia Signora" className="h-8 mr-2" />
+                <span>La Vecchia Signora</span>
               </Link>
             </div>
           )}

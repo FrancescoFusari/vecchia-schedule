@@ -65,12 +65,10 @@ const Register = () => {
       <div className="w-full max-w-md px-4 py-8">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <div className="bg-primary rounded-full p-3 animate-fade-in">
-              <Calendar className="h-10 w-10 text-white" />
-            </div>
+            <img src="/lovable-uploads/5cec7ef1-53d9-4fab-ba62-9a1137e84da9.png" alt="La Vecchia Signora" className="h-24" />
           </div>
-          <h1 className="text-3xl font-bold mb-2 animate-slide-up">WorkShift</h1>
-          <p className="text-gray-600 animate-slide-up">Gestione turni e orari</p>
+          <h1 className="text-3xl font-bold mb-2 animate-slide-up">La Vecchia Signora</h1>
+          <p className="text-gray-600 animate-slide-up">Sistema di gestione turni</p>
         </div>
         
         <Card className="animate-scale-in">
