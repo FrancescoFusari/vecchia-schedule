@@ -326,6 +326,31 @@ const Dashboard = () => {
     setVisibleWeekIndex(0);
   }, [currentMonth]);
 
+  const handleShiftsAdded = async () => {
+    try {
+      const start = startOfMonth(currentMonth);
+      const end = endOfMonth(currentMonth);
+      
+      const shiftData = await shiftService.getShifts(
+        start.toISOString().split('T')[0], 
+        end.toISOString().split('T')[0]
+      );
+      setShifts(shiftData);
+      
+      toast({
+        title: "Turni aggiornati",
+        description: "I turni sono stati aggiornati con successo.",
+      });
+    } catch (error) {
+      console.error("Error refreshing shifts:", error);
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiornare i turni.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
