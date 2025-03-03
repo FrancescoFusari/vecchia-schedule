@@ -18,8 +18,16 @@ export function formatDate(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-// Format time (HH:MM)
+// Format time (HH:MM) - remove seconds if present
 export function formatTime(time: string): string {
+  if (!time) return '';
+  // If time has seconds (HH:MM:SS), remove them
+  if (time.includes(':')) {
+    const parts = time.split(':');
+    if (parts.length >= 2) {
+      return `${parts[0]}:${parts[1]}`;
+    }
+  }
   return time;
 }
 

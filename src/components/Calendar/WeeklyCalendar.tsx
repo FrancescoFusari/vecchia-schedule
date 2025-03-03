@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { CalendarHeader } from "./CalendarHeader";
 import { DAYS_OF_WEEK } from "@/lib/constants";
-import { formatDate, getWeekDates, formatMonthYear } from "@/lib/utils";
+import { formatDate, getWeekDates, formatMonthYear, formatTime } from "@/lib/utils";
 import { Shift, Employee } from "@/lib/types";
 import { useAuth } from "@/hooks/useAuth";
 import { employeeService, shiftService } from "@/lib/supabase";
@@ -10,9 +10,11 @@ import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { HoursSummary } from "../Reports/HoursSummary";
+
 interface WeeklyCalendarProps {
   onViewChange?: (isWeekView: boolean) => void;
 }
+
 export function WeeklyCalendar({
   onViewChange
 }: WeeklyCalendarProps) {
@@ -89,6 +91,7 @@ export function WeeklyCalendar({
     };
     fetchData();
   }, [currentDate, user]);
+
   const handlePrevWeek = () => {
     setCurrentDate(prev => {
       const date = new Date(prev);
@@ -96,6 +99,7 @@ export function WeeklyCalendar({
       return date;
     });
   };
+
   const handleNextWeek = () => {
     setCurrentDate(prev => {
       const date = new Date(prev);
@@ -103,23 +107,28 @@ export function WeeklyCalendar({
       return date;
     });
   };
+
   const handleToday = () => {
     setCurrentDate(new Date());
   };
+
   const handleAddShift = (date: Date, dayOfWeek: number) => {
     setSelectedDate(date);
     setCurrentDayOfWeek(dayOfWeek);
     setIsAddingShift(true);
     setSelectedShift(null);
   };
+
   const handleEditShift = (shift: Shift) => {
     setSelectedShift(shift);
     setIsAddingShift(false);
   };
+
   const handleShiftModalClose = () => {
     setSelectedShift(null);
     setIsAddingShift(false);
   };
+
   const handleSaveShift = async (shift: Shift) => {
     try {
       if (selectedShift) {
@@ -149,6 +158,7 @@ export function WeeklyCalendar({
       });
     }
   };
+
   const handleDeleteShift = async (shiftId: string) => {
     try {
       await shiftService.deleteShift(shiftId);
@@ -167,6 +177,7 @@ export function WeeklyCalendar({
       });
     }
   };
+
   const getUniqueShiftTimes = () => {
     const times = new Set<string>();
     shifts.forEach(shift => {
@@ -174,11 +185,13 @@ export function WeeklyCalendar({
     });
     return Array.from(times).sort();
   };
+
   const handleViewToggle = (isWeekView: boolean) => {
     if (onViewChange) {
       onViewChange(isWeekView);
     }
   };
+
   const getShiftsByDayAndTime = () => {
     const shiftsByDay: Record<number, Record<string, Shift[]>> = {};
 
@@ -229,6 +242,7 @@ export function WeeklyCalendar({
     }
     return shiftsByDay;
   };
+
   const getEmployeeById = (id: string): Employee | undefined => {
     return employees.find(emp => emp.id === id);
   };
@@ -248,6 +262,7 @@ export function WeeklyCalendar({
     }
     return dates;
   };
+
   const formattedDates = getFormattedDates();
   const shiftsByDayAndTime = getShiftsByDayAndTime();
   const shiftsByDay = getShiftsByDay();
@@ -263,159 +278,226 @@ export function WeeklyCalendar({
   if (!user) {
     return null;
   }
-  return <div className="space-y-6 animate-fade-in">
+
+  return (
+    <div className="space-y-6 animate-fade-in">
       {/* Calendar header with navigation */}
       <CalendarHeader date={currentDate} onPrevMonth={handlePrevWeek} onNextMonth={handleNextWeek} onToday={handleToday} isWeekView={true} onViewChange={handleViewToggle} />
       
       {/* Admin information banner */}
-      {isAdmin()}
+      {isAdmin() && (
+        <div className="bg-amber-50 border border-amber-200 p-3 rounded-md text-amber-800 text-sm">
+          <p>Sei in modalità amministratore. Puoi aggiungere o modificare i turni cliccando su una cella del calendario.</p>
+        </div>
+      )}
       
       {/* Error banner */}
-      {hasError && <div className="bg-red-50 border border-red-200 p-3 rounded-md text-red-800 text-sm">
+      {hasError && (
+        <div className="bg-red-50 border border-red-200 p-3 rounded-md text-red-800 text-sm">
           Si è verificato un errore durante il caricamento dei dati. Prova ad aggiornare la pagina.
-        </div>}
+        </div>
+      )}
       
       {/* Weekly view */}
-      {isLoading ? <div className="flex justify-center py-12">
+      {isLoading ? (
+        <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        </div> : <>
+        </div>
+      ) : (
+        <>
           {/* Desktop view - horizontal days, vertical time slots */}
-          {!isMobile && <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
+          {!isMobile && (
+            <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
               {/* Day headers */}
               <div className="grid grid-cols-8 border-b border-gray-200">
                 <div className="py-2 text-center font-semibold text-sm border-r border-gray-200">
                   Orario
                 </div>
-                {DAYS_OF_WEEK.map((day, index) => <div key={day} className="relative py-2 text-center font-semibold text-sm border-r last:border-r-0 border-gray-200">
+                {DAYS_OF_WEEK.map((day, index) => (
+                  <div key={day} className="relative py-2 text-center font-semibold text-sm border-r last:border-r-0 border-gray-200">
                     <div>{day}</div>
                     <div className={`mt-1 text-xs ${formattedDates[index].isToday ? "text-primary font-bold" : "text-gray-500"}`}>
                       {formattedDates[index].dayOfMonth}
                     </div>
-                    {formattedDates[index].isToday && <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary"></div>}
-                  </div>)}
+                    {formattedDates[index].isToday && (
+                      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary"></div>
+                    )}
+                  </div>
+                ))}
               </div>
               
               {/* Time slots and shifts */}
               <div className="divide-y divide-gray-200">
-                {getUniqueShiftTimes().length === 0 ? <div className="text-center py-8 text-gray-500">
+                {getUniqueShiftTimes().length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
                     Nessun turno pianificato per questa settimana.
-                  </div> : getUniqueShiftTimes().map(time => <div key={time} className="grid grid-cols-8">
+                  </div>
+                ) : (
+                  getUniqueShiftTimes().map(time => (
+                    <div key={time} className="grid grid-cols-8">
                       {/* Time slot */}
                       <div className="p-2 text-xs font-medium text-gray-700 bg-gray-50 border-r border-gray-200 flex items-center justify-center">
-                        {time}
+                        {formatTime(time)}
                       </div>
                       
                       {/* Days */}
-                      {Array.from({
-              length: 7
-            }).map((_, dayIndex) => {
-              const isWeekend = dayIndex > 4; // Friday and Saturday are weekend
-              const shifts = shiftsByDayAndTime[dayIndex][time] || [];
-              return <div key={dayIndex} className={`p-2 border-r last:border-r-0 border-gray-200 ${isWeekend ? "bg-amber-50/30" : ""} min-h-[60px]`} onClick={() => {
-                if (isAdmin()) {
-                  const date = new Date(formattedDates[dayIndex].date);
-                  handleAddShift(date, dayIndex);
-                }
-              }}>
+                      {Array.from({ length: 7 }).map((_, dayIndex) => {
+                        const isWeekend = dayIndex > 4; // Friday and Saturday are weekend
+                        const shifts = shiftsByDayAndTime[dayIndex][time] || [];
+                        return (
+                          <div 
+                            key={dayIndex} 
+                            className={`p-2 border-r last:border-r-0 border-gray-200 ${isWeekend ? "bg-amber-50/30" : ""} min-h-[60px]`} 
+                            onClick={() => {
+                              if (isAdmin()) {
+                                const date = new Date(formattedDates[dayIndex].date);
+                                handleAddShift(date, dayIndex);
+                              }
+                            }}
+                          >
                             <div className="space-y-1">
                               {shifts.map(shift => {
-                    const employee = getEmployeeById(shift.employeeId);
-                    if (!employee) return null;
+                                const employee = getEmployeeById(shift.employeeId);
+                                if (!employee) return null;
 
-                    // Use employee color with fallback
-                    const employeeColor = employee.color || "#9CA3AF";
+                                // Use employee color with fallback
+                                const employeeColor = employee.color || "#9CA3AF";
 
-                    // Generate color styles based on employee color
-                    const customStyle = {
-                      backgroundColor: `${employeeColor}20`,
-                      // 20% opacity
-                      color: employeeColor,
-                      borderColor: `${employeeColor}30` // 30% opacity
-                    };
-                    return <div key={shift.id} className="px-2 py-1 rounded-md text-xs font-medium truncate border cursor-pointer" style={customStyle} onClick={e => {
-                      e.stopPropagation();
-                      if (isAdmin()) {
-                        handleEditShift(shift);
-                      }
-                    }}>
-                                    {employee.firstName} {employee.lastName.charAt(0)} {shift.startTime}-{shift.endTime}
-                                  </div>;
-                  })}
+                                // Generate color styles based on employee color
+                                const customStyle = {
+                                  backgroundColor: `${employeeColor}20`, // 20% opacity
+                                  color: employeeColor,
+                                  borderColor: `${employeeColor}30` // 30% opacity
+                                };
+                                return (
+                                  <div 
+                                    key={shift.id} 
+                                    className="px-2 py-1 rounded-md text-xs font-medium truncate border cursor-pointer" 
+                                    style={customStyle} 
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      if (isAdmin()) {
+                                        handleEditShift(shift);
+                                      }
+                                    }}
+                                  >
+                                    {employee.firstName} {employee.lastName.charAt(0)} {formatTime(shift.startTime)}-{formatTime(shift.endTime)}
+                                  </div>
+                                );
+                              })}
                             </div>
-                          </div>;
-            })}
-                    </div>)}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))
+                )}
               </div>
-            </div>}
+            </div>
+          )}
           
           {/* Mobile view - vertical days */}
-          {isMobile && <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200 divide-y divide-gray-200">
+          {isMobile && (
+            <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200 divide-y divide-gray-200">
               {DAYS_OF_WEEK.map((day, dayIndex) => {
-          const isWeekend = dayIndex > 4; // Friday and Saturday are weekend
-          const shifts = shiftsByDay[dayIndex] || [];
-          const formattedDate = formattedDates[dayIndex];
-          const isToday = formattedDate.isToday;
-          return <div key={day} className={`${isWeekend ? "bg-amber-50/30" : ""}`}>
+                const isWeekend = dayIndex > 4; // Friday and Saturday are weekend
+                const shifts = shiftsByDay[dayIndex] || [];
+                const formattedDate = formattedDates[dayIndex];
+                const isToday = formattedDate.isToday;
+                return (
+                  <div key={day} className={`${isWeekend ? "bg-amber-50/30" : ""}`}>
                     {/* Day header */}
-                    <div className={`px-4 py-3 flex justify-between items-center ${isToday ? "bg-primary/10" : ""}`} onClick={() => {
-              if (isAdmin()) {
-                const date = new Date(formattedDates[dayIndex].date);
-                handleAddShift(date, dayIndex);
-              }
-            }}>
+                    <div 
+                      className={`px-4 py-3 flex justify-between items-center ${isToday ? "bg-primary/10" : ""}`} 
+                      onClick={() => {
+                        if (isAdmin()) {
+                          const date = new Date(formattedDates[dayIndex].date);
+                          handleAddShift(date, dayIndex);
+                        }
+                      }}
+                    >
                       <div className="flex items-center">
                         <div className={`font-semibold ${isToday ? "text-primary" : ""}`}>
                           {day} {formattedDate.dayOfMonth}
                         </div>
                       </div>
-                      {isAdmin() && <button className="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-gray-700" onClick={e => {
-                e.stopPropagation();
-                const date = new Date(formattedDates[dayIndex].date);
-                handleAddShift(date, dayIndex);
-              }}>
+                      {isAdmin() && (
+                        <button 
+                          className="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-gray-700" 
+                          onClick={e => {
+                            e.stopPropagation();
+                            const date = new Date(formattedDates[dayIndex].date);
+                            handleAddShift(date, dayIndex);
+                          }}
+                        >
                           + Turno
-                        </button>}
+                        </button>
+                      )}
                     </div>
                     
                     {/* Shifts */}
                     <div className="px-4 py-2 space-y-2">
-                      {shifts.length === 0 ? <div className="text-sm text-gray-500 py-2">Nessun turno</div> : shifts.map(shift => {
-                const employee = getEmployeeById(shift.employeeId);
-                if (!employee) return null;
+                      {shifts.length === 0 ? (
+                        <div className="text-sm text-gray-500 py-2">Nessun turno</div>
+                      ) : (
+                        shifts.map(shift => {
+                          const employee = getEmployeeById(shift.employeeId);
+                          if (!employee) return null;
 
-                // Use employee color with fallback
-                const employeeColor = employee.color || "#9CA3AF";
+                          // Use employee color with fallback
+                          const employeeColor = employee.color || "#9CA3AF";
 
-                // Generate color styles based on employee color
-                const customStyle = {
-                  backgroundColor: `${employeeColor}20`,
-                  // 20% opacity
-                  color: employeeColor,
-                  borderColor: `${employeeColor}30` // 30% opacity
-                };
-                return <div key={shift.id} className="px-3 py-2 rounded-md text-sm font-medium border flex justify-between" style={customStyle} onClick={() => {
-                  if (isAdmin()) {
-                    handleEditShift(shift);
-                  }
-                }}>
+                          // Generate color styles based on employee color
+                          const customStyle = {
+                            backgroundColor: `${employeeColor}20`, // 20% opacity
+                            color: employeeColor,
+                            borderColor: `${employeeColor}30` // 30% opacity
+                          };
+                          return (
+                            <div 
+                              key={shift.id} 
+                              className="px-3 py-2 rounded-md text-sm font-medium border flex justify-between" 
+                              style={customStyle} 
+                              onClick={() => {
+                                if (isAdmin()) {
+                                  handleEditShift(shift);
+                                }
+                              }}
+                            >
                               <span>
                                 {employee.firstName} {employee.lastName.charAt(0)}
                               </span>
                               <span className="font-semibold">
-                                {shift.startTime}-{shift.endTime}
+                                {formatTime(shift.startTime)}-{formatTime(shift.endTime)}
                               </span>
-                            </div>;
-              })}
+                            </div>
+                          );
+                        })
+                      )}
                     </div>
-                  </div>;
-        })}
-            </div>}
-        </>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
       
       {/* Hours summary */}
       
-      
       {/* Shift modal for adding/editing shifts */}
-      {(isAddingShift || selectedShift) && <ShiftModal isOpen={isAddingShift || !!selectedShift} onClose={handleShiftModalClose} shift={selectedShift} date={selectedDate} dayOfWeek={currentDayOfWeek} employees={employees} onSave={handleSaveShift} onDelete={handleDeleteShift} />}
-    </div>;
+      {(isAddingShift || selectedShift) && (
+        <ShiftModal 
+          isOpen={isAddingShift || !!selectedShift} 
+          onClose={handleShiftModalClose} 
+          shift={selectedShift} 
+          date={selectedDate} 
+          dayOfWeek={currentDayOfWeek} 
+          employees={employees} 
+          onSave={handleSaveShift} 
+          onDelete={handleDeleteShift} 
+        />
+      )}
+    </div>
+  );
 }
