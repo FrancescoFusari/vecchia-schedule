@@ -13,6 +13,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
+import { v4 as uuidv4 } from "uuid";
 
 const formSchema = z.object({
   title: z.string().min(3, "Il titolo deve contenere almeno 3 caratteri"),
@@ -45,10 +46,13 @@ export function NewMessageForm({ onSuccess }: NewMessageFormProps) {
         ? `${user.firstName} ${user.lastName}` 
         : user.username;
 
+      // Generate a proper UUID for admin users instead of using "admin-id"
+      const senderId = user.id === 'admin-id' ? uuidv4() : user.id;
+
       const { error } = await supabase.from('communications').insert({
         title: values.title,
         content: values.content,
-        sender_id: user.id,
+        sender_id: senderId,
         sender_name: senderName,
         read_by: [], // Initially empty
       });
