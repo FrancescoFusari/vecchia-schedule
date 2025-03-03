@@ -215,20 +215,22 @@ export function MonthlyCalendar({ onViewChange }: MonthlyCalendarProps) {
         </div>
       )}
       
-      <div className="flex justify-start">
-        <Button 
-          onClick={toggleExpandedMonth} 
-          variant="outline" 
-          size="sm"
-          className="gap-1 bg-primary/5 border-primary/20 hover:bg-primary/10"
-        >
-          <BarChart className="h-4 w-4" />
-          Riepilogo Ore Mensili
-          {expandedMonth ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </Button>
-      </div>
+      {isAdmin() && (
+        <div className="flex justify-start">
+          <Button 
+            onClick={toggleExpandedMonth} 
+            variant="outline" 
+            size="sm"
+            className="gap-1 bg-primary/5 border-primary/20 hover:bg-primary/10"
+          >
+            <BarChart className="h-4 w-4" />
+            Riepilogo Ore Mensili
+            {expandedMonth ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
+        </div>
+      )}
       
-      {expandedMonth && (
+      {expandedMonth && isAdmin() && (
         <div className="animate-in slide-in-from-top-5 duration-300">
           <HoursSummary 
             shifts={shifts} 
