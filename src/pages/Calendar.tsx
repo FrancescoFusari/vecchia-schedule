@@ -114,19 +114,21 @@ const Calendar = () => {
           <CollapsibleContent>
             <div className="px-4 pb-4">
               <ScrollArea className="w-full">
-                <div className={`flex ${isMobile ? 'flex-wrap gap-3' : 'space-x-3'} pb-1 pr-4`}>
+                <div className={`flex ${isMobile ? 'flex-wrap gap-2' : 'space-x-3'} pb-1 pr-4`}>
                   {employees.map((employee) => (
                     <div
                       key={employee.id}
-                      className={`flex flex-col items-center p-2 rounded-md hover:bg-gray-100 cursor-pointer transition-colors ${isMobile ? 'mb-2' : 'min-w-[80px]'}`}
+                      className={`flex flex-col items-center p-2 rounded-md hover:bg-gray-100 cursor-pointer transition-colors ${
+                        isMobile ? 'mb-2 w-[65px]' : 'min-w-[80px]'
+                      }`}
                       onClick={() => handleEmployeeClick(employee)}
                     >
-                      <Avatar className="h-12 w-12 mb-2 flex items-center justify-center" style={{ backgroundColor: employee.color }}>
+                      <Avatar className={`${isMobile ? 'h-10 w-10' : 'h-12 w-12'} mb-2 flex items-center justify-center`} style={{ backgroundColor: employee.color }}>
                         <span className="text-sm font-medium text-white">
                           {employee.firstName.charAt(0)}{employee.lastName.charAt(0)}
                         </span>
                       </Avatar>
-                      <span className="text-xs font-medium text-center">
+                      <span className={`text-xs font-medium text-center ${isMobile ? 'text-[10px]' : ''}`}>
                         {employee.firstName} {employee.lastName}
                       </span>
                       <Badge
