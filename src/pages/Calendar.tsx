@@ -104,7 +104,7 @@ const Calendar = () => {
                     onClick={() => handleEmployeeClick(employee)}
                   >
                     <div className="flex items-center gap-2">
-                      <Avatar className="h-8 w-8" style={{ backgroundColor: employee.color }}>
+                      <Avatar className="h-8 w-8 flex items-center justify-center" style={{ backgroundColor: employee.color }}>
                         <span className="text-xs font-medium text-white">
                           {employee.firstName.charAt(0)}{employee.lastName.charAt(0)}
                         </span>
