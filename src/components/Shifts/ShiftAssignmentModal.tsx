@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { format, getDay, setDay, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth } from "date-fns";
+import { format, getDay, setDay, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths, isEqual, isBefore, isAfter } from "date-fns";
 import { it } from "date-fns/locale";
 import { Employee, ShiftTemplate, Shift } from "@/lib/types";
 import { toast } from "@/hooks/use-toast";
@@ -37,6 +38,7 @@ export const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
   const [weekdays, setWeekdays] = useState<number[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [displayMonth, setDisplayMonth] = useState<Date>(currentMonth);
+  const [selectedMonth, setSelectedMonth] = useState<Date>(currentMonth);
   
   useEffect(() => {
     if (isOpen) {
@@ -44,6 +46,7 @@ export const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
       setSelectedDays([]);
       setWeekdays([]);
       setDisplayMonth(currentMonth);
+      setSelectedMonth(currentMonth);
     }
   }, [isOpen, currentMonth]);
 
@@ -66,8 +69,8 @@ export const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
       let daysToAssign: Date[] = [];
       
       if (weekdays.length > 0) {
-        const monthStart = startOfMonth(currentMonth);
-        const monthEnd = endOfMonth(currentMonth);
+        const monthStart = startOfMonth(selectedMonth);
+        const monthEnd = endOfMonth(selectedMonth);
         const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
         
         daysToAssign = daysInMonth.filter(date => 
@@ -145,11 +148,27 @@ export const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
     }
     setDisplayMonth(newDate);
   };
+  
+  const handleSelectedMonthChange = (direction: 'previous' | 'next') => {
+    const newDate = direction === 'previous' 
+      ? subMonths(selectedMonth, 1) 
+      : addMonths(selectedMonth, 1);
+    setSelectedMonth(newDate);
+  };
 
   if (!employee) return null;
 
   const validDaysCount = filterDaysForDisplayMonth(selectedDays).length;
-  const totalShiftsCount = validDaysCount + weekdays.length;
+  const weekdayShiftsCount = weekdays.length > 0 
+    ? eachDayOfInterval({ 
+        start: startOfMonth(selectedMonth), 
+        end: endOfMonth(selectedMonth) 
+      }).filter(date => 
+        weekdays.includes(getDay(date) === 0 ? 6 : getDay(date) - 1)
+      ).length 
+    : 0;
+  
+  const totalShiftsCount = validDaysCount + weekdayShiftsCount;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -167,30 +186,62 @@ export const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
           </TabsList>
           
           <TabsContent value="weekday" className="space-y-4 mt-2">
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {dayLabels.map((day, index) => (
-                <div 
-                  className={cn(
-                    "flex items-center space-x-2 p-2 rounded-md transition-colors",
-                    weekdays.includes(index) ? "bg-primary/10" : ""
-                  )} 
-                  key={index}
+            <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm my-2">
+              <div className="flex items-center justify-between mb-4">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleSelectedMonthChange('previous')}
+                  className="h-8 w-8"
                 >
-                  <Checkbox 
-                    id={`day-${index}`} 
-                    checked={weekdays.includes(index)}
-                    onCheckedChange={() => handleWeekdayToggle(index)}
-                  />
-                  <Label 
-                    htmlFor={`day-${index}`}
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <h2 className="text-center font-medium capitalize">
+                  {format(selectedMonth, 'MMMM yyyy', { locale: it })}
+                </h2>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleSelectedMonthChange('next')}
+                  className="h-8 w-8"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {dayLabels.map((day, index) => (
+                  <div 
                     className={cn(
-                      weekdays.includes(index) ? "font-medium text-primary" : ""
-                    )}
+                      "flex items-center space-x-2 p-2 rounded-md transition-colors",
+                      weekdays.includes(index) ? "bg-primary/10" : ""
+                    )} 
+                    key={index}
                   >
-                    {day}
-                  </Label>
+                    <Checkbox 
+                      id={`day-${index}`} 
+                      checked={weekdays.includes(index)}
+                      onCheckedChange={() => handleWeekdayToggle(index)}
+                    />
+                    <Label 
+                      htmlFor={`day-${index}`}
+                      className={cn(
+                        weekdays.includes(index) ? "font-medium text-primary" : ""
+                      )}
+                    >
+                      {day}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+              
+              {weekdayShiftsCount > 0 && (
+                <div className="mt-4 p-2 bg-muted rounded-md text-sm">
+                  <p className="font-medium">
+                    Turni selezionati: {weekdayShiftsCount} per {format(selectedMonth, 'MMMM yyyy', { locale: it })}
+                  </p>
                 </div>
-              ))}
+              )}
             </div>
           </TabsContent>
           
@@ -280,7 +331,7 @@ export const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
           </Button>
           <Button 
             onClick={handleSaveAssignments} 
-            disabled={(validDaysCount === 0 && weekdays.length === 0) || !selectedTemplate || isSubmitting}
+            disabled={(validDaysCount === 0 && weekdayShiftsCount === 0) || !selectedTemplate || isSubmitting}
             className={cn(
               "transition-all duration-200",
               totalShiftsCount > 0 && selectedTemplate ? "bg-primary hover:bg-primary/90" : ""
