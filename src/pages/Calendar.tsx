@@ -20,7 +20,7 @@ const Calendar = () => {
   const [templates, setTemplates] = useState<ShiftTemplate[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState(false);
-  const [isEmployeeListOpen, setIsEmployeeListOpen] = useState(true);
+  const [isEmployeeListOpen, setIsEmployeeListOpen] = useState(!isMobile);
 
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -47,6 +47,9 @@ const Calendar = () => {
 
   useEffect(() => {
     setIsWeekView(isMobile);
+    if (isMobile) {
+      setIsEmployeeListOpen(false);
+    }
   }, [isMobile]);
   
   const handleViewChange = (weekView: boolean) => {
@@ -111,11 +114,11 @@ const Calendar = () => {
           <CollapsibleContent>
             <div className="px-4 pb-4">
               <ScrollArea className="w-full">
-                <div className="flex space-x-3 pb-1 pr-4">
+                <div className={`flex ${isMobile ? 'flex-wrap gap-3' : 'space-x-3'} pb-1 pr-4`}>
                   {employees.map((employee) => (
                     <div
                       key={employee.id}
-                      className="flex flex-col items-center p-2 rounded-md hover:bg-gray-100 cursor-pointer transition-colors min-w-[80px]"
+                      className={`flex flex-col items-center p-2 rounded-md hover:bg-gray-100 cursor-pointer transition-colors ${isMobile ? 'mb-2' : 'min-w-[80px]'}`}
                       onClick={() => handleEmployeeClick(employee)}
                     >
                       <Avatar className="h-12 w-12 mb-2 flex items-center justify-center" style={{ backgroundColor: employee.color }}>
