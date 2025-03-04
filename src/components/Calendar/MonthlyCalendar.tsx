@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { CalendarHeader } from "./CalendarHeader";
 import { CalendarDay } from "./CalendarDay";
 import { DAYS_OF_WEEK } from "@/lib/constants";
@@ -15,9 +15,10 @@ import { HoursSummary } from "../Reports/HoursSummary";
 
 interface MonthlyCalendarProps {
   onViewChange?: (isWeekView: boolean) => void;
+  'data-component'?: string;
 }
 
-export function MonthlyCalendar({ onViewChange }: MonthlyCalendarProps) {
+export function MonthlyCalendar({ onViewChange, 'data-component': dataComponent }: MonthlyCalendarProps) {
   const { isAdmin, user, loading } = useAuth();
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -31,6 +32,7 @@ export function MonthlyCalendar({ onViewChange }: MonthlyCalendarProps) {
   const [hasError, setHasError] = useState(false);
   const [currentDayOfWeek, setCurrentDayOfWeek] = useState<number | undefined>(undefined);
   const [expandedMonth, setExpandedMonth] = useState<boolean>(false);
+  const calendarRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     if (!loading && !user) {
@@ -95,6 +97,55 @@ export function MonthlyCalendar({ onViewChange }: MonthlyCalendarProps) {
     const days = getCalendarDays(year, month, shifts);
     setCalendarDays(days);
   }, [currentDate, shifts]);
+  
+  useEffect(() => {
+    const refreshCalendar = () => {
+      if (user) {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        
+        const startDate = new Date(firstDay);
+        startDate.setDate(startDate.getDate() - (startDate.getDay() === 0 ? 6 : startDate.getDay() - 1));
+        
+        const endDate = new Date(lastDay);
+        const daysToAdd = 7 - endDate.getDay();
+        endDate.setDate(endDate.getDate() + (daysToAdd === 7 ? 0 : daysToAdd));
+        
+        const formattedStartDate = formatDate(startDate);
+        const formattedEndDate = formatDate(endDate);
+        
+        console.log(`Refreshing shifts from ${formattedStartDate} to ${formattedEndDate}`);
+        shiftService.getShifts(formattedStartDate, formattedEndDate)
+          .then(shiftData => {
+            setShifts(shiftData);
+          })
+          .catch(error => {
+            console.error("Error refreshing shifts:", error);
+          });
+      }
+    };
+    
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && 
+            mutation.attributeName === 'class' && 
+            calendarRef.current?.classList.contains('refresh-trigger')) {
+          refreshCalendar();
+        }
+      });
+    });
+    
+    if (calendarRef.current) {
+      observer.observe(calendarRef.current, { attributes: true });
+    }
+    
+    return () => {
+      observer.disconnect();
+    };
+  }, [currentDate, user]);
   
   const handlePrevMonth = () => {
     setCurrentDate(prev => {
@@ -199,7 +250,7 @@ export function MonthlyCalendar({ onViewChange }: MonthlyCalendarProps) {
   }
   
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in" ref={calendarRef} data-component={dataComponent}>
       <CalendarHeader
         date={currentDate}
         onPrevMonth={handlePrevMonth}

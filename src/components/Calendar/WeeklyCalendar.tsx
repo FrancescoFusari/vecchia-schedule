@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { CalendarHeader } from "./CalendarHeader";
 import { DAYS_OF_WEEK } from "@/lib/constants";
 import { formatDate, getWeekDates, formatMonthYear, formatTime } from "@/lib/utils";
@@ -15,10 +15,12 @@ import { ChevronDown, ChevronUp, BarChart } from "lucide-react";
 
 interface WeeklyCalendarProps {
   onViewChange?: (isWeekView: boolean) => void;
+  'data-component'?: string;
 }
 
 export function WeeklyCalendar({
-  onViewChange
+  onViewChange,
+  'data-component': dataComponent
 }: WeeklyCalendarProps) {
   const {
     isAdmin,
@@ -44,6 +46,7 @@ export function WeeklyCalendar({
     end: new Date()
   });
   const [expandedWeek, setExpandedWeek] = useState<boolean>(false);
+  const calendarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -87,6 +90,43 @@ export function WeeklyCalendar({
       }
     };
     fetchData();
+  }, [currentDate, user]);
+
+  useEffect(() => {
+    const refreshCalendar = () => {
+      if (user) {
+        const weekRange = getWeekDates(currentDate);
+        
+        const formattedStartDate = formatDate(weekRange.start);
+        const formattedEndDate = formatDate(weekRange.end);
+        console.log(`Refreshing shifts from ${formattedStartDate} to ${formattedEndDate}`);
+        shiftService.getShifts(formattedStartDate, formattedEndDate)
+          .then(shiftData => {
+            setShifts(shiftData);
+          })
+          .catch(error => {
+            console.error("Error refreshing shifts:", error);
+          });
+      }
+    };
+    
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && 
+            mutation.attributeName === 'class' && 
+            calendarRef.current?.classList.contains('refresh-trigger')) {
+          refreshCalendar();
+        }
+      });
+    });
+    
+    if (calendarRef.current) {
+      observer.observe(calendarRef.current, { attributes: true });
+    }
+    
+    return () => {
+      observer.disconnect();
+    };
   }, [currentDate, user]);
 
   const handlePrevWeek = () => {
@@ -268,7 +308,7 @@ export function WeeklyCalendar({
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in" ref={calendarRef} data-component={dataComponent}>
       <CalendarHeader date={currentDate} onPrevMonth={handlePrevWeek} onNextMonth={handleNextWeek} onToday={handleToday} isWeekView={true} onViewChange={handleViewToggle} />
       
       {isAdmin() && (
