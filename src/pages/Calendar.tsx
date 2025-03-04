@@ -1,4 +1,3 @@
-
 import { MonthlyCalendar } from "@/components/Calendar/MonthlyCalendar";
 import { WeeklyCalendar } from "@/components/Calendar/WeeklyCalendar";
 import { useEffect, useState } from "react";
@@ -46,7 +45,6 @@ const Calendar = () => {
     fetchTemplates();
   }, []);
 
-  // Update view when mobile status changes
   useEffect(() => {
     setIsWeekView(isMobile);
   }, [isMobile]);
@@ -64,22 +62,17 @@ const Calendar = () => {
   
   const handleAssignmentComplete = () => {
     setIsAssignmentModalOpen(false);
-    // Refresh the calendar view to show the new shifts
     if (isWeekView) {
-      // Force a re-render of the weekly calendar
       const weeklyCalendarElement = document.querySelector('[data-component="weekly-calendar"]');
       if (weeklyCalendarElement) {
-        // This will trigger a re-render of the weekly calendar
         weeklyCalendarElement.classList.add('refresh-trigger');
         setTimeout(() => {
           weeklyCalendarElement.classList.remove('refresh-trigger');
         }, 100);
       }
     } else {
-      // Force a re-render of the monthly calendar
       const monthlyCalendarElement = document.querySelector('[data-component="monthly-calendar"]');
       if (monthlyCalendarElement) {
-        // This will trigger a re-render of the monthly calendar
         monthlyCalendarElement.classList.add('refresh-trigger');
         setTimeout(() => {
           monthlyCalendarElement.classList.remove('refresh-trigger');
@@ -117,7 +110,7 @@ const Calendar = () => {
           
           <CollapsibleContent>
             <div className="px-4 pb-4">
-              <ScrollArea className="w-full" orientation="horizontal">
+              <ScrollArea className="w-full">
                 <div className="flex space-x-3 pb-1 pr-4">
                   {employees.map((employee) => (
                     <div
