@@ -9,8 +9,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, Calendar } from "lucide-react";
+import { Pencil, Trash2, Calendar, Mail, Phone, BriefcaseIcon } from "lucide-react";
 import { Employee } from "@/lib/types";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,6 +38,119 @@ export const EmployeeTable: React.FC<EmployeeTableProps> = ({
   onDelete,
   onRowClick,
 }) => {
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <div className="space-y-4">
+        {employees.length === 0 ? (
+          <div className="text-center py-6 bg-muted/20 rounded-md">
+            Nessun dipendente trovato
+          </div>
+        ) : (
+          employees.map((employee) => (
+            <Card 
+              key={employee.id} 
+              className={`overflow-hidden ${onRowClick ? "cursor-pointer hover:border-primary/40 transition-colors" : ""}`}
+              onClick={onRowClick ? () => onRowClick(employee) : undefined}
+              style={{ borderLeft: employee.color ? `4px solid ${employee.color}` : undefined }}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="font-medium text-lg">{employee.firstName} {employee.lastName}</div>
+                  <div className="flex space-x-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(employee);
+                      }}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Conferma eliminazione</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Sei sicuro di voler eliminare questo dipendente? Questa
+                            azione non può essere annullata.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Annulla</AlertDialogCancel>
+                          <AlertDialogAction
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDelete(employee.id);
+                            }}
+                          >
+                            Elimina
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                    
+                    {onRowClick && (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRowClick(employee);
+                        }}
+                      >
+                        <Calendar className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="space-y-2 text-sm">
+                  {employee.email && (
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <span>{employee.email}</span>
+                    </div>
+                  )}
+                  
+                  {employee.phone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <span>{employee.phone}</span>
+                    </div>
+                  )}
+                  
+                  {employee.position && (
+                    <div className="flex items-center gap-2">
+                      <BriefcaseIcon className="h-4 w-4 text-muted-foreground" />
+                      <span>{employee.position}</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="border rounded-md overflow-hidden">
       <div className="overflow-x-auto">
