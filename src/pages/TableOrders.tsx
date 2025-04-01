@@ -383,7 +383,7 @@ const TableOrders = () => {
                 Non ci sono ordini attivi per questo tavolo. Clicca su "Nuovo ordine" per iniziare.
               </p>
               
-              <div className="grid grid-cols-2 gap-4 mt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-6 mt-6">
                 <WaterControl 
                   value={waterAmount}
                   isSparkling={isSparkling}
@@ -399,7 +399,7 @@ const TableOrders = () => {
                 />
               </div>
             </div> : <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-6">
                 <WaterControl 
                   value={waterAmount}
                   isSparkling={isSparkling}
