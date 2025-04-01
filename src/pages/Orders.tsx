@@ -13,6 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { supabaseCustom as supabase } from "@/integrations/supabase/client";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 
 const Orders = () => {
   const [sections, setSections] = useState<RestaurantSection[]>([]);
@@ -22,9 +24,11 @@ const Orders = () => {
   const [editingSection, setEditingSection] = useState<RestaurantSection | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [sectionToDelete, setSectionToDelete] = useState<RestaurantSection | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
+  const isMobile = useIsMobile();
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -156,13 +160,50 @@ const Orders = () => {
     return null; // Will redirect to login
   }
 
-  return (
-    <div className="animate-fade-in">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Gestione Comande</h1>
-        
-        <div className="flex space-x-2">
+  const renderMobileControls = () => {
+    return (
+      <>
+        <div className="fixed bottom-4 right-4 z-10 flex flex-col gap-2">
           {isAdmin() && (
+            <Button 
+              size="icon"
+              onClick={openAddSectionDialog}
+              className="rounded-full shadow-lg h-12 w-12"
+            >
+              <Plus className="h-6 w-6" />
+              <span className="sr-only">Aggiungi Sezione</span>
+            </Button>
+          )}
+        </div>
+        
+        {isAdmin() && (
+          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+            <SheetContent side="bottom" className="h-auto max-h-[40vh]">
+              <SheetHeader>
+                <SheetTitle>Menu Amministrazione</SheetTitle>
+              </SheetHeader>
+              <div className="flex flex-col gap-3 py-4">
+                <Button onClick={() => navigate('/dashboard')}>
+                  Amministrazione
+                </Button>
+                <Button variant="outline" onClick={() => setIsMenuOpen(false)}>
+                  Chiudi
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
+        )}
+      </>
+    );
+  };
+
+  return (
+    <div className="animate-fade-in pb-16">
+      <div className="flex justify-between items-center mb-4 md:mb-6">
+        <h1 className="text-xl md:text-2xl font-bold">Gestione Comande</h1>
+        
+        {!isMobile && isAdmin() && (
+          <div className="flex space-x-2">
             <Button 
               variant="outline" 
               onClick={openAddSectionDialog}
@@ -171,14 +212,22 @@ const Orders = () => {
               <Plus className="h-4 w-4" />
               Aggiungi Sezione
             </Button>
-          )}
-          
-          {isAdmin() && (
+            
             <Button variant="outline" onClick={() => navigate('/dashboard')}>
               Amministrazione
             </Button>
-          )}
-        </div>
+          </div>
+        )}
+        
+        {isMobile && isAdmin() && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setIsMenuOpen(true)}
+          >
+            Menu
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -197,10 +246,10 @@ const Orders = () => {
           )}
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {sections.map(section => (
             <div key={section.id} className="relative group">
-              {isAdmin() && (
+              {isAdmin() && !isMobile && (
                 <div className="absolute right-2 top-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                   <Button 
                     variant="ghost" 
@@ -227,6 +276,8 @@ const Orders = () => {
           ))}
         </div>
       )}
+
+      {isMobile && renderMobileControls()}
 
       {/* Section Dialog */}
       <Dialog open={isSectionDialogOpen} onOpenChange={setSectionDialogOpen}>
