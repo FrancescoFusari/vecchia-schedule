@@ -27,8 +27,8 @@ export function Navbar() {
   // Show profile for regular users
   const showProfile = !showDashboard;
   
-  // Show orders button for regular users (employees)
-  const showOrders = !isAdmin();
+  // Show orders button for all users (removing the restriction)
+  const showOrders = true;
 
   const handleLogout = () => {
     signOut();
@@ -76,7 +76,7 @@ export function Navbar() {
               </Button>
             </Link>
             
-            {/* Orders link for employees */}
+            {/* Orders link for all users now */}
             {showOrders && (
               <OrdersNavButton isMobile={isMobile} />
             )}
