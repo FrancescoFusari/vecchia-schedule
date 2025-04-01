@@ -6,9 +6,16 @@ import { Clock } from "lucide-react";
 interface TableTimerProps {
   startTime: string | null;
   className?: string;
+  variant?: "orange" | "blue" | "default";
+  size?: "sm" | "md";
 }
 
-export const TableTimer = ({ startTime, className }: TableTimerProps) => {
+export const TableTimer = ({ 
+  startTime, 
+  className = "", 
+  variant = "orange",
+  size = "md"
+}: TableTimerProps) => {
   const [elapsedTime, setElapsedTime] = useState<string>("00:00:00");
   
   useEffect(() => {
@@ -42,13 +49,24 @@ export const TableTimer = ({ startTime, className }: TableTimerProps) => {
   
   if (!startTime) return null;
   
+  // Size classes for the badge and icon
+  const sizeClasses = {
+    sm: "px-2 py-0.5 text-[10px]",
+    md: "px-3 py-1 text-xs"
+  };
+  
+  const iconSizeClasses = {
+    sm: "h-3 w-3",
+    md: "h-3.5 w-3.5"
+  };
+  
   return (
     <Badge 
-      variant="orange" 
-      className={`px-3 py-1 flex items-center gap-1.5 ${className}`}
+      variant={variant} 
+      className={`flex items-center gap-1.5 ${sizeClasses[size]} ${className}`}
     >
-      <Clock className="h-3.5 w-3.5" />
-      <span className="font-mono text-xs font-medium">{elapsedTime}</span>
+      <Clock className={iconSizeClasses[size]} />
+      <span className={`font-mono font-medium ${size === 'sm' ? 'text-[10px]' : 'text-xs'}`}>{elapsedTime}</span>
     </Badge>
   );
 };

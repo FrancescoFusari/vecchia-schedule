@@ -12,21 +12,23 @@ import { supabaseCustom as supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { TableTimer } from "./TableTimer";
 
 interface SectionCardProps {
   section: RestaurantSection;
   className?: string;
 }
 
-interface TableWithOrders extends RestaurantTable {
+interface TableWithOrderInfo extends RestaurantTable {
   hasActiveOrder?: boolean;
+  orderCreatedAt?: string | null;
 }
 
 export function SectionCard({ section, className = "" }: SectionCardProps) {
-  const [tables, setTables] = useState<TableWithOrders[]>([]);
+  const [tables, setTables] = useState<TableWithOrderInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isTableManagementOpen, setIsTableManagementOpen] = useState(false);
-  const [activeTables, setActiveTables] = useState<TableWithOrders[]>([]);
+  const [activeTables, setActiveTables] = useState<TableWithOrderInfo[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
   const isMobile = useIsMobile();
@@ -43,7 +45,8 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
             const activeOrder = await getActiveOrder(table.id);
             return {
               ...table,
-              hasActiveOrder: !!activeOrder
+              hasActiveOrder: !!activeOrder,
+              orderCreatedAt: activeOrder ? activeOrder.createdAt : null
             };
           })
         );
@@ -158,15 +161,30 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
                   {tables.map((table) => (
                     <Link key={table.id} to={`/orders/tables/${table.id}`}>
-                      <Button
-                        variant={table.hasActiveOrder ? "default" : "outline"}
-                        className={`w-full h-full aspect-square flex flex-col items-center justify-center ${
-                          table.hasActiveOrder ? "bg-primary text-primary-foreground" : ""
-                        }`}
-                      >
-                        <span className="text-lg font-semibold">{table.tableNumber}</span>
-                        <span className="text-xs">{table.seats} posti</span>
-                      </Button>
+                      <div className="w-full">
+                        <Button
+                          variant={table.hasActiveOrder ? "outline" : "outline"}
+                          className={`w-full h-full aspect-square flex flex-col items-center justify-center relative 
+                            ${
+                              table.hasActiveOrder 
+                                ? "bg-primary/20 text-primary border-primary hover:bg-primary/30" 
+                                : ""
+                            }`}
+                        >
+                          <span className="text-lg font-semibold">{table.tableNumber}</span>
+                          <span className="text-xs">{table.seats} posti</span>
+                          
+                          {table.hasActiveOrder && table.orderCreatedAt && (
+                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 translate-y-1/2 z-10">
+                              <TableTimer 
+                                startTime={table.orderCreatedAt} 
+                                variant="blue" 
+                                size="sm"
+                              />
+                            </div>
+                          )}
+                        </Button>
+                      </div>
                     </Link>
                   ))}
                 </div>
@@ -179,13 +197,26 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
                 {activeTables.map((table) => (
                   <Link key={table.id} to={`/orders/tables/${table.id}`}>
-                    <Button
-                      variant="default"
-                      className="w-full h-full aspect-square flex flex-col items-center justify-center"
-                    >
-                      <span className="text-lg font-semibold">{table.tableNumber}</span>
-                      <span className="text-xs">{table.seats} posti</span>
-                    </Button>
+                    <div className="w-full">
+                      <Button
+                        variant="outline"
+                        className="w-full h-full aspect-square flex flex-col items-center justify-center relative
+                          bg-primary/20 text-primary border-primary hover:bg-primary/30"
+                      >
+                        <span className="text-lg font-semibold">{table.tableNumber}</span>
+                        <span className="text-xs">{table.seats} posti</span>
+                        
+                        {table.orderCreatedAt && (
+                          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 translate-y-1/2 z-10">
+                            <TableTimer 
+                              startTime={table.orderCreatedAt} 
+                              variant="blue" 
+                              size="sm"
+                            />
+                          </div>
+                        )}
+                      </Button>
+                    </div>
                   </Link>
                 ))}
               </div>
