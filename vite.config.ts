@@ -1,3 +1,4 @@
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -20,7 +21,7 @@ export default defineConfig(({ mode }) => ({
         name: 'La Vecchia Signora - Schedule',
         short_name: 'Schedule',
         description: 'Sistema di gestione turni per La Vecchia Signora',
-        theme_color: '#ffffff',
+        theme_color: '#1e293b',
         background_color: '#1e293b',
         display: 'standalone',
         icons: [
