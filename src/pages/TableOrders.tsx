@@ -7,7 +7,9 @@ import {
   updateOrder, 
   createOrderRound, 
   addOrderItems,
-  updateRoundStatus
+  updateRoundStatus,
+  updateOrderItem,
+  deleteOrderItem
 } from "@/lib/restaurant-service";
 import { employeeService } from "@/lib/supabase";
 import { OrderWithItems, Employee, CartItem } from "@/lib/types";
@@ -191,6 +193,49 @@ function TableOrders() {
     }
   };
 
+  const handleUpdateOrderItem = async (itemId: string, quantity: number) => {
+    try {
+      await updateOrderItem(itemId, quantity);
+      
+      // Refresh order data
+      if (tableId) {
+        const refreshedOrder = await getActiveOrder(tableId);
+        setOrder(refreshedOrder);
+      }
+    } catch (error) {
+      console.error("Error updating order item:", error);
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiornare la quantità del prodotto",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteOrderItem = async (itemId: string) => {
+    try {
+      await deleteOrderItem(itemId);
+      
+      // Refresh order data
+      if (tableId) {
+        const refreshedOrder = await getActiveOrder(tableId);
+        setOrder(refreshedOrder);
+      }
+      
+      toast({
+        title: "Prodotto rimosso",
+        description: "Prodotto rimosso con successo"
+      });
+    } catch (error) {
+      console.error("Error deleting order item:", error);
+      toast({
+        title: "Errore",
+        description: "Impossibile rimuovere il prodotto",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="container py-4 animate-pulse">
@@ -259,21 +304,21 @@ function TableOrders() {
                 <div className="grid grid-cols-3 gap-4 mb-4">
                   <CounterControl
                     label="Acqua nat."
-                    icon={<PanelTop className="h-4 w-4" />}
                     value={order.stillWater}
                     onChange={(value) => handleUpdateCounter('still', value)}
+                    icon={<PanelTop className="h-4 w-4" />}
                   />
                   <CounterControl
                     label="Acqua gas."
-                    icon={<PanelTop className="h-4 w-4" />}
                     value={order.sparklingWater}
                     onChange={(value) => handleUpdateCounter('sparkling', value)}
+                    icon={<PanelTop className="h-4 w-4" />}
                   />
                   <CounterControl
                     label="Pane"
-                    icon={<Coffee className="h-4 w-4" />}
                     value={order.bread}
                     onChange={(value) => handleUpdateCounter('bread', value)}
+                    icon={<Coffee className="h-4 w-4" />}
                   />
                 </div>
               </CardContent>
@@ -309,7 +354,12 @@ function TableOrders() {
                   <CardContent>
                     <div className="space-y-2">
                       {order.items.map(item => (
-                        <OrderItemRow key={item.id} item={item} />
+                        <OrderItemRow 
+                          key={item.id} 
+                          item={item} 
+                          onUpdateQuantity={handleUpdateOrderItem}
+                          onDeleteItem={handleDeleteOrderItem}
+                        />
                       ))}
                     </div>
                   </CardContent>
@@ -336,7 +386,12 @@ function TableOrders() {
                   <CardContent>
                     <div className="space-y-2">
                       {round.items.map(item => (
-                        <OrderItemRow key={item.id} item={item} />
+                        <OrderItemRow 
+                          key={item.id} 
+                          item={item} 
+                          onUpdateQuantity={handleUpdateOrderItem}
+                          onDeleteItem={handleDeleteOrderItem}
+                        />
                       ))}
                     </div>
                   </CardContent>

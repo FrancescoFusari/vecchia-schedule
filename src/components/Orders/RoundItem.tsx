@@ -42,7 +42,7 @@ export function RoundItem({ round, onUpdateStatus }: RoundItemProps) {
           label: "Completato",
           icon: <Check className="h-4 w-4 mr-2" />,
           status: 'completed' as const,
-          variant: 'success' as const
+          variant: 'secondary' as const // Changed from 'success' to 'secondary'
         };
       default:
         return null;

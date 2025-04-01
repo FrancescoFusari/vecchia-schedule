@@ -1,6 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Minus, Plus } from "lucide-react";
+import { ReactNode } from "react";
 
 interface CounterControlProps {
   value: number;
@@ -9,6 +10,7 @@ interface CounterControlProps {
   max?: number;
   label: string;
   className?: string;
+  icon?: ReactNode; // Added icon prop
 }
 
 export function CounterControl({
@@ -18,6 +20,7 @@ export function CounterControl({
   max = 99,
   label,
   className = "",
+  icon, // Added icon prop
 }: CounterControlProps) {
   const handleIncrement = () => {
     if (value < max) {
@@ -33,7 +36,10 @@ export function CounterControl({
 
   return (
     <div className={`flex flex-col items-center ${className}`}>
-      <span className="text-sm font-medium mb-1">{label}</span>
+      <span className="text-sm font-medium mb-1 flex items-center gap-1">
+        {icon && icon} {/* Render icon if provided */}
+        {label}
+      </span>
       <div className="flex items-center space-x-2">
         <Button
           variant="outline"

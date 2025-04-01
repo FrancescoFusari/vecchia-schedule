@@ -7,17 +7,17 @@ interface RoundBadgeProps {
 }
 
 export function RoundBadge({ status, className = "" }: RoundBadgeProps) {
-  const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline" | "success", label: string }> = {
+  const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline", label: string }> = {
     pending: { variant: "outline", label: "In attesa" },
     preparing: { variant: "secondary", label: "In preparazione" },
     served: { variant: "default", label: "Servito" },
-    completed: { variant: "success", label: "Completato" }
+    completed: { variant: "secondary", label: "Completato" } // Changed from 'success' to 'secondary'
   };
 
   const { variant, label } = variants[status] || variants.pending;
 
   return (
-    <Badge variant={variant as any} className={className}>
+    <Badge variant={variant} className={`${className} ${status === 'completed' ? 'bg-green-600 hover:bg-green-700' : ''}`}>
       {label}
     </Badge>
   );
