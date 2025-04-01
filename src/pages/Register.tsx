@@ -80,7 +80,7 @@ const Register = () => {
       <div className="w-full max-w-md px-4 py-8">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <img src="/lovable-uploads/5cec7ef1-53d9-4fab-ba62-9a1137e84da9.png" alt="La Vecchia Signora" className="h-24" />
+            <img src="/lovable-uploads/5cec7ef1-53d9-4fab-ba62-9a1137e84da9.png" alt="La Vecchia Signora" className="h-24 dark:invert" />
           </div>
           <h1 className="text-3xl font-bold mb-2 animate-slide-up text-foreground">La Vecchia Signora</h1>
           <p className="text-muted-foreground animate-slide-up">Sistema di gestione turni</p>
