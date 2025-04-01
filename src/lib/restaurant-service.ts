@@ -1,5 +1,5 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabaseCustom as supabase } from "@/integrations/supabase/client";
 import { 
   RestaurantSection, 
   RestaurantTable, 
