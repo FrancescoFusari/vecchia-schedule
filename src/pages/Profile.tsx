@@ -1,74 +1,45 @@
-import React, { useState, useEffect } from "react";
+
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LogOut, Calendar, Clock } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
-import { format, parseISO, startOfMonth, endOfMonth, eachWeekOfInterval, startOfWeek, endOfWeek } from "date-fns";
-import { it } from "date-fns/locale";
-import { Shift, ShiftTemplate, Employee } from "@/lib/types";
-import { employeeService, shiftService, templateService } from "@/lib/supabase";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { User, LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { employeeService } from "@/lib/supabase";
+import { Employee } from "@/lib/types";
 
 const Profile = () => {
   const { user, signOut } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [linkedEmployee, setLinkedEmployee] = useState<Employee | null>(null);
+  const [isLoadingEmployee, setIsLoadingEmployee] = useState(true);
   const navigate = useNavigate();
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [employee, setEmployee] = useState<Employee | null>(null);
-  const [shifts, setShifts] = useState<Shift[]>([]);
-  const [templates, setTemplates] = useState<ShiftTemplate[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchLinkedEmployee = async () => {
+      if (!user) return;
+      
       try {
-        if (!user?.id) return;
-        
-        setLoading(true);
-        
-        const templateData = await templateService.getTemplates();
-        setTemplates(templateData);
-        
+        setIsLoadingEmployee(true);
         const employees = await employeeService.getEmployees();
-        const userEmployee = employees.find(emp => emp.userId === user.id);
-        
-        if (userEmployee) {
-          setEmployee(userEmployee);
-          
-          const start = startOfMonth(currentMonth);
-          const end = endOfMonth(currentMonth);
-          
-          const shiftData = await shiftService.getShifts(
-            start.toISOString().split('T')[0],
-            end.toISOString().split('T')[0]
-          );
-          
-          setShifts(shiftData.filter(shift => shift.employeeId === userEmployee.id));
-        } else {
-          toast({
-            title: "Informazione",
-            description: "Il tuo account non è collegato a nessun dipendente.",
-          });
-        }
+        const linked = employees.find(emp => emp.userId === user.id);
+        setLinkedEmployee(linked || null);
       } catch (error) {
-        console.error("Error fetching employee data:", error);
-        toast({
-          title: "Errore",
-          description: "Si è verificato un errore durante il caricamento dei dati.",
-          variant: "destructive",
-        });
+        console.error("Error fetching linked employee:", error);
       } finally {
-        setLoading(false);
+        setIsLoadingEmployee(false);
       }
     };
-    
-    fetchData();
-  }, [user, currentMonth]);
+
+    fetchLinkedEmployee();
+  }, [user]);
 
   const handleLogout = async () => {
+    setIsLoading(true);
     try {
       await signOut();
       navigate("/login");
@@ -76,253 +47,162 @@ const Profile = () => {
       console.error("Error logging out:", error);
       toast({
         title: "Errore",
-        description: "Si è verificato un errore durante il logout.",
+        description: "Si è verificato un errore durante il logout",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const calculateWeeklyHours = () => {
-    if (!shifts.length) return [];
-    
-    const start = startOfMonth(currentMonth);
-    const end = endOfMonth(currentMonth);
-    const weeks = eachWeekOfInterval(
-      { start, end }, 
-      { weekStartsOn: 1 } // 1 = Monday
+  if (!user) {
+    return (
+      <div className="flex justify-center items-center h-[50vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
     );
-    
-    return weeks.map(weekStart => {
-      const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
-      const weekShifts = shifts.filter(
-        shift => 
-          new Date(shift.date) >= startOfWeek(weekStart, { weekStartsOn: 1 }) && 
-          new Date(shift.date) <= weekEnd
-      );
-      
-      const totalHours = weekShifts.reduce(
-        (sum, shift) => sum + parseFloat(shift.duration.toString()), 
-        0
-      );
-      
-      const templateUsage = templates.reduce((acc, template) => {
-        const count = weekShifts.filter(shift => 
-          shift.startTime === template.startTime && 
-          shift.endTime === template.endTime
-        ).length;
-        if (count > 0) {
-          acc[template.name] = count;
-        }
-        return acc;
-      }, {} as Record<string, number>);
-      
-      return {
-        weekStart,
-        weekEnd,
-        hours: totalHours,
-        templateUsage,
-        shifts: weekShifts
-      };
-    });
-  };
-
-  const weeklyHours = calculateWeeklyHours();
-  
-  const totalMonthlyHours = shifts.reduce(
-    (sum, shift) => sum + parseFloat(shift.duration.toString()), 
-    0
-  );
-  
-  const groupShiftsByDate = () => {
-    const grouped: Record<string, Shift[]> = {};
-    
-    shifts.forEach(shift => {
-      if (!grouped[shift.date]) {
-        grouped[shift.date] = [];
-      }
-      grouped[shift.date].push(shift);
-    });
-    
-    return Object.entries(grouped)
-      .sort(([dateA], [dateB]) => new Date(dateA).getTime() - new Date(dateB).getTime())
-      .map(([date, shifts]) => ({
-        date,
-        shifts
-      }));
-  };
-  
-  const shiftsByDate = groupShiftsByDate();
-  const currentMonthName = format(currentMonth, 'MMMM yyyy', { locale: it });
+  }
 
   return (
-    <div className="container mx-auto px-0 sm:px-4 py-6 space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Profilo Personale</h1>
-          <p className="text-gray-500">
-            {employee ? `${employee.firstName} ${employee.lastName}` : 'Dipendente'}
-          </p>
-        </div>
-        
-        <Button 
-          variant="destructive" 
-          className="w-full sm:w-auto flex items-center" 
-          onClick={handleLogout}
-        >
-          <LogOut className="mr-2 h-4 w-4" />
-          Logout
-        </Button>
+    <div className="container mx-auto max-w-2xl py-6 animate-fade-in">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Profilo Utente</h1>
       </div>
-      
-      {employee ? (
-        <Tabs defaultValue="schedule" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="schedule" className="flex items-center justify-center gap-2">
-              <Calendar className="h-4 w-4" />
-              <span>Turni</span>
-            </TabsTrigger>
-            <TabsTrigger value="hours" className="flex items-center justify-center gap-2">
-              <Clock className="h-4 w-4" />
-              <span>Ore</span>
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="schedule" className="space-y-4">
-            <Card>
-              <CardHeader className="bg-primary/5 py-4 border-b">
-                <CardTitle className="text-xl font-semibold">
-                  I tuoi turni - {currentMonthName}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                {loading ? (
-                  <div className="p-8 text-center">
-                    <p className="text-gray-500">Caricamento turni...</p>
-                  </div>
-                ) : shifts.length === 0 ? (
-                  <div className="p-8 text-center">
-                    <p className="text-gray-500">Nessun turno programmato per questo mese.</p>
-                  </div>
-                ) : (
-                  <div className="divide-y">
-                    {shiftsByDate.map(({ date, shifts }) => (
-                      <div key={date} className="p-4">
-                        <h3 className="font-medium text-lg mb-2">
-                          {format(parseISO(date), "EEEE d MMMM", { locale: it })}
-                        </h3>
-                        <div className="space-y-3">
-                          {shifts.map((shift) => (
-                            <div 
-                              key={shift.id} 
-                              className="p-3 rounded-md border border-gray-200 bg-gray-50"
-                              style={{ 
-                                borderLeftWidth: "4px",
-                                borderLeftColor: employee?.color || "#9CA3AF" 
-                              }}
-                            >
-                              <p className="font-medium">
-                                {shift.startTime} - {shift.endTime}
-                              </p>
-                              <p className="text-sm text-gray-500">
-                                Durata: {shift.duration} ore
-                              </p>
-                              {shift.notes && (
-                                <p className="text-sm mt-1 text-gray-600">
-                                  Note: {shift.notes}
-                                </p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="hours" className="space-y-4">
-            <Card>
-              <CardHeader className="bg-primary/5 py-4 border-b">
-                <CardTitle className="text-xl flex justify-between items-center">
-                  <span>Ore lavorate - {currentMonthName}</span>
-                  {!loading && (
-                    <span className="text-lg font-bold">
-                      Totale: {totalMonthlyHours.toFixed(1)} ore
-                    </span>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                {loading ? (
-                  <div className="p-8 text-center">
-                    <p className="text-gray-500">Caricamento dati...</p>
-                  </div>
-                ) : weeklyHours.length === 0 ? (
-                  <div className="p-8 text-center">
-                    <p className="text-gray-500">Nessun dato per questo mese.</p>
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Settimana</TableHead>
-                        <TableHead>Ore</TableHead>
-                        <TableHead>Dettagli</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {weeklyHours.map((week, index) => (
-                        <TableRow key={index}>
-                          <TableCell className="font-medium whitespace-nowrap">
-                            {format(week.weekStart, "dd/MM", { locale: it })} - {format(week.weekEnd, "dd/MM", { locale: it })}
-                          </TableCell>
-                          <TableCell className="font-semibold">
-                            {week.hours.toFixed(1)}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-wrap gap-1">
-                              {Object.entries(week.templateUsage).map(([template, count], i) => (
-                                <Badge 
-                                  key={i} 
-                                  variant="outline" 
-                                  className="text-xs"
-                                  style={{
-                                    borderColor: employee?.color ? `${employee.color}50` : undefined,
-                                    backgroundColor: employee?.color ? `${employee.color}15` : undefined
-                                  }}
-                                >
-                                  {template}: {count}
-                                </Badge>
-                              ))}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      ) : loading ? (
+
+      <div className="space-y-6">
         <Card>
-          <CardContent className="p-8 text-center">
-            <p className="text-gray-500">Caricamento dati...</p>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <div>
+              <CardTitle className="text-xl">Informazioni Personali</CardTitle>
+              <CardDescription>I tuoi dati personali</CardDescription>
+            </div>
+            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <User className="h-6 w-6 text-primary" />
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <Label>Username</Label>
+                <Input value={user.username} readOnly className="bg-muted" />
+              </div>
+              <div>
+                <Label>Ruolo</Label>
+                <div className="flex items-center space-x-2 h-10">
+                  <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                    {user.role === 'admin' ? 'Amministratore' : 'Dipendente'}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <Label>Nome</Label>
+                <Input value={user.firstName || ''} readOnly className="bg-muted" />
+              </div>
+              <div>
+                <Label>Cognome</Label>
+                <Input value={user.lastName || ''} readOnly className="bg-muted" />
+              </div>
+            </div>
+
+            <div>
+              <Label>Email</Label>
+              <Input value={user.email || ''} readOnly className="bg-muted" />
+            </div>
           </CardContent>
         </Card>
-      ) : (
+
+        {isLoadingEmployee ? (
+          <Card>
+            <CardContent className="py-6 flex justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </CardContent>
+          </Card>
+        ) : linkedEmployee ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">Dettagli Dipendente</CardTitle>
+              <CardDescription>Il tuo profilo dipendente collegato</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <Label>Nome Completo</Label>
+                  <Input 
+                    value={`${linkedEmployee.firstName} ${linkedEmployee.lastName || ''}`} 
+                    readOnly 
+                    className="bg-muted" 
+                  />
+                </div>
+                <div>
+                  <Label>Posizione</Label>
+                  <Input 
+                    value={linkedEmployee.position || 'Non specificata'} 
+                    readOnly 
+                    className="bg-muted" 
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <Label>Email</Label>
+                  <Input 
+                    value={linkedEmployee.email || 'Non specificata'} 
+                    readOnly 
+                    className="bg-muted" 
+                  />
+                </div>
+                <div>
+                  <Label>Telefono</Label>
+                  <Input 
+                    value={linkedEmployee.phone || 'Non specificato'} 
+                    readOnly 
+                    className="bg-muted" 
+                  />
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <div className="w-6 h-6 rounded-full" style={{ backgroundColor: linkedEmployee.color }}></div>
+                <span>Colore assegnato</span>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">Dettagli Dipendente</CardTitle>
+              <CardDescription>Nessun profilo dipendente collegato</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">
+                Il tuo account utente non è collegato a nessun profilo dipendente. 
+                Contatta l'amministratore per collegare il tuo account.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
-          <CardContent className="p-8 text-center">
-            <p className="text-gray-500">
-              Il tuo account non è collegato a nessun profilo dipendente. 
-              Contatta l'amministratore per collegare il tuo account.
-            </p>
-          </CardContent>
+          <CardHeader>
+            <CardTitle className="text-xl">Azioni Account</CardTitle>
+          </CardHeader>
+          <CardFooter className="flex justify-end">
+            <Button
+              variant="destructive"
+              onClick={handleLogout}
+              disabled={isLoading}
+              className="flex items-center"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              {isLoading ? "Logout in corso..." : "Logout"}
+            </Button>
+          </CardFooter>
         </Card>
-      )}
+      </div>
     </div>
   );
 };

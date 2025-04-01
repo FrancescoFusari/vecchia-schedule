@@ -1,136 +1,123 @@
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { toast } from '@/hooks/use-toast';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "@/hooks/use-toast";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const Login = () => {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { signIn, user } = useAuth();
   const navigate = useNavigate();
-  const { user, loading, signIn } = useAuth();
-  const [username, setUsername] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
-  const [loginError, setLoginError] = useState<string | null>(null);
-
+  
+  // Redirect authenticated users away from login page
   useEffect(() => {
-    // If user is already logged in, redirect to dashboard
     if (user) {
-      navigate('/');
+      navigate("/");
     }
   }, [user, navigate]);
-
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!username || !password) {
-      setLoginError('Username and password are required');
+    if (!username.trim() || !password.trim()) {
+      toast({
+        title: "Errore",
+        description: "Inserisci username e password",
+        variant: "destructive",
+      });
       return;
     }
     
+    setIsLoading(true);
+    
     try {
-      setIsLoggingIn(true);
-      setLoginError(null);
-      
-      // Log login attempt without exposing password
-      console.log("Login attempt with username:", username);
-      
       await signIn(username, password);
-      // Redirect will happen automatically due to the useEffect above
-    } catch (error: any) {
-      console.error('Login failed:', error);
-      
-      // Provide a more detailed error message based on the error
-      let errorMessage = 'Invalid credentials. Please try again.';
-      
-      if (error.message && error.message.includes('Database error')) {
-        errorMessage = 'Database error. Please try again or contact support.';
-      } else if (error.message && error.message.includes('Invalid login')) {
-        errorMessage = 'Invalid username or password. Please check your credentials.';
-      }
-      
-      setLoginError(errorMessage);
-      
-      toast({
-        title: "Login Failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoggingIn(false);
+      // Navigate is handled by useAuth after successful login
+    } catch (error) {
+      console.error("Login error:", error);
+      setIsLoading(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-primary">Caricamento...</div>
-      </div>
-    );
-  }
-
+  
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
+    <div className="flex items-center justify-center min-h-screen bg-background">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+      
+      <div className="w-full max-w-md px-4 py-8">
+        <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <img src="/lovable-uploads/5cec7ef1-53d9-4fab-ba62-9a1137e84da9.png" alt="La Vecchia Signora" className="h-20" />
+            <img 
+              src="/lovable-uploads/5cec7ef1-53d9-4fab-ba62-9a1137e84da9.png" 
+              alt="La Vecchia Signora" 
+              className="h-24 dark:invert" 
+            />
           </div>
-          <CardTitle className="text-2xl font-bold text-center">La Vecchia Signora</CardTitle>
-          <CardDescription className="text-center">
-            Sistema di gestione turni
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                placeholder="admin o username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-            {loginError && (
-              <div className="text-sm font-medium text-destructive">
-                {loginError}
+          <h1 className="text-3xl font-bold mb-2 animate-slide-up text-foreground">La Vecchia Signora</h1>
+          <p className="text-muted-foreground animate-slide-up">Sistema di gestione turni</p>
+        </div>
+        
+        <Card className="animate-scale-in">
+          <CardHeader>
+            <CardTitle>Accesso</CardTitle>
+            <CardDescription>
+              Inserisci le tue credenziali per accedere
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  placeholder="nome.cognome"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                />
               </div>
-            )}
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={isLoggingIn}
-            >
-              {isLoggingIn ? 'Accesso in corso...' : 'Accedi'}
-            </Button>
+              
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              
+              <div className="text-sm bg-accent p-3 rounded-md">
+                <p className="mb-1 font-medium text-foreground">Credenziali di demo:</p>
+                <p className="text-muted-foreground">Admin: admin / juventus96</p>
+              </div>
+            </CardContent>
+            
+            <CardFooter className="flex flex-col space-y-4">
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Accesso in corso..." : "Accedi"}
+              </Button>
+              <div className="text-center w-full">
+                <p className="text-sm text-muted-foreground">
+                  Non hai un account?{" "}
+                  <Link to="/register" className="text-primary hover:underline">
+                    Registrati
+                  </Link>
+                </p>
+              </div>
+            </CardFooter>
           </form>
-          
-          <div className="mt-4 text-center text-sm">
-            <p className="text-muted-foreground">Credenziali di demo:</p>
-            <p className="font-medium">Username: <span className="font-bold">admin</span></p>
-            <p className="font-medium">Password: <span className="font-bold">juventus96</span></p>
-          </div>
-        </CardContent>
-        <CardFooter className="flex flex-col">
-          <p className="text-xs text-center text-muted-foreground">
-            Pizzeria - Trattoria - Forno a Legna
-          </p>
-        </CardFooter>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 };
