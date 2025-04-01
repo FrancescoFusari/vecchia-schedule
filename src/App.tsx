@@ -22,7 +22,7 @@ const queryClient = new QueryClient();
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="dark" storageKey="la-vecchia-signora-theme">
+      <ThemeProvider attribute="class" forcedTheme="dark" defaultTheme="dark" storageKey="la-vecchia-signora-theme">
         <Router>
           <AuthProvider>
             <Routes>

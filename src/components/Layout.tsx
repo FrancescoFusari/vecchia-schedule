@@ -4,10 +4,20 @@ import { Toaster } from "@/components/ui/toaster";
 import { Outlet } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "next-themes";
+import { useEffect } from "react";
 
 export function Layout() {
   const isMobile = useIsMobile();
-  const { theme } = useTheme();
+  const { theme, setTheme } = useTheme();
+  
+  // Force the theme to dark initially
+  useEffect(() => {
+    const htmlElement = document.documentElement;
+    if (!htmlElement.classList.contains('dark')) {
+      htmlElement.classList.add('dark');
+    }
+    setTheme('dark');
+  }, [setTheme]);
   
   return (
     <div className="min-h-screen flex flex-col bg-background transition-colors duration-300">

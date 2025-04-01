@@ -1,16 +1,15 @@
 
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, Users, User, MessageSquare, LogOut, Moon, Sun } from "lucide-react";
+import { CalendarDays, Users, User, MessageSquare, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useTheme } from "next-themes";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export function Navbar() {
   const { user, isAdmin, signOut } = useAuth();
   const location = useLocation();
   const isMobile = useIsMobile();
-  const { theme, setTheme } = useTheme();
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -26,10 +25,6 @@ export function Navbar() {
 
   const handleLogout = () => {
     signOut();
-  };
-
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
   };
 
   return (
@@ -100,19 +95,7 @@ export function Navbar() {
             
             {/* Add theme toggle button */}
             {!isMobile && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleTheme}
-                className="ml-2"
-                aria-label="Toggle theme"
-              >
-                {theme === "dark" ? (
-                  <Sun className="h-4 w-4" />
-                ) : (
-                  <Moon className="h-4 w-4" />
-                )}
-              </Button>
+              <ThemeToggle className="ml-2" />
             )}
             
             {/* Add logout button if not on mobile */}
