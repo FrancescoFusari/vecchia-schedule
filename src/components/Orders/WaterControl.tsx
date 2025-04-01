@@ -46,11 +46,18 @@ export function WaterControl({
           pressed={isSparkling} 
           onPressedChange={onTypeChange}
           size="sm"
-          className="h-8 px-3 data-[state=on]:bg-blue-500/20 border border-input flex items-center gap-2"
+          className={`h-8 px-3 border border-input flex items-center gap-2 transition-colors ${
+            isSparkling 
+              ? "bg-blue-500/20 text-blue-600 border-blue-400 data-[state=on]:bg-blue-500/30 hover:bg-blue-500/40" 
+              : "data-[state=on]:bg-slate-100"
+          }`}
           aria-label="Toggle sparkling water"
         >
-          {isSparkling ? <Droplets className="h-3.5 w-3.5" /> : <Droplet className="h-3.5 w-3.5" />}
-          <span className="text-xs">{isSparkling ? "Frizzante" : "Naturale"}</span>
+          {isSparkling 
+            ? <Droplets className="h-3.5 w-3.5 text-blue-600" /> 
+            : <Droplet className="h-3.5 w-3.5" />
+          }
+          <span className="text-xs font-medium">{isSparkling ? "Frizzante" : "Naturale"}</span>
         </Toggle>
       </div>
       
