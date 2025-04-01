@@ -118,17 +118,17 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
     <>
       <Card className={`${className} overflow-hidden`}>
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-          <div className="flex items-center justify-between">
-            <CardHeader className="pb-2 flex flex-row justify-between items-center flex-grow">
-              <div className="flex items-center">
-                <CardTitle className="text-xl font-medium">{section.name}</CardTitle>
+          <div className="flex items-center px-6 py-4">
+            <div className="flex-1">
+              <CardTitle className="text-xl font-medium flex items-center">
+                {section.name}
                 {getActiveBadge()}
-              </div>
-            </CardHeader>
+              </CardTitle>
+            </div>
             
-            <div className="flex items-center pr-4">
+            <div className="flex items-center gap-2">
               <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-9 w-9 p-0 mr-2 rounded-full">
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full">
                   {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   <span className="sr-only">{isOpen ? 'Chiudi' : 'Apri'}</span>
                 </Button>
@@ -137,7 +137,7 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
               <Button 
                 variant="ghost" 
                 size="sm"
-                className="h-9 w-9 p-0 rounded-full"
+                className="h-8 w-8 p-0 rounded-full"
                 onClick={() => setIsTableManagementOpen(true)}
               >
                 <Settings className="h-4 w-4" />
@@ -147,7 +147,7 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
           </div>
           
           <CollapsibleContent>
-            <CardContent>
+            <CardContent className="pt-0 pb-6">
               {isLoading ? (
                 <div className="flex justify-center py-4">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
@@ -175,7 +175,7 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
           </CollapsibleContent>
           
           {!isOpen && activeTables.length > 0 && (
-            <div className="px-6 pb-4 pt-0">
+            <div className="px-6 pb-6 pt-0">
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
                 {activeTables.map((table) => (
                   <Link key={table.id} to={`/orders/tables/${table.id}`}>
