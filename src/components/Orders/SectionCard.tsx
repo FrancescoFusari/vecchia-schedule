@@ -167,7 +167,7 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
                           className={`w-full h-full aspect-square flex flex-col items-center justify-center relative 
                             ${
                               table.hasActiveOrder 
-                                ? "bg-primary/30 text-primary border-primary hover:bg-primary/40" 
+                                ? "bg-primary/10 text-blue-700 border-primary hover:bg-primary/20" 
                                 : ""
                             }`}
                         >
@@ -202,7 +202,7 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
                       <Button
                         variant="outline"
                         className="w-full h-full aspect-square flex flex-col items-center justify-center relative
-                          bg-primary/30 text-primary border-primary hover:bg-primary/40"
+                          bg-primary/10 text-blue-700 border-primary hover:bg-primary/20"
                       >
                         <span className="text-lg font-semibold">{table.tableNumber}</span>
                         <span className="text-xs">{table.seats} posti</span>
