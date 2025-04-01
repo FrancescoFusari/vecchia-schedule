@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,7 @@ import { authService } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
+
 const Register = () => {
   const [username, setUsername] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -26,6 +28,7 @@ const Register = () => {
       navigate("/");
     }
   }, [user, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
@@ -52,6 +55,7 @@ const Register = () => {
       });
       return;
     }
+    
     setIsLoading(true);
     try {
       await authService.registerEmployee(username, password, firstName, lastName);
@@ -75,6 +79,7 @@ const Register = () => {
       setIsLoading(false);
     }
   };
+
   return <div className="flex items-center justify-center min-h-screen bg-background">
       <div className="w-full max-w-md px-4 py-8">
         <div className="text-center mb-8">
@@ -99,9 +104,15 @@ const Register = () => {
                 <Input id="username" placeholder="nome.cognome" value={username} onChange={e => setUsername(e.target.value)} required />
               </div>
               
+              <div className="space-y-2">
+                <Label htmlFor="firstName">Nome</Label>
+                <Input id="firstName" placeholder="Nome" value={firstName} onChange={e => setFirstName(e.target.value)} />
+              </div>
               
-              
-              
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Cognome</Label>
+                <Input id="lastName" placeholder="Cognome" value={lastName} onChange={e => setLastName(e.target.value)} />
+              </div>
               
               <div className="space-y-2">
                 <Label htmlFor="password">Password <span className="text-destructive">*</span></Label>
@@ -135,4 +146,5 @@ const Register = () => {
       </div>
     </div>;
 };
+
 export default Register;
