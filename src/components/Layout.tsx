@@ -10,14 +10,12 @@ export function Layout() {
   const isMobile = useIsMobile();
   const { theme, setTheme } = useTheme();
   
-  // Force the theme to dark initially
+  // Initialize the theme to dark on first load, but don't force it afterwards
   useEffect(() => {
-    const htmlElement = document.documentElement;
-    if (!htmlElement.classList.contains('dark')) {
-      htmlElement.classList.add('dark');
+    if (!theme) {
+      setTheme('dark');
     }
-    setTheme('dark');
-  }, [setTheme]);
+  }, [setTheme, theme]);
   
   return (
     <div className="min-h-screen flex flex-col bg-background transition-colors duration-300">

@@ -1,3 +1,4 @@
+
 import { MonthlyCalendar } from "@/components/Calendar/MonthlyCalendar";
 import { WeeklyCalendar } from "@/components/Calendar/WeeklyCalendar";
 import { useEffect, useState } from "react";
@@ -88,21 +89,21 @@ const Calendar = () => {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-bold">Calendario Turni</h1>
-        <p className="text-gray-500">Visualizza e gestisci i turni dei dipendenti</p>
+        <p className="text-muted-foreground">Visualizza e gestisci i turni dei dipendenti</p>
       </div>
 
       {isAdmin() && (
         <Collapsible
           open={isEmployeeListOpen}
           onOpenChange={setIsEmployeeListOpen}
-          className="w-full bg-white rounded-lg shadow border border-gray-200"
+          className="w-full bg-card rounded-lg shadow border border-border"
         >
           <div className="p-4 flex items-center justify-between">
             <h2 className="font-semibold flex items-center gap-2">
               <User className="h-4 w-4" />
               Dipendenti
             </h2>
-            <CollapsibleTrigger className="p-1.5 rounded-md hover:bg-gray-100">
+            <CollapsibleTrigger className="p-1.5 rounded-md hover:bg-muted/50">
               {isEmployeeListOpen ? (
                 <ChevronDown className="h-4 w-4" />
               ) : (
@@ -118,7 +119,7 @@ const Calendar = () => {
                   {employees.map((employee) => (
                     <div
                       key={employee.id}
-                      className={`flex flex-col items-center p-2 rounded-md hover:bg-gray-100 cursor-pointer transition-colors ${
+                      className={`flex flex-col items-center p-2 rounded-md hover:bg-muted/50 cursor-pointer transition-colors ${
                         isMobile ? 'mb-2 w-[65px]' : 'min-w-[80px]'
                       }`}
                       onClick={() => handleEmployeeClick(employee)}

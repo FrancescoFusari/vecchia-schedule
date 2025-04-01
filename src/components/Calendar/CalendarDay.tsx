@@ -40,8 +40,8 @@ export function CalendarDay({ day, employees, onAddShift, onEditShift }: Calenda
   return (
     <div
       className={cn(
-        "calendar-day border border-gray-200 p-2 transition-all duration-200 overflow-hidden h-full min-h-[120px]",
-        !day.isCurrentMonth && "empty text-gray-400 bg-gray-50",
+        "calendar-day border border-border p-2 transition-all duration-200 overflow-hidden h-full min-h-[120px]",
+        !day.isCurrentMonth && "empty text-muted-foreground bg-muted/20 dark:bg-muted/5",
         day.isToday && "border-primary/50"
       )}
     >
@@ -49,7 +49,7 @@ export function CalendarDay({ day, employees, onAddShift, onEditShift }: Calenda
         <div
           className={cn(
             "font-semibold text-sm rounded-full w-7 h-7 flex items-center justify-center",
-            day.isToday && "bg-primary text-white"
+            day.isToday && "bg-primary text-primary-foreground"
           )}
         >
           {day.date.getDate()}
@@ -62,7 +62,7 @@ export function CalendarDay({ day, employees, onAddShift, onEditShift }: Calenda
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 rounded-full opacity-60 hover:opacity-100 bg-gray-100"
+                  className="h-6 w-6 rounded-full opacity-60 hover:opacity-100 bg-muted/50 dark:bg-muted/20"
                   onClick={handleAddShift}
                 >
                   <Plus className="h-3 w-3" />
@@ -78,7 +78,7 @@ export function CalendarDay({ day, employees, onAddShift, onEditShift }: Calenda
       
       <div className="mt-2 space-y-1 max-h-[250px] overflow-y-auto">
         {day.shifts.length === 0 && day.isCurrentMonth && (
-          <div className="text-xs text-gray-400 italic py-1">
+          <div className="text-xs text-muted-foreground italic py-1">
             Nessun turno
           </div>
         )}
