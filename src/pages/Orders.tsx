@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { supabaseCustom as supabase } from "@/integrations/supabase/client";
 
 const Orders = () => {
   const [sections, setSections] = useState<RestaurantSection[]>([]);
@@ -29,11 +30,8 @@ const Orders = () => {
   useEffect(() => {
     if (!user) {
       navigate('/login');
-    } else if (isAdmin()) {
-      // Optionally redirect admins to dashboard or another page
-      // navigate('/dashboard');
     }
-  }, [user, isAdmin, navigate]);
+  }, [user, navigate]);
 
   useEffect(() => {
     const fetchSections = async () => {
@@ -52,8 +50,27 @@ const Orders = () => {
         setIsLoading(false);
       }
     };
+    
     if (user) {
       fetchSections();
+      
+      // Set up real-time listener for section changes
+      const sectionsChannel = supabase
+        .channel('restaurant_sections_changes')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'restaurant_sections'
+        }, () => {
+          // Refresh the sections whenever there's a change
+          fetchSections();
+        })
+        .subscribe();
+
+      // Clean up the channel subscription when the component unmounts
+      return () => {
+        supabase.removeChannel(sectionsChannel);
+      };
     }
   }, [user]);
 
@@ -101,9 +118,7 @@ const Orders = () => {
         });
       }
       
-      // Refresh sections and close dialog
-      const sectionsData = await getSections();
-      setSections(sectionsData);
+      // Close dialog - sections will be refreshed via realtime subscription
       setSectionDialogOpen(false);
     } catch (error) {
       console.error("Error saving section:", error);
@@ -125,9 +140,7 @@ const Orders = () => {
         description: `Sezione "${sectionToDelete.name}" eliminata con successo`
       });
       
-      // Refresh sections and close dialog
-      const sectionsData = await getSections();
-      setSections(sectionsData);
+      // Close dialog - sections will be refreshed via realtime subscription
       setIsDeleteDialogOpen(false);
     } catch (error) {
       console.error("Error deleting section:", error);

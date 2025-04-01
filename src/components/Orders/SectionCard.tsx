@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Settings } from "lucide-react";
 import { TableManagementDialog } from "./TableManagementDialog";
 import { useAuth } from "@/hooks/useAuth";
+import { supabaseCustom as supabase } from "@/integrations/supabase/client";
 
 interface SectionCardProps {
   section: RestaurantSection;
@@ -18,7 +19,7 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
   const [tables, setTables] = useState<RestaurantTable[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isTableManagementOpen, setIsTableManagementOpen] = useState(false);
-  const { isAdmin } = useAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchTables = async () => {
@@ -34,6 +35,25 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
     };
 
     fetchTables();
+
+    // Set up real-time listeners for table changes
+    const tablesChannel = supabase
+      .channel('restaurant_tables_changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'restaurant_tables',
+        filter: `section_id=eq.${section.id}`
+      }, () => {
+        // Refresh the tables whenever there's a change
+        fetchTables();
+      })
+      .subscribe();
+
+    // Clean up the channel subscription when the component unmounts
+    return () => {
+      supabase.removeChannel(tablesChannel);
+    };
   }, [section.id, isTableManagementOpen]);
 
   return (
@@ -41,17 +61,15 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
       <Card className={`${className}`}>
         <CardHeader className="pb-2 flex flex-row justify-between items-center">
           <CardTitle className="text-xl font-medium">{section.name}</CardTitle>
-          {isAdmin() && (
-            <Button 
-              variant="ghost" 
-              size="sm"
-              className="h-8 w-8 p-0"
-              onClick={() => setIsTableManagementOpen(true)}
-            >
-              <Settings className="h-4 w-4" />
-              <span className="sr-only">Gestisci tavoli</span>
-            </Button>
-          )}
+          <Button 
+            variant="ghost" 
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={() => setIsTableManagementOpen(true)}
+          >
+            <Settings className="h-4 w-4" />
+            <span className="sr-only">Gestisci tavoli</span>
+          </Button>
         </CardHeader>
         <CardContent>
           {isLoading ? (

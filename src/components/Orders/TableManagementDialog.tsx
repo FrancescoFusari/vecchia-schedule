@@ -9,6 +9,7 @@ import { RestaurantTable } from "@/lib/types";
 import { toast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Trash2, Plus } from "lucide-react";
+import { supabaseCustom as supabase } from "@/integrations/supabase/client";
 
 interface TableManagementDialogProps {
   isOpen: boolean;
@@ -30,6 +31,27 @@ export function TableManagementDialog({ isOpen, onClose, sectionId }: TableManag
     if (isOpen) {
       fetchTables();
     }
+    
+    // Set up real-time listener for table changes
+    const tablesChannel = supabase
+      .channel('tables_dialog_changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'restaurant_tables',
+        filter: `section_id=eq.${sectionId}`
+      }, () => {
+        // Refresh the tables whenever there's a change
+        if (isOpen) {
+          fetchTables();
+        }
+      })
+      .subscribe();
+
+    // Clean up the channel subscription when the component unmounts
+    return () => {
+      supabase.removeChannel(tablesChannel);
+    };
   }, [isOpen, sectionId]);
 
   const fetchTables = async () => {
