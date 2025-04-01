@@ -1,4 +1,3 @@
-
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -26,20 +25,36 @@ export default defineConfig(({ mode }) => ({
         display: 'standalone',
         icons: [
           {
-            src: 'og-image.png',
+            src: 'pwa-192x192.png',
             sizes: '192x192',
             type: 'image/png',
           },
           {
-            src: 'og-image.png',
+            src: 'pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png',
           },
           {
-            src: 'og-image.png',
+            src: 'maskable-icon.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable',
+            purpose: 'maskable',
+          }
+        ],
+        screenshots: [
+          {
+            src: 'screenshots/screenshot1.png',
+            sizes: '1280x720',
+            type: 'image/png',
+            form_factor: 'wide',
+            label: 'Calendario dei turni'
+          },
+          {
+            src: 'screenshots/screenshot2.png',
+            sizes: '1280x720',
+            type: 'image/png',
+            form_factor: 'narrow',
+            label: 'Vista calendario mobile'
           }
         ]
       },
