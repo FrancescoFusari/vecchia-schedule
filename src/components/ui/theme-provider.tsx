@@ -6,6 +6,7 @@ import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { type ThemeProviderProps } from "next-themes/dist/types";
 
 export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
+  // Create state properly using React.useState
   const [mounted, setMounted] = React.useState(false);
 
   // When mounted on client, now we can render
