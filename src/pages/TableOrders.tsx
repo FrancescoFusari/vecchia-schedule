@@ -594,7 +594,12 @@ const TableOrders = () => {
         </div>
       )}
 
-      <AddItemModal open={isItemModalOpen} onClose={() => setIsItemModalOpen(false)} onAddItem={handleAddItem} />
+      <AddItemModal 
+        open={isItemModalOpen} 
+        onClose={() => setIsItemModalOpen(false)} 
+        onAddItem={handleAddItem} 
+        currentOrderItems={order?.items}
+      />
     </div>;
 };
 

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -32,7 +31,12 @@ export function AddItemModal({
   const [isLoading, setIsLoading] = useState(true);
   const [openCategories, setOpenCategories] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [localOrderItems, setLocalOrderItems] = useState<OrderItemWithMenuData[]>([]);
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    setLocalOrderItems(currentOrderItems);
+  }, [currentOrderItems]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -72,7 +76,19 @@ export function AddItemModal({
   const handleAddToOrder = async (item: MenuItem, quantity: number) => {
     try {
       await onAddItem(item.id, quantity);
-      // We don't close the modal anymore to allow adding multiple items
+      
+      const newItem: OrderItemWithMenuData = {
+        id: `temp-${Date.now()}`,
+        orderId: "temp",
+        menuItemId: item.id,
+        quantity: quantity,
+        createdAt: new Date().toISOString(),
+        menuItem: item,
+        isLastFirstCourse: false
+      };
+      
+      setLocalOrderItems(prev => [...prev, newItem]);
+      
       toast({
         title: "Prodotto aggiunto",
         description: `${quantity}x ${item.name} aggiunto all'ordine`
@@ -88,9 +104,9 @@ export function AddItemModal({
   };
 
   const addCourseDelimiter = async () => {
-    console.log("Current order items:", currentOrderItems);
+    console.log("Current order items:", localOrderItems);
     
-    if (!currentOrderItems || currentOrderItems.length === 0) {
+    if (!localOrderItems || localOrderItems.length === 0) {
       toast({
         title: "Impossibile aggiungere separatore",
         description: "Non ci sono prodotti nell'ordine",
@@ -100,16 +116,22 @@ export function AddItemModal({
     }
 
     try {
-      // Remove any existing separators first
-      for (const item of currentOrderItems) {
+      for (const item of localOrderItems) {
         if (item.isLastFirstCourse) {
           await updateOrderItem(item.id, item.quantity, item.notes, false);
         }
       }
       
-      // Set the last item as the delimiter
-      const lastItem = currentOrderItems[currentOrderItems.length - 1];
+      const lastItem = localOrderItems[localOrderItems.length - 1];
       await updateOrderItem(lastItem.id, lastItem.quantity, lastItem.notes, true);
+      
+      setLocalOrderItems(prev => {
+        const updated = prev.map(item => ({
+          ...item,
+          isLastFirstCourse: item.id === lastItem.id
+        }));
+        return updated;
+      });
       
       toast({
         title: "Separatore aggiunto",
@@ -133,8 +155,8 @@ export function AddItemModal({
     );
   };
 
-  const totalItems = currentOrderItems.reduce((sum, item) => sum + item.quantity, 0);
-  const orderTotal = currentOrderItems.reduce((sum, item) => sum + (item.quantity * item.menuItem.price), 0);
+  const totalItems = localOrderItems.reduce((sum, item) => sum + item.quantity, 0);
+  const orderTotal = localOrderItems.reduce((sum, item) => sum + (item.quantity * item.menuItem.price), 0);
   const formattedTotal = new Intl.NumberFormat('it-IT', {
     style: 'currency',
     currency: 'EUR'
@@ -199,7 +221,7 @@ export function AddItemModal({
           </div>
         </ScrollArea>
         
-        {currentOrderItems.length > 0 && (
+        {localOrderItems.length > 0 && (
           <div className="mt-4 border-t pt-4">
             <h3 className="font-medium mb-2">Riepilogo ordine</h3>
             <div className="bg-muted/30 rounded-md p-3">
@@ -209,7 +231,7 @@ export function AddItemModal({
               </div>
               <ScrollArea className="max-h-[120px]">
                 <div className="space-y-1">
-                  {currentOrderItems.map((item) => (
+                  {localOrderItems.map((item) => (
                     <div key={item.id} className="text-sm flex justify-between">
                       <span>{item.quantity}x {item.menuItem.name}</span>
                       <span>
@@ -241,7 +263,7 @@ export function AddItemModal({
           onClick={addCourseDelimiter} 
           variant="outline" 
           className="w-full flex items-center justify-center"
-          disabled={!currentOrderItems || currentOrderItems.length === 0}
+          disabled={localOrderItems.length === 0}
         >
           <Utensils className="h-4 w-4 mr-2" />
           Secondo
