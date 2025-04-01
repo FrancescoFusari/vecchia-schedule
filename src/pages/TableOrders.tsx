@@ -444,14 +444,11 @@ const TableOrders = () => {
 
   return <div className="animate-fade-in">
       <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center">
-          <Button variant="ghost" size="icon" className="mr-2" onClick={() => navigate('/orders')}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-2xl font-bold">
-            Tavolo {table.tableNumber}
-          </h1>
-          {order && <TableTimer startTime={order.createdAt} className="ml-3" />}
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl font-semibold">
+            {order ? 'Ordine attivo' : 'Nessun ordine attivo'}
+          </h2>
+          {order && <TableTimer startTime={order.createdAt} variant="orange" />}
         </div>
         
         {order && <DropdownMenu>
@@ -474,9 +471,12 @@ const TableOrders = () => {
       <Card>
         <CardContent className="p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">
-              {order ? 'Ordine attivo' : 'Nessun ordine attivo'}
-            </h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-xl font-semibold">
+                {order ? 'Ordine attivo' : 'Nessun ordine attivo'}
+              </h2>
+              {order && <TableTimer startTime={order.createdAt} variant="orange" />}
+            </div>
             
             {!order && <Button onClick={handleAddNewOrder} disabled={isSaving}>
                 {isSaving ? "Creazione..." : "Nuovo ordine"}
