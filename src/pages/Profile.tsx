@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,18 +10,18 @@ import { User, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { employeeService } from "@/lib/supabase";
 import { Employee } from "@/lib/types";
-
 const Profile = () => {
-  const { user, signOut } = useAuth();
+  const {
+    user,
+    signOut
+  } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [linkedEmployee, setLinkedEmployee] = useState<Employee | null>(null);
   const [isLoadingEmployee, setIsLoadingEmployee] = useState(true);
   const navigate = useNavigate();
-
   useEffect(() => {
     const fetchLinkedEmployee = async () => {
       if (!user) return;
-      
       try {
         setIsLoadingEmployee(true);
         const employees = await employeeService.getEmployees();
@@ -34,10 +33,8 @@ const Profile = () => {
         setIsLoadingEmployee(false);
       }
     };
-
     fetchLinkedEmployee();
   }, [user]);
-
   const handleLogout = async () => {
     setIsLoading(true);
     try {
@@ -48,23 +45,18 @@ const Profile = () => {
       toast({
         title: "Errore",
         description: "Si è verificato un errore durante il logout",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setIsLoading(false);
     }
   };
-
   if (!user) {
-    return (
-      <div className="flex justify-center items-center h-[50vh]">
+    return <div className="flex justify-center items-center h-[50vh]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="container mx-auto max-w-2xl py-6 animate-fade-in">
+  return <div className="container mx-auto max-w-2xl py-6 animate-fade-in">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Profilo Utente</h1>
       </div>
@@ -107,21 +99,15 @@ const Profile = () => {
               </div>
             </div>
 
-            <div>
-              <Label>Email</Label>
-              <Input value={user.email || ''} readOnly className="bg-muted" />
-            </div>
+            
           </CardContent>
         </Card>
 
-        {isLoadingEmployee ? (
-          <Card>
+        {isLoadingEmployee ? <Card>
             <CardContent className="py-6 flex justify-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </CardContent>
-          </Card>
-        ) : linkedEmployee ? (
-          <Card>
+          </Card> : linkedEmployee ? <Card>
             <CardHeader>
               <CardTitle className="text-xl">Dettagli Dipendente</CardTitle>
               <CardDescription>Il tuo profilo dipendente collegato</CardDescription>
@@ -130,49 +116,33 @@ const Profile = () => {
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <Label>Nome Completo</Label>
-                  <Input 
-                    value={`${linkedEmployee.firstName} ${linkedEmployee.lastName || ''}`} 
-                    readOnly 
-                    className="bg-muted" 
-                  />
+                  <Input value={`${linkedEmployee.firstName} ${linkedEmployee.lastName || ''}`} readOnly className="bg-muted" />
                 </div>
                 <div>
                   <Label>Posizione</Label>
-                  <Input 
-                    value={linkedEmployee.position || 'Non specificata'} 
-                    readOnly 
-                    className="bg-muted" 
-                  />
+                  <Input value={linkedEmployee.position || 'Non specificata'} readOnly className="bg-muted" />
                 </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <Label>Email</Label>
-                  <Input 
-                    value={linkedEmployee.email || 'Non specificata'} 
-                    readOnly 
-                    className="bg-muted" 
-                  />
+                  <Input value={linkedEmployee.email || 'Non specificata'} readOnly className="bg-muted" />
                 </div>
                 <div>
                   <Label>Telefono</Label>
-                  <Input 
-                    value={linkedEmployee.phone || 'Non specificato'} 
-                    readOnly 
-                    className="bg-muted" 
-                  />
+                  <Input value={linkedEmployee.phone || 'Non specificato'} readOnly className="bg-muted" />
                 </div>
               </div>
               
               <div className="flex items-center space-x-2">
-                <div className="w-6 h-6 rounded-full" style={{ backgroundColor: linkedEmployee.color }}></div>
+                <div className="w-6 h-6 rounded-full" style={{
+              backgroundColor: linkedEmployee.color
+            }}></div>
                 <span>Colore assegnato</span>
               </div>
             </CardContent>
-          </Card>
-        ) : (
-          <Card>
+          </Card> : <Card>
             <CardHeader>
               <CardTitle className="text-xl">Dettagli Dipendente</CardTitle>
               <CardDescription>Nessun profilo dipendente collegato</CardDescription>
@@ -183,28 +153,20 @@ const Profile = () => {
                 Contatta l'amministratore per collegare il tuo account.
               </p>
             </CardContent>
-          </Card>
-        )}
+          </Card>}
 
         <Card>
           <CardHeader>
             <CardTitle className="text-xl">Azioni Account</CardTitle>
           </CardHeader>
           <CardFooter className="flex justify-end">
-            <Button
-              variant="destructive"
-              onClick={handleLogout}
-              disabled={isLoading}
-              className="flex items-center"
-            >
+            <Button variant="destructive" onClick={handleLogout} disabled={isLoading} className="flex items-center">
               <LogOut className="mr-2 h-4 w-4" />
               {isLoading ? "Logout in corso..." : "Logout"}
             </Button>
           </CardFooter>
         </Card>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Profile;
