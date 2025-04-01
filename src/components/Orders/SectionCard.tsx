@@ -49,8 +49,13 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
           })
         );
         
-        setTables(tablesWithOrderStatus);
-        setActiveTables(tablesWithOrderStatus.filter(table => table.hasActiveOrder));
+        // Sort tables by number
+        const sortedTables = tablesWithOrderStatus.sort((a, b) => 
+          a.tableNumber - b.tableNumber
+        );
+        
+        setTables(sortedTables);
+        setActiveTables(sortedTables.filter(table => table.hasActiveOrder));
       } catch (error) {
         console.error("Error fetching tables for section:", error);
       } finally {
@@ -118,7 +123,7 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
             
             <div className="flex items-center pr-4">
               <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 mr-2">
+                <Button variant="ghost" size="sm" className="h-9 w-9 p-0 mr-2 rounded-full">
                   {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   <span className="sr-only">{isOpen ? 'Chiudi' : 'Apri'}</span>
                 </Button>
@@ -127,7 +132,7 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
               <Button 
                 variant="ghost" 
                 size="sm"
-                className="h-8 w-8 p-0"
+                className="h-9 w-9 p-0 rounded-full"
                 onClick={() => setIsTableManagementOpen(true)}
               >
                 <Settings className="h-4 w-4" />
