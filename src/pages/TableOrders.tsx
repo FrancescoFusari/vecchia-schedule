@@ -16,9 +16,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { CompletedOrdersList } from "@/components/Orders/CompletedOrdersList";
 
 const TableOrders = () => {
-  const { tableId } = useParams<{ tableId: string; }>();
-  const navigate = useNavigate();
-  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [table, setTable] = useState<RestaurantTable | null>(null);
   const [order, setOrder] = useState<OrderWithItems | null>(null);
@@ -28,6 +25,9 @@ const TableOrders = () => {
   const [bread, setBread] = useState(0);
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const { tableId } = useParams<{ tableId: string; }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     if (!user) {
@@ -298,6 +298,25 @@ const TableOrders = () => {
     }
   };
 
+  const handleAddSecondCourse = () => {
+    if (!order || !user) return;
+    
+    const updatedItems = [...order.items];
+    if (updatedItems.length > 0) {
+      const lastItem = updatedItems[updatedItems.length - 1];
+      const updatedLastItem = {
+        ...lastItem,
+        isLastFirstCourse: true
+      };
+      updatedItems[updatedItems.length - 1] = updatedLastItem;
+      
+      setOrder({
+        ...order,
+        items: updatedItems
+      });
+    }
+  };
+
   const calculateTotal = () => {
     if (!order) return 0;
     return order.items.reduce((total, item) => {
@@ -408,24 +427,52 @@ const TableOrders = () => {
               <div>
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-semibold">Prodotti</h3>
-                  <Button variant="outline" size="sm" onClick={() => setIsItemModalOpen(true)} className="flex items-center">
-                    <Plus className="h-4 w-4 mr-1" />
-                    Aggiungi
-                  </Button>
+                  <div className="flex space-x-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleAddSecondCourse} 
+                      className="flex items-center"
+                    >
+                      <Utensils className="h-4 w-4 mr-1" />
+                      Secondo
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setIsItemModalOpen(true)} 
+                      className="flex items-center"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Aggiungi
+                    </Button>
+                  </div>
                 </div>
                 
                 <div className="max-h-96 overflow-y-auto pr-1">
                   {order.items.length === 0 ? <p className="text-muted-foreground text-center py-4">
                       Nessun prodotto nell'ordine
                     </p> : <div className="space-y-1">
-                      {order.items.map(item => 
-                        <OrderItemRow 
-                          key={item.id} 
-                          item={item} 
-                          onUpdateQuantity={handleUpdateQuantity} 
-                          onDeleteItem={handleDeleteItem} 
-                        />
-                      )}
+                      {order.items.map((item, index) => (
+                        <>
+                          <OrderItemRow 
+                            key={item.id} 
+                            item={item} 
+                            onUpdateQuantity={handleUpdateQuantity} 
+                            onDeleteItem={handleDeleteItem} 
+                          />
+                          {item.isLastFirstCourse && (
+                            <div className="my-3">
+                              <Separator className="bg-primary/30 h-[2px]" />
+                              <div className="flex justify-center -mt-[1px]">
+                                <span className="bg-background px-2 text-xs text-muted-foreground">
+                                  Secondi
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      ))}
                     </div>}
                 </div>
                 

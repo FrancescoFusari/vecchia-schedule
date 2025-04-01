@@ -1,3 +1,4 @@
+
 export type Role = "admin" | "employee";
 
 export interface User {
@@ -119,6 +120,7 @@ export interface OrderItem {
   quantity: number;
   notes?: string;
   createdAt: string;
+  isLastFirstCourse?: boolean; // Added this property for course separation
 }
 
 export interface OrderWithItems extends Order {
