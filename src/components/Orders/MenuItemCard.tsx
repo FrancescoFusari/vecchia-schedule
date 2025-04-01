@@ -23,8 +23,7 @@ export function MenuItemCard({ item, onAddToOrder }: MenuItemCardProps) {
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow">
       <CardContent className="p-0">
-        <button 
-          onClick={handleClick}
+        <div 
           className="w-full text-left p-3 flex items-start justify-between"
         >
           <div className="flex-1 pr-2">
@@ -40,15 +39,12 @@ export function MenuItemCard({ item, onAddToOrder }: MenuItemCardProps) {
             variant="ghost" 
             size="sm" 
             className="h-8 w-8 rounded-full flex-shrink-0 hover:bg-primary/10"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleClick();
-            }}
+            onClick={handleClick}
             aria-label={`Aggiungi ${item.name}`}
           >
             <Plus className="h-5 w-5 text-primary" />
           </Button>
-        </button>
+        </div>
       </CardContent>
     </Card>
   );

@@ -382,6 +382,37 @@ const TableOrders = () => {
     }
   };
 
+  const handleUpdateNotes = async (itemId: string, notes: string) => {
+    if (!order || !user) return;
+    try {
+      await updateOrderItem(itemId, 
+        order.items.find(item => item.id === itemId)?.quantity || 1, 
+        notes,
+        order.items.find(item => item.id === itemId)?.isLastFirstCourse
+      );
+
+      setOrder({
+        ...order,
+        items: order.items.map(item => item.id === itemId ? {
+          ...item,
+          notes
+        } : item)
+      });
+      
+      toast({
+        title: "Aggiornato",
+        description: "Note aggiornate"
+      });
+    } catch (error) {
+      console.error("Error updating notes:", error);
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiornare le note",
+        variant: "destructive"
+      });
+    }
+  };
+
   const calculateTotal = () => {
     if (!order) return 0;
     return order.items.reduce((total, item) => {
@@ -525,6 +556,7 @@ const TableOrders = () => {
                             item={item} 
                             onUpdateQuantity={handleUpdateQuantity} 
                             onDeleteItem={handleDeleteItem} 
+                            onUpdateNotes={handleUpdateNotes}
                           />
                           {item.isLastFirstCourse && (
                             <div className="my-3">
