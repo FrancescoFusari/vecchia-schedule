@@ -48,7 +48,7 @@ const Orders = () => {
   if (!user) {
     return null; // Will redirect to login
   }
-  return <div className="container mx-auto  py-6 animate-fade-in">
+  return <div className=" animate-fade-in">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Gestione Comande</h1>
         
