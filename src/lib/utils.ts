@@ -33,6 +33,21 @@ export function formatTime(time: string): string {
   return time;
 }
 
+// Format time to 12-hour format with am/pm
+export function formatTo12Hour(time: string): string {
+  if (!time) return '';
+  
+  const [hourStr, minuteStr] = time.split(':');
+  let hour = parseInt(hourStr, 10);
+  const suffix = hour >= 12 ? 'pm' : 'am';
+  
+  // Convert 24-hour to 12-hour format
+  hour = hour % 12;
+  hour = hour === 0 ? 12 : hour; // Convert 0 to 12 for 12am
+  
+  return `${hour}${suffix}`;
+}
+
 // Calculate shift duration in hours
 export function calculateShiftDuration(startTime: string, endTime: string): number {
   const [startHour, startMinute] = startTime.split(":").map(Number);

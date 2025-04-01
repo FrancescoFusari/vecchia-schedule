@@ -1,6 +1,6 @@
 
 import { Shift, Employee } from "@/lib/types";
-import { cn, formatEmployeeName } from "@/lib/utils";
+import { cn, formatEmployeeName, formatTo12Hour } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -25,6 +25,10 @@ export function ShiftItem({ shift, employee, onClick }: ShiftItemProps) {
     borderColor: `${employeeColor}30`, // 30% opacity
   };
   
+  // Format times to 12-hour format
+  const formattedStartTime = formatTo12Hour(shift.startTime);
+  const formattedEndTime = formatTo12Hour(shift.endTime);
+  
   if (isAdmin() && onClick) {
     return (
       <TooltipProvider>
@@ -40,7 +44,7 @@ export function ShiftItem({ shift, employee, onClick }: ShiftItemProps) {
               style={customStyle}
             >
               <div className="truncate">
-                {formatEmployeeName(employee.firstName, employee.lastName)} {shift.startTime}-{shift.endTime}
+                {formatEmployeeName(employee.firstName, employee.lastName)} {formattedStartTime}-{formattedEndTime}
               </div>
             </div>
           </TooltipTrigger>
@@ -61,7 +65,7 @@ export function ShiftItem({ shift, employee, onClick }: ShiftItemProps) {
       )}
       style={customStyle}
     >
-      {formatEmployeeName(employee.firstName, employee.lastName)} {shift.startTime}-{shift.endTime}
+      {formatEmployeeName(employee.firstName, employee.lastName)} {formattedStartTime}-{formattedEndTime}
     </div>
   );
 }
