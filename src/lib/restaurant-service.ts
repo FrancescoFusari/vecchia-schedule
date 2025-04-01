@@ -1,4 +1,3 @@
-
 import { supabaseCustom as supabase } from "@/integrations/supabase/client";
 import { 
   RestaurantSection, 
@@ -308,6 +307,7 @@ export const createOrder = async (
   bread: number = 0
 ): Promise<Order> => {
   try {
+    console.log("Creating order with employee ID:", employeeId);
     const { data, error } = await supabase
       .from('orders')
       .insert({ 
@@ -321,7 +321,10 @@ export const createOrder = async (
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error creating order:", error);
+      throw error;
+    }
     
     return {
       id: data.id,

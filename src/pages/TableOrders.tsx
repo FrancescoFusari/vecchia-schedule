@@ -12,16 +12,11 @@ import { OrderItemRow } from "@/components/Orders/OrderItemRow";
 import { AddItemModal } from "@/components/Orders/AddItemModal";
 import { Separator } from "@/components/ui/separator";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+
 const TableOrders = () => {
-  const {
-    tableId
-  } = useParams<{
-    tableId: string;
-  }>();
+  const { tableId } = useParams<{ tableId: string; }>();
   const navigate = useNavigate();
-  const {
-    user
-  } = useAuth();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [table, setTable] = useState<RestaurantTable | null>(null);
   const [order, setOrder] = useState<OrderWithItems | null>(null);
@@ -31,19 +26,18 @@ const TableOrders = () => {
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Redirect to login if not authenticated
   useEffect(() => {
     if (!user) {
       navigate('/login');
     }
   }, [user, navigate]);
+
   useEffect(() => {
     const fetchTableData = async () => {
       if (!tableId || !user) return;
       try {
         setIsLoading(true);
 
-        // Fetch table info
         const tables = await getTables();
         const tableData = tables.find(t => t.id === tableId);
         if (!tableData) {
@@ -57,7 +51,6 @@ const TableOrders = () => {
         }
         setTable(tableData);
 
-        // Try to fetch active order
         const activeOrder = await getActiveOrder(tableId);
         if (activeOrder) {
           setOrder(activeOrder);
@@ -78,6 +71,7 @@ const TableOrders = () => {
     };
     fetchTableData();
   }, [tableId, navigate, user]);
+
   const handleStillWaterChange = async (value: number) => {
     setStillWater(value);
     if (!order || !user) return;
@@ -99,6 +93,7 @@ const TableOrders = () => {
       setIsSaving(false);
     }
   };
+
   const handleSparklingWaterChange = async (value: number) => {
     setSparklingWater(value);
     if (!order || !user) return;
@@ -120,6 +115,7 @@ const TableOrders = () => {
       setIsSaving(false);
     }
   };
+
   const handleBreadChange = async (value: number) => {
     setBread(value);
     if (!order || !user) return;
@@ -141,13 +137,14 @@ const TableOrders = () => {
       setIsSaving(false);
     }
   };
+
   const handleAddNewOrder = async () => {
     if (!tableId || !user) return;
     try {
       setIsSaving(true);
+      console.log("Creating order with user ID:", user.id);
       const newOrder = await createOrder(tableId, user.id, stillWater, sparklingWater, bread);
 
-      // Refetch the order to get the full object
       const fullOrder = await getActiveOrder(tableId);
       setOrder(fullOrder);
       toast({
@@ -165,13 +162,13 @@ const TableOrders = () => {
       setIsSaving(false);
     }
   };
+
   const handleAddItem = async (menuItemId: string, quantity: number, notes?: string) => {
     if (!order || !user) return;
     try {
       setIsSaving(true);
       await addOrderItem(order.id, menuItemId, quantity, notes);
 
-      // Refetch the order to get updated items
       const updatedOrder = await getActiveOrder(tableId!);
       setOrder(updatedOrder);
       toast({
@@ -189,12 +186,12 @@ const TableOrders = () => {
       setIsSaving(false);
     }
   };
+
   const handleUpdateQuantity = async (itemId: string, quantity: number) => {
     if (!order || !user) return;
     try {
       await updateOrderItem(itemId, quantity);
 
-      // Update the local state
       setOrder({
         ...order,
         items: order.items.map(item => item.id === itemId ? {
@@ -211,12 +208,12 @@ const TableOrders = () => {
       });
     }
   };
+
   const handleDeleteItem = async (itemId: string) => {
     if (!order || !user) return;
     try {
       await deleteOrderItem(itemId);
 
-      // Update the local state
       setOrder({
         ...order,
         items: order.items.filter(item => item.id !== itemId)
@@ -234,6 +231,7 @@ const TableOrders = () => {
       });
     }
   };
+
   const handleCompleteOrder = async () => {
     if (!order || !user) return;
     try {
@@ -244,7 +242,6 @@ const TableOrders = () => {
         description: "Ordine completato con successo"
       });
 
-      // Navigate back to tables
       navigate('/orders');
     } catch (error) {
       console.error("Error completing order:", error);
@@ -257,6 +254,7 @@ const TableOrders = () => {
       setIsSaving(false);
     }
   };
+
   const handleCancelOrder = async () => {
     if (!order || !user) return;
     try {
@@ -267,7 +265,6 @@ const TableOrders = () => {
         description: "Ordine annullato"
       });
 
-      // Navigate back to tables
       navigate('/orders');
     } catch (error) {
       console.error("Error cancelling order:", error);
@@ -281,21 +278,23 @@ const TableOrders = () => {
     }
   };
 
-  // Calculate total for the order
   const calculateTotal = () => {
     if (!order) return 0;
     return order.items.reduce((total, item) => {
       return total + item.menuItem.price * item.quantity;
     }, 0);
   };
+
   if (!user) {
-    return null; // Will redirect to login
+    return null;
   }
+
   if (isLoading) {
     return <div className="container mx-auto max-w-4xl py-6 flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>;
   }
+
   if (!table) {
     return <div className="container mx-auto max-w-4xl py-6">
         <div className="text-center py-12">
@@ -306,6 +305,7 @@ const TableOrders = () => {
         </div>
       </div>;
   }
+
   return <div className="animate-fade-in">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center">
@@ -399,4 +399,5 @@ const TableOrders = () => {
       <AddItemModal open={isItemModalOpen} onClose={() => setIsItemModalOpen(false)} onAddItem={handleAddItem} />
     </div>;
 };
+
 export default TableOrders;
