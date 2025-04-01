@@ -1,645 +1,361 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { toast } from "@/hooks/use-toast";
-import { RestaurantTable, OrderWithItems, CartItem, OrderRound } from "@/lib/types";
 import { 
-  getTables, 
   getActiveOrder, 
   createOrder, 
   updateOrder, 
-  addOrderItem, 
+  createOrderRound, 
   addOrderItems,
-  updateOrderItem, 
-  deleteOrderItem,
-  createOrderRound,
   updateRoundStatus
 } from "@/lib/restaurant-service";
+import { employeeService } from "@/lib/supabase";
+import { OrderWithItems, Employee, CartItem } from "@/lib/types";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Plus, MoreVertical, Layers } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { 
+  ChevronLeft, 
+  Plus, 
+  Trash2, 
+  ClipboardList, 
+  Coffee, 
+  PanelTop 
+} from "lucide-react";
 import { CounterControl } from "@/components/Orders/CounterControl";
-import { OrderItemRow } from "@/components/Orders/OrderItemRow";
 import { AddItemModal } from "@/components/Orders/AddItemModal";
 import { RoundItem } from "@/components/Orders/RoundItem";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
+import { OrderItemRow } from "@/components/Orders/OrderItemRow";
+import { RoundBadge } from "@/components/Orders/RoundBadge";
 
-const TableOrders = () => {
-  const { tableId } = useParams<{ tableId: string; }>();
+function TableOrders() {
+  const { tableId } = useParams<{ tableId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(true);
-  const [table, setTable] = useState<RestaurantTable | null>(null);
   const [order, setOrder] = useState<OrderWithItems | null>(null);
-  const [stillWater, setStillWater] = useState(0);
-  const [sparklingWater, setSparklingWater] = useState(0);
-  const [bread, setBread] = useState(0);
-  const [isItemModalOpen, setIsItemModalOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState("items");
+  const [loading, setLoading] = useState(true);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [isAddingItem, setIsAddingItem] = useState(false);
+  const [creatingOrder, setCreatingOrder] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
-    }
-  }, [user, navigate]);
-
-  useEffect(() => {
-    const fetchTableData = async () => {
-      if (!tableId || !user) return;
+    const fetchData = async () => {
       try {
-        setIsLoading(true);
-
-        const tables = await getTables();
-        const tableData = tables.find(t => t.id === tableId);
-        if (!tableData) {
-          toast({
-            title: "Errore",
-            description: "Tavolo non trovato",
-            variant: "destructive"
-          });
-          navigate('/orders');
-          return;
+        setLoading(true);
+        
+        // Fetch current order
+        if (tableId) {
+          const orderData = await getActiveOrder(tableId);
+          setOrder(orderData);
         }
-        setTable(tableData);
-
-        const activeOrder = await getActiveOrder(tableId);
-        if (activeOrder) {
-          setOrder(activeOrder);
-          setStillWater(activeOrder.stillWater);
-          setSparklingWater(activeOrder.sparklingWater);
-          setBread(activeOrder.bread);
-        }
+        
+        // Fetch employees for employee assignment
+        const employeesData = await employeeService.getEmployees();
+        setEmployees(employeesData);
       } catch (error) {
-        console.error("Error fetching table data:", error);
+        console.error("Error fetching order data:", error);
         toast({
           title: "Errore",
-          description: "Impossibile caricare i dati del tavolo",
-          variant: "destructive"
+          description: "Impossibile caricare i dati dell'ordine",
+          variant: "destructive",
         });
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
-    fetchTableData();
-  }, [tableId, navigate, user]);
+    
+    fetchData();
+  }, [tableId]);
 
-  const handleStillWaterChange = async (value: number) => {
-    setStillWater(value);
-    if (!order || !user) return;
-    try {
-      setIsSaving(true);
-      await updateOrder(order.id, value, undefined, undefined);
-      toast({
-        title: "Aggiornato",
-        description: "Acqua naturale aggiornata"
-      });
-    } catch (error) {
-      console.error("Error updating still water:", error);
-      toast({
-        title: "Errore",
-        description: "Impossibile aggiornare l'acqua naturale",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSaving(false);
-    }
+  const handleBack = () => {
+    navigate(-1);
   };
 
-  const handleSparklingWaterChange = async (value: number) => {
-    setSparklingWater(value);
-    if (!order || !user) return;
-    try {
-      setIsSaving(true);
-      await updateOrder(order.id, undefined, value, undefined);
-      toast({
-        title: "Aggiornato",
-        description: "Acqua frizzante aggiornata"
-      });
-    } catch (error) {
-      console.error("Error updating sparkling water:", error);
-      toast({
-        title: "Errore",
-        description: "Impossibile aggiornare l'acqua frizzante",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleBreadChange = async (value: number) => {
-    setBread(value);
-    if (!order || !user) return;
-    try {
-      setIsSaving(true);
-      await updateOrder(order.id, undefined, undefined, value);
-      toast({
-        title: "Aggiornato",
-        description: "Pane aggiornato"
-      });
-    } catch (error) {
-      console.error("Error updating bread:", error);
-      toast({
-        title: "Errore",
-        description: "Impossibile aggiornare il pane",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleAddNewOrder = async () => {
+  const handleCreateOrder = async () => {
     if (!tableId || !user) return;
+    
     try {
-      setIsSaving(true);
-      console.log("Creating order with user ID:", user.id);
-      await createOrder(tableId, user.id, stillWater, sparklingWater, bread);
-
-      const fullOrder = await getActiveOrder(tableId);
-      setOrder(fullOrder);
+      setCreatingOrder(true);
+      
+      const newOrder = await createOrder(tableId, user.id);
+      setOrder({
+        ...newOrder,
+        items: [],
+        table: { id: tableId, sectionId: "", tableNumber: 0, seats: 0, createdAt: "" }
+      });
+      
       toast({
-        title: "Creato",
-        description: "Nuovo ordine creato"
+        title: "Ordine creato",
+        description: "Nuovo ordine creato con successo"
       });
     } catch (error) {
-      console.error("Error creating new order:", error);
+      console.error("Error creating order:", error);
       toast({
         title: "Errore",
-        description: "Impossibile creare un nuovo ordine",
-        variant: "destructive"
+        description: "Impossibile creare l'ordine",
+        variant: "destructive",
       });
     } finally {
-      setIsSaving(false);
+      setCreatingOrder(false);
     }
   };
 
-  const handleAddItems = async (items: CartItem[], roundId?: string) => {
-    if (!order || !user) return;
+  const handleAddItems = async (items: CartItem[], roundNumber: number = 1) => {
+    if (!order) return;
+    
     try {
-      setIsSaving(true);
+      // Check if a round with this number already exists
+      let roundId: string | undefined;
+      let existingRound = order.rounds?.find(r => r.roundNumber === roundNumber);
       
-      // If roundId is undefined and createNewRound is true, create a new round
-      let actualRoundId = roundId;
-      if (!roundId && items.length > 0 && order.rounds) {
-        // Calculate the next round number
-        const nextRoundNumber = order.rounds.length > 0 
-          ? Math.max(...order.rounds.map(r => r.roundNumber)) + 1 
-          : 1;
-          
-        // Create new round
-        const newRound = await createOrderRound(order.id, nextRoundNumber);
-        actualRoundId = newRound.id;
+      if (!existingRound) {
+        // Create a new round
+        const newRound = await createOrderRound(order.id, roundNumber);
+        roundId = newRound.id;
+      } else {
+        roundId = existingRound.id;
       }
       
-      // Add items to the order
-      await addOrderItems(order.id, items, actualRoundId);
-
+      // Add items to the order with round ID
+      await addOrderItems(order.id, items, roundId);
+      
       // Refresh order data
-      const updatedOrder = await getActiveOrder(tableId!);
-      setOrder(updatedOrder);
+      if (tableId) {
+        const refreshedOrder = await getActiveOrder(tableId);
+        setOrder(refreshedOrder);
+      }
       
       toast({
-        title: "Aggiunto",
-        description: items.length === 1 
-          ? "Prodotto aggiunto all'ordine" 
-          : `${items.length} prodotti aggiunti all'ordine`
+        title: "Prodotti aggiunti",
+        description: `${items.reduce((sum, item) => sum + item.quantity, 0)} prodotti aggiunti al giro ${roundNumber}`
       });
     } catch (error) {
       console.error("Error adding items to order:", error);
       toast({
         title: "Errore",
         description: "Impossibile aggiungere i prodotti all'ordine",
-        variant: "destructive"
+        variant: "destructive",
       });
-    } finally {
-      setIsSaving(false);
     }
   };
 
-  // For backward compatibility with single item addition
-  const handleAddItem = async (menuItemId: string, quantity: number, notes?: string) => {
-    if (!order || !user) return;
+  const handleUpdateCounter = async (type: 'still' | 'sparkling' | 'bread', value: number) => {
+    if (!order) return;
+    
     try {
-      setIsSaving(true);
-      await addOrderItem(order.id, menuItemId, quantity, notes);
-
-      const updatedOrder = await getActiveOrder(tableId!);
-      setOrder(updatedOrder);
-      toast({
-        title: "Aggiunto",
-        description: "Prodotto aggiunto all'ordine"
-      });
-    } catch (error) {
-      console.error("Error adding item to order:", error);
-      toast({
-        title: "Errore",
-        description: "Impossibile aggiungere il prodotto all'ordine",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleUpdateQuantity = async (itemId: string, quantity: number) => {
-    if (!order || !user) return;
-    try {
-      await updateOrderItem(itemId, quantity);
-
-      // Update local state
-      if (order.rounds) {
-        // Check if item is in a round
-        let foundInRound = false;
-        const updatedRounds = order.rounds.map(round => {
-          const updatedItems = round.items.map(item => {
-            if (item.id === itemId) {
-              foundInRound = true;
-              return { ...item, quantity };
-            }
-            return item;
-          });
-          return { ...round, items: updatedItems };
-        });
-        
-        if (foundInRound) {
-          setOrder({
-            ...order,
-            rounds: updatedRounds
-          });
-          return;
-        }
+      let updatedOrder;
+      if (type === 'still') {
+        updatedOrder = await updateOrder(order.id, value, undefined, undefined);
+      } else if (type === 'sparkling') {
+        updatedOrder = await updateOrder(order.id, undefined, value, undefined);
+      } else {
+        updatedOrder = await updateOrder(order.id, undefined, undefined, value);
       }
       
-      // Otherwise update in regular items
-      setOrder({
-        ...order,
-        items: order.items.map(item => item.id === itemId ? {
-          ...item,
-          quantity
-        } : item)
-      });
-    } catch (error) {
-      console.error("Error updating item quantity:", error);
-      toast({
-        title: "Errore",
-        description: "Impossibile aggiornare la quantità",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleDeleteItem = async (itemId: string) => {
-    if (!order || !user) return;
-    try {
-      await deleteOrderItem(itemId);
-
       // Update local state
-      if (order.rounds) {
-        // Check if item is in a round
-        let foundInRound = false;
-        const updatedRounds = order.rounds.map(round => {
-          const updatedItems = round.items.filter(item => {
-            if (item.id === itemId) {
-              foundInRound = true;
-              return false;
-            }
-            return true;
-          });
-          return { ...round, items: updatedItems };
-        });
-        
-        if (foundInRound) {
-          setOrder({
-            ...order,
-            rounds: updatedRounds
-          });
-          return;
-        }
-      }
-      
-      // Otherwise remove from regular items
-      setOrder({
-        ...order,
-        items: order.items.filter(item => item.id !== itemId)
-      });
-      
-      toast({
-        title: "Rimosso",
-        description: "Prodotto rimosso dall'ordine"
-      });
+      setOrder(prev => prev ? { ...prev, ...updatedOrder } : null);
     } catch (error) {
-      console.error("Error deleting item:", error);
+      console.error(`Error updating ${type}:`, error);
       toast({
         title: "Errore",
-        description: "Impossibile rimuovere il prodotto",
-        variant: "destructive"
+        description: `Impossibile aggiornare ${type === 'still' ? 'acqua naturale' : type === 'sparkling' ? 'acqua frizzante' : 'pane'}`,
+        variant: "destructive",
       });
     }
   };
 
   const handleUpdateRoundStatus = async (roundId: string, status: 'pending' | 'preparing' | 'served' | 'completed') => {
-    if (!order || !user) return;
     try {
-      setIsSaving(true);
       await updateRoundStatus(roundId, status);
       
-      // Update local state
-      if (order.rounds) {
-        const updatedRounds = order.rounds.map(round => 
-          round.id === roundId ? { ...round, status } : round
-        );
-        setOrder({
-          ...order,
-          rounds: updatedRounds
-        });
+      // Refresh order data
+      if (tableId) {
+        const refreshedOrder = await getActiveOrder(tableId);
+        setOrder(refreshedOrder);
       }
       
       toast({
-        title: "Aggiornato",
-        description: `Stato della portata aggiornato a "${status}"`
+        title: "Stato aggiornato",
+        description: `Stato del giro aggiornato con successo`
       });
     } catch (error) {
       console.error("Error updating round status:", error);
       toast({
         title: "Errore",
-        description: "Impossibile aggiornare lo stato della portata",
-        variant: "destructive"
+        description: "Impossibile aggiornare lo stato del giro",
+        variant: "destructive",
       });
-    } finally {
-      setIsSaving(false);
     }
   };
 
-  const handleCompleteOrder = async () => {
-    if (!order || !user) return;
-    try {
-      setIsSaving(true);
-      await updateOrder(order.id, undefined, undefined, undefined, 'completed');
-      toast({
-        title: "Completato",
-        description: "Ordine completato con successo"
-      });
-
-      navigate('/orders');
-    } catch (error) {
-      console.error("Error completing order:", error);
-      toast({
-        title: "Errore",
-        description: "Impossibile completare l'ordine",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleCancelOrder = async () => {
-    if (!order || !user) return;
-    try {
-      setIsSaving(true);
-      await updateOrder(order.id, undefined, undefined, undefined, 'cancelled');
-      toast({
-        title: "Annullato",
-        description: "Ordine annullato"
-      });
-
-      navigate('/orders');
-    } catch (error) {
-      console.error("Error cancelling order:", error);
-      toast({
-        title: "Errore",
-        description: "Impossibile annullare l'ordine",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const calculateTotal = () => {
-    if (!order) return 0;
-    
-    // Calculate total for items not in rounds
-    const regularItemsTotal = order.items.reduce((total, item) => {
-      return total + item.menuItem.price * item.quantity;
-    }, 0);
-    
-    // Calculate total for items in rounds
-    const roundsTotal = order.rounds?.reduce((total, round) => {
-      return total + round.items.reduce((roundTotal, item) => {
-        return roundTotal + item.menuItem.price * item.quantity;
-      }, 0);
-    }, 0) || 0;
-    
-    return regularItemsTotal + roundsTotal;
-  };
-
-  // Get existing rounds for select options
-  const getExistingRounds = () => {
-    if (!order || !order.rounds) return [];
-    return order.rounds.map(round => ({
-      id: round.id,
-      roundNumber: round.roundNumber
-    }));
-  };
-
-  if (!user) {
-    return null;
-  }
-
-  if (isLoading) {
-    return <div className="container mx-auto max-w-4xl py-6 flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>;
-  }
-
-  if (!table) {
-    return <div className="container mx-auto max-w-4xl py-6">
-        <div className="text-center py-12">
-          <p className="text-muted-foreground mb-4">Tavolo non trovato</p>
-          <Button onClick={() => navigate('/orders')}>
-            Torna alla lista tavoli
-          </Button>
-        </div>
-      </div>;
-  }
-
-  return <div className="animate-fade-in">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center">
-          <Button variant="ghost" size="icon" className="mr-2" onClick={() => navigate('/orders')}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-2xl font-bold">
-            Tavolo {table.tableNumber}
-          </h1>
+  if (loading) {
+    return (
+      <div className="container py-4 animate-pulse">
+        <div className="flex items-center mb-6">
+          <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700"></div>
+          <div className="h-6 w-48 ml-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
         </div>
         
-        {order && <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleCompleteOrder}>
-                Completa ordine
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleCancelOrder} className="text-destructive">
-                Annulla ordine
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>}
+        <div className="grid gap-4">
+          <div className="h-40 bg-gray-100 dark:bg-gray-800 rounded-lg"></div>
+          <div className="h-60 bg-gray-100 dark:bg-gray-800 rounded-lg"></div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container py-4">
+      <div className="flex items-center mb-6">
+        <Button variant="ghost" size="icon" onClick={handleBack} className="mr-2">
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-2xl font-bold">
+          {order ? `Tavolo ${order.table.tableNumber}` : 'Nuovo ordine'}
+        </h1>
+        {order && (
+          <Badge variant="outline" className="ml-2">
+            Ordine #{order.id.slice(0, 8)}
+          </Badge>
+        )}
       </div>
 
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">
-              {order ? 'Ordine attivo' : 'Nessun ordine attivo'}
-            </h2>
-            
-            {!order && <Button onClick={handleAddNewOrder} disabled={isSaving}>
-                {isSaving ? "Creazione..." : "Nuovo ordine"}
-              </Button>}
-          </div>
-
-          {!order ? <div className="space-y-4">
-              <p className="text-muted-foreground">
-                Non ci sono ordini attivi per questo tavolo. Clicca su "Nuovo ordine" per iniziare.
+      {!order ? (
+        <Card className="mb-6">
+          <CardContent className="flex flex-col items-center justify-center py-8">
+            <div className="text-center mb-4">
+              <ClipboardList className="mx-auto h-12 w-12 text-muted-foreground mb-3" />
+              <h3 className="text-lg font-medium">Nessun ordine attivo</h3>
+              <p className="text-muted-foreground mt-1">
+                Crea un nuovo ordine per questo tavolo
               </p>
-              
-              <div className="grid grid-cols-3 gap-4 mt-4">
-                <CounterControl label="Acqua Nat." value={stillWater} onChange={setStillWater} />
-                <CounterControl label="Acqua Gas." value={sparklingWater} onChange={setSparklingWater} />
-                <CounterControl label="Pane" value={bread} onChange={setBread} />
-              </div>
-            </div> : <div className="space-y-6">
-              <div className="grid grid-cols-3 gap-4">
-                <CounterControl label="Acqua Nat." value={stillWater} onChange={handleStillWaterChange} className="text-center" />
-                <CounterControl label="Acqua Gas." value={sparklingWater} onChange={handleSparklingWaterChange} className="text-center" />
-                <CounterControl label="Pane" value={bread} onChange={handleBreadChange} className="text-center" />
-              </div>
-              
-              <Separator />
-              
-              <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="w-full grid grid-cols-2">
-                  <TabsTrigger value="items" className="relative">
-                    Prodotti
-                    {order.items.length > 0 && (
-                      <span className="ml-1 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">
-                        {order.items.length}
-                      </span>
-                    )}
-                  </TabsTrigger>
-                  <TabsTrigger value="rounds" className="relative flex items-center gap-1">
-                    <Layers className="h-4 w-4" />
-                    Portate
-                    {order.rounds && order.rounds.length > 0 && (
-                      <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">
-                        {order.rounds.length}
-                      </span>
-                    )}
-                  </TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="items" className="mt-4">
-                  <div>
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="font-semibold">Prodotti</h3>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => setIsItemModalOpen(true)} 
-                        className="flex items-center"
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Aggiungi
-                      </Button>
+            </div>
+            <Button onClick={handleCreateOrder} disabled={creatingOrder}>
+              {creatingOrder ? "Creazione in corso..." : "Crea ordine"}
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex justify-between items-center">
+                  <span>Riepilogo ordine</span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setIsAddingItem(true)}
+                    className="h-8 px-2"
+                  >
+                    <Plus className="h-4 w-4 mr-1" /> Aggiungi
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  <CounterControl
+                    label="Acqua nat."
+                    icon={<PanelTop className="h-4 w-4" />}
+                    value={order.stillWater}
+                    onChange={(value) => handleUpdateCounter('still', value)}
+                  />
+                  <CounterControl
+                    label="Acqua gas."
+                    icon={<PanelTop className="h-4 w-4" />}
+                    value={order.sparklingWater}
+                    onChange={(value) => handleUpdateCounter('sparkling', value)}
+                  />
+                  <CounterControl
+                    label="Pane"
+                    icon={<Coffee className="h-4 w-4" />}
+                    value={order.bread}
+                    onChange={(value) => handleUpdateCounter('bread', value)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Rounds Section */}
+          <h2 className="text-xl font-bold mb-4">Giri</h2>
+          
+          {(!order.rounds || order.rounds.length === 0) && (!order.items || order.items.length === 0) ? (
+            <Card className="mb-6">
+              <CardContent className="flex flex-col items-center justify-center py-8">
+                <div className="text-center mb-4">
+                  <ClipboardList className="mx-auto h-12 w-12 text-muted-foreground mb-3" />
+                  <h3 className="text-lg font-medium">Nessun prodotto</h3>
+                  <p className="text-muted-foreground mt-1">
+                    Aggiungi prodotti all'ordine
+                  </p>
+                </div>
+                <Button onClick={() => setIsAddingItem(true)}>
+                  <Plus className="h-4 w-4 mr-1" /> Aggiungi prodotti
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-6">
+              {/* Display items without round assignment first */}
+              {order.items && order.items.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg">Prodotti senza giro</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {order.items.map(item => (
+                        <OrderItemRow key={item.id} item={item} />
+                      ))}
                     </div>
-                    
-                    <div className="max-h-96 overflow-y-auto pr-1">
-                      {order.items.length === 0 ? <p className="text-muted-foreground text-center py-4">
-                          Nessun prodotto nell'ordine
-                        </p> : <div className="space-y-1">
-                          {order.items.map(item => <OrderItemRow 
-                            key={item.id} 
-                            item={item} 
-                            onUpdateQuantity={handleUpdateQuantity} 
-                            onDeleteItem={handleDeleteItem} 
-                          />)}
-                        </div>}
-                    </div>
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="rounds" className="mt-4">
-                  <div>
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="font-semibold">Portate</h3>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => setIsItemModalOpen(true)}
-                        className="flex items-center"
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Aggiungi
-                      </Button>
-                    </div>
-                    
-                    <div className="max-h-96 overflow-y-auto pr-1">
-                      {!order.rounds || order.rounds.length === 0 ? (
-                        <p className="text-muted-foreground text-center py-4">
-                          Nessuna portata nell'ordine
-                        </p>
-                      ) : (
-                        <div className="space-y-1">
-                          {order.rounds.map(round => (
-                            <RoundItem 
-                              key={round.id} 
-                              round={round} 
-                              onUpdateStatus={handleUpdateRoundStatus}
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
+                  </CardContent>
+                </Card>
+              )}
               
-              <div className="flex justify-between items-center mt-6 text-lg font-semibold">
-                <span>Totale</span>
-                <span>
-                  {new Intl.NumberFormat('it-IT', {
-                    style: 'currency',
-                    currency: 'EUR'
-                  }).format(calculateTotal())}
-                </span>
-              </div>
-            </div>}
-        </CardContent>
-      </Card>
+              {/* Display rounds */}
+              {order.rounds && order.rounds.map(round => (
+                <Card key={round.id}>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex justify-between items-center">
+                      <div className="flex items-center">
+                        <span>Giro {round.roundNumber}</span>
+                        <RoundBadge status={round.status} className="ml-2" />
+                      </div>
+                      <div className="flex space-x-2">
+                        <RoundItem
+                          round={round}
+                          onUpdateStatus={handleUpdateRoundStatus}
+                        />
+                      </div>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {round.items.map(item => (
+                        <OrderItemRow key={item.id} item={item} />
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </>
+      )}
 
-      {order && <AddItemModal 
-        open={isItemModalOpen} 
-        onClose={() => setIsItemModalOpen(false)} 
-        onAddItems={handleAddItems}
-        rounds={getExistingRounds()}
-        createNewRound={true}
-      />}
-    </div>;
-};
+      {isAddingItem && order && (
+        <AddItemModal
+          isOpen={isAddingItem}
+          onClose={() => setIsAddingItem(false)}
+          onAddItems={handleAddItems}
+        />
+      )}
+    </div>
+  );
+}
 
 export default TableOrders;
