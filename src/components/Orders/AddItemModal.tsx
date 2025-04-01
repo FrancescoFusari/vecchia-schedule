@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -119,7 +120,7 @@ export function AddItemModal({ open, onClose, onAddItem }: AddItemModalProps) {
               Nessun prodotto trovato
             </p>
           ) : (
-            <ScrollArea className="h-[60vh] pr-4">
+            <ScrollArea className="h-[70vh] pr-4">
               <div className="grid grid-cols-1 gap-2">
                 {filteredItems.map((item) => (
                   <MenuItemCard
@@ -136,7 +137,7 @@ export function AddItemModal({ open, onClose, onAddItem }: AddItemModalProps) {
     }
 
     return (
-      <ScrollArea className="h-[60vh] pr-4">
+      <ScrollArea className="h-[70vh] pr-4">
         <div className="space-y-4">
           {isLoading ? (
             <div className="flex justify-center py-8">
@@ -286,11 +287,11 @@ export function AddItemModal({ open, onClose, onAddItem }: AddItemModalProps) {
 
   return isMobile ? (
     <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <SheetContent className="p-0 pt-6 h-screen max-h-screen inset-0" side="bottom">
+      <SheetContent className="p-0 pt-6 h-[100dvh] max-h-[100dvh] inset-0 w-full" side="bottom">
         <SheetHeader className="px-4 pb-2">
           <SheetTitle>Aggiungi prodotto</SheetTitle>
         </SheetHeader>
-        <div className="px-4 pb-8 overflow-auto flex-1">
+        <div className="px-4 pb-8 overflow-auto flex-1 h-[calc(100%-60px)]">
           {renderContent()}
         </div>
       </SheetContent>
