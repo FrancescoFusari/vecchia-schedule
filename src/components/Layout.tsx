@@ -5,6 +5,7 @@ import { Outlet } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "next-themes";
 import { useEffect } from "react";
+import { OfflineIndicator } from "./OfflineIndicator";
 
 export function Layout() {
   const isMobile = useIsMobile();
@@ -19,6 +20,7 @@ export function Layout() {
   
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
+      <OfflineIndicator />
       <Navbar />
       <main className={`flex-1 container mx-auto px-4 py-6 sm:px-6 md:px-8 ${isMobile ? 'pb-24' : ''}`}>
         <Outlet />

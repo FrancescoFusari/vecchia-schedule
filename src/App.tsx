@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { ThemeProvider } from "./components/ui/theme-provider";
@@ -14,6 +14,8 @@ import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "@/hooks/useAuth";
 import { Toaster } from "@/components/ui/toaster";
+import PWAInstall from "@/components/PWA/PWAInstall";
+import { registerServiceWorker } from "@/utils/pwaUtils";
 
 import Communications from "./pages/Communications";
 import Orders from "./pages/Orders";
@@ -22,6 +24,11 @@ import TableOrders from "./pages/TableOrders";
 const queryClient = new QueryClient();
 
 function App() {
+  useEffect(() => {
+    // Register the service worker
+    registerServiceWorker();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="dark" storageKey="la-vecchia-signora-theme">
@@ -44,6 +51,7 @@ function App() {
             </Routes>
           </AuthProvider>
         </Router>
+        <PWAInstall />
         <Toaster />
       </ThemeProvider>
     </QueryClientProvider>
