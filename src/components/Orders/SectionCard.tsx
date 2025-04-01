@@ -26,11 +26,10 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
   const [tables, setTables] = useState<TableWithOrders[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isTableManagementOpen, setIsTableManagementOpen] = useState(false);
-  const [isOpen, setIsOpen] = useState(true);
+  const [activeTables, setActiveTables] = useState<TableWithOrders[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
   const isMobile = useIsMobile();
-  
-  const [activeTables, setActiveTables] = useState<TableWithOrders[]>([]);
 
   useEffect(() => {
     const fetchTables = async () => {
@@ -55,7 +54,13 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
         );
         
         setTables(sortedTables);
-        setActiveTables(sortedTables.filter(table => table.hasActiveOrder));
+        const activeTablesFiltered = sortedTables.filter(table => table.hasActiveOrder);
+        setActiveTables(activeTablesFiltered);
+        
+        // Set isOpen to true only if this section has active tables
+        if (activeTablesFiltered.length > 0 && !isOpen) {
+          setIsOpen(true);
+        }
       } catch (error) {
         console.error("Error fetching tables for section:", error);
       } finally {
