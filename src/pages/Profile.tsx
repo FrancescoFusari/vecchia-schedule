@@ -56,7 +56,7 @@ const Profile = () => {
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>;
   }
-  return <div className="container mx-auto max-w-2xl py-6 animate-fade-in">
+  return <div className="animate-fade-in">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Profilo Utente</h1>
       </div>
