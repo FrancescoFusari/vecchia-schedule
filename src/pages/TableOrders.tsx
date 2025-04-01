@@ -185,10 +185,6 @@ const TableOrders = () => {
 
       const updatedOrder = await getActiveOrder(tableId!);
       setOrder(updatedOrder);
-      toast({
-        title: "Aggiunto",
-        description: "Prodotto aggiunto all'ordine"
-      });
     } catch (error) {
       console.error("Error adding item to order:", error);
       toast({
