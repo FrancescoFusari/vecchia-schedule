@@ -6,8 +6,9 @@ import { RestaurantTable, OrderWithItems } from "@/lib/types";
 import { getTables, getActiveOrder, getCompletedOrders, createOrder, updateOrder, addOrderItem, updateOrderItem, deleteOrderItem } from "@/lib/restaurant-service";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Plus, MoreVertical, Droplets, Droplet, Utensils } from "lucide-react";
+import { ArrowLeft, Plus, MoreVertical, Utensils } from "lucide-react";
 import { CounterControl } from "@/components/Orders/CounterControl";
+import { WaterControl } from "@/components/Orders/WaterControl";
 import { OrderItemRow } from "@/components/Orders/OrderItemRow";
 import { AddItemModal } from "@/components/Orders/AddItemModal";
 import { Separator } from "@/components/ui/separator";
@@ -22,8 +23,8 @@ const TableOrders = () => {
   const [table, setTable] = useState<RestaurantTable | null>(null);
   const [order, setOrder] = useState<OrderWithItems | null>(null);
   const [completedOrders, setCompletedOrders] = useState<OrderWithItems[]>([]);
-  const [stillWater, setStillWater] = useState(0);
-  const [sparklingWater, setSparklingWater] = useState(0);
+  const [waterAmount, setWaterAmount] = useState(0);
+  const [isSparkling, setIsSparkling] = useState(false);
   const [bread, setBread] = useState(0);
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -56,8 +57,9 @@ const TableOrders = () => {
         const activeOrder = await getActiveOrder(tableId);
         if (activeOrder) {
           setOrder(activeOrder);
-          setStillWater(activeOrder.stillWater);
-          setSparklingWater(activeOrder.sparklingWater);
+          const totalWater = activeOrder.stillWater + activeOrder.sparklingWater;
+          setWaterAmount(totalWater);
+          setIsSparkling(activeOrder.sparklingWater > 0);
           setBread(activeOrder.bread);
         }
 
@@ -81,21 +83,25 @@ const TableOrders = () => {
     fetchTableData();
   }, [tableId, navigate, user]);
 
-  const handleStillWaterChange = async (value: number) => {
-    setStillWater(value);
+  const handleWaterChange = async (value: number) => {
+    setWaterAmount(value);
     if (!order || !user) return;
+    
     try {
       setIsSaving(true);
-      await updateOrder(order.id, value, undefined, undefined);
+      const stillWater = isSparkling ? 0 : value;
+      const sparklingWater = isSparkling ? value : 0;
+      
+      await updateOrder(order.id, stillWater, sparklingWater, undefined);
       toast({
         title: "Aggiornato",
-        description: "Acqua naturale aggiornata"
+        description: `Acqua ${isSparkling ? "frizzante" : "naturale"} aggiornata`
       });
     } catch (error) {
-      console.error("Error updating still water:", error);
+      console.error("Error updating water:", error);
       toast({
         title: "Errore",
-        description: "Impossibile aggiornare l'acqua naturale",
+        description: "Impossibile aggiornare l'acqua",
         variant: "destructive"
       });
     } finally {
@@ -103,21 +109,25 @@ const TableOrders = () => {
     }
   };
 
-  const handleSparklingWaterChange = async (value: number) => {
-    setSparklingWater(value);
-    if (!order || !user) return;
+  const handleWaterTypeChange = async (sparklingValue: boolean) => {
+    setIsSparkling(sparklingValue);
+    if (!order || !user || waterAmount === 0) return;
+    
     try {
       setIsSaving(true);
-      await updateOrder(order.id, undefined, value, undefined);
+      const stillWater = sparklingValue ? 0 : waterAmount;
+      const sparklingWater = sparklingValue ? waterAmount : 0;
+      
+      await updateOrder(order.id, stillWater, sparklingWater, undefined);
       toast({
         title: "Aggiornato",
-        description: "Acqua frizzante aggiornata"
+        description: `Tipo di acqua cambiato a ${sparklingValue ? "frizzante" : "naturale"}`
       });
     } catch (error) {
-      console.error("Error updating sparkling water:", error);
+      console.error("Error updating water type:", error);
       toast({
         title: "Errore",
-        description: "Impossibile aggiornare l'acqua frizzante",
+        description: "Impossibile aggiornare il tipo di acqua",
         variant: "destructive"
       });
     } finally {
@@ -152,6 +162,9 @@ const TableOrders = () => {
     try {
       setIsSaving(true);
       console.log("Creating order with user ID:", user.id);
+      const stillWater = isSparkling ? 0 : waterAmount;
+      const sparklingWater = isSparkling ? waterAmount : 0;
+      
       const newOrder = await createOrder(tableId, user.id, stillWater, sparklingWater, bread);
 
       const fullOrder = await getActiveOrder(tableId);
@@ -254,8 +267,8 @@ const TableOrders = () => {
       setCompletedOrders([completedOrder, ...completedOrders]);
       
       setOrder(null);
-      setStillWater(0);
-      setSparklingWater(0);
+      setWaterAmount(0);
+      setIsSparkling(false);
       setBread(0);
       
       toast({
@@ -370,45 +383,35 @@ const TableOrders = () => {
                 Non ci sono ordini attivi per questo tavolo. Clicca su "Nuovo ordine" per iniziare.
               </p>
               
-              <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-4">
-                <CounterControl 
-                  label="Acqua Nat." 
-                  value={stillWater} 
-                  onChange={setStillWater} 
-                  className="w-full"
-                />
-                <CounterControl 
-                  label="Acqua Gas." 
-                  value={sparklingWater} 
-                  onChange={setSparklingWater} 
-                  className="w-full"
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <WaterControl 
+                  value={waterAmount}
+                  isSparkling={isSparkling}
+                  onValueChange={setWaterAmount}
+                  onTypeChange={setIsSparkling}
+                  className="col-span-1"
                 />
                 <CounterControl 
                   label="Pane" 
                   value={bread} 
                   onChange={setBread} 
-                  className="w-full"
+                  className="col-span-1"
                 />
               </div>
             </div> : <div className="space-y-6">
-              <div className="grid grid-cols-3 gap-2 sm:gap-4">
-                <CounterControl 
-                  label="Acqua Nat."
-                  value={stillWater} 
-                  onChange={handleStillWaterChange} 
-                  className="w-full"
-                />
-                <CounterControl
-                  label="Acqua Gas." 
-                  value={sparklingWater} 
-                  onChange={handleSparklingWaterChange} 
-                  className="w-full"
+              <div className="grid grid-cols-2 gap-4">
+                <WaterControl 
+                  value={waterAmount}
+                  isSparkling={isSparkling}
+                  onValueChange={handleWaterChange}
+                  onTypeChange={handleWaterTypeChange}
+                  className="col-span-1"
                 />
                 <CounterControl 
                   label="Pane" 
                   value={bread} 
                   onChange={handleBreadChange} 
-                  className="w-full"
+                  className="col-span-1"
                 />
               </div>
               
