@@ -113,10 +113,7 @@ const Register = () => {
                 <Input id="confirmPassword" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
               </div>
               
-              <div className="text-sm bg-accent p-3 rounded-md">
-                <p className="mb-1 font-medium text-foreground">Credenziali di demo:</p>
-                <p className="text-muted-foreground">Admin: admin / juventus96</p>
-              </div>
+              
             </CardContent>
             
             <CardFooter className="flex flex-col space-y-4">
