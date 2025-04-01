@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +8,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -23,6 +25,7 @@ const Login = () => {
       navigate("/");
     }
   }, [user, navigate]);
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !password.trim()) {
@@ -42,6 +45,7 @@ const Login = () => {
       setIsLoading(false);
     }
   };
+  
   return <div className="flex items-center justify-center min-h-screen bg-background">
       <div className="absolute top-4 right-4">
         <ThemeToggle />
@@ -66,16 +70,14 @@ const Login = () => {
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="username">Username <span className="text-destructive">*</span></Label>
                 <Input id="username" placeholder="nome.cognome" value={username} onChange={e => setUsername(e.target.value)} required />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">Password <span className="text-destructive">*</span></Label>
                 <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
               </div>
-              
-              
             </CardContent>
             
             <CardFooter className="flex flex-col space-y-4">
@@ -96,4 +98,5 @@ const Login = () => {
       </div>
     </div>;
 };
+
 export default Login;
