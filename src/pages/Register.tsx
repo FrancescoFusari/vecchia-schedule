@@ -12,8 +12,6 @@ import { useEffect } from "react";
 
 const Register = () => {
   const [username, setUsername] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -58,7 +56,7 @@ const Register = () => {
     
     setIsLoading(true);
     try {
-      await authService.registerEmployee(username, password, firstName, lastName);
+      await authService.registerEmployee(username, password, "", "");
       toast({
         title: "Registrazione completata",
         description: "Il tuo account è stato creato con successo. Ora puoi accedere."
@@ -105,16 +103,6 @@ const Register = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="firstName">Nome</Label>
-                <Input id="firstName" placeholder="Nome" value={firstName} onChange={e => setFirstName(e.target.value)} />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Cognome</Label>
-                <Input id="lastName" placeholder="Cognome" value={lastName} onChange={e => setLastName(e.target.value)} />
-              </div>
-              
-              <div className="space-y-2">
                 <Label htmlFor="password">Password <span className="text-destructive">*</span></Label>
                 <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
                 <p className="text-xs text-muted-foreground">Minimo 6 caratteri</p>
@@ -124,8 +112,6 @@ const Register = () => {
                 <Label htmlFor="confirmPassword">Conferma Password <span className="text-destructive">*</span></Label>
                 <Input id="confirmPassword" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
               </div>
-              
-              
             </CardContent>
             
             <CardFooter className="flex flex-col space-y-4">
