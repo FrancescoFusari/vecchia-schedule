@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -63,7 +62,6 @@ const TableOrders = () => {
         }
 
         const completed = await getCompletedOrders(tableId);
-        // Ensure the status is of the correct type
         const typedOrders: OrderWithItems[] = completed.map(order => ({
           ...order,
           status: order.status as "active" | "completed" | "cancelled"
@@ -249,7 +247,6 @@ const TableOrders = () => {
       setIsSaving(true);
       await updateOrder(order.id, undefined, undefined, undefined, 'completed');
       
-      // Add the completed order to the list with correct typing
       const completedOrder: OrderWithItems = {
         ...order,
         status: 'completed'
@@ -373,39 +370,45 @@ const TableOrders = () => {
                 Non ci sono ordini attivi per questo tavolo. Clicca su "Nuovo ordine" per iniziare.
               </p>
               
-              <div className="grid grid-cols-3 gap-4 mt-4">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-4">
                 <CounterControl 
                   label="Acqua Nat." 
                   value={stillWater} 
                   onChange={setStillWater} 
+                  className="w-full"
                 />
                 <CounterControl 
                   label="Acqua Gas." 
                   value={sparklingWater} 
                   onChange={setSparklingWater} 
+                  className="w-full"
                 />
                 <CounterControl 
                   label="Pane" 
                   value={bread} 
                   onChange={setBread} 
+                  className="w-full"
                 />
               </div>
             </div> : <div className="space-y-6">
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4">
                 <CounterControl 
                   label="Acqua Nat."
                   value={stillWater} 
                   onChange={handleStillWaterChange} 
+                  className="w-full"
                 />
                 <CounterControl
                   label="Acqua Gas." 
                   value={sparklingWater} 
                   onChange={handleSparklingWaterChange} 
+                  className="w-full"
                 />
                 <CounterControl 
                   label="Pane" 
                   value={bread} 
                   onChange={handleBreadChange} 
+                  className="w-full"
                 />
               </div>
               

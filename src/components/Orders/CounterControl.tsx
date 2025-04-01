@@ -34,25 +34,25 @@ export function CounterControl({
   return (
     <div className={`flex flex-col items-center ${className}`}>
       <span className="text-sm font-medium mb-1">{label}</span>
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center">
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8"
+          className="h-12 w-12 rounded-full touch-manipulation"
           onClick={handleDecrement}
           disabled={value <= min}
         >
-          <Minus className="h-3 w-3" />
+          <Minus className="h-4 w-4" />
         </Button>
-        <div className="w-8 text-center font-semibold">{value}</div>
+        <div className="w-10 text-center font-semibold text-lg mx-2">{value}</div>
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8"
+          className="h-12 w-12 rounded-full touch-manipulation"
           onClick={handleIncrement}
           disabled={value >= max}
         >
-          <Plus className="h-3 w-3" />
+          <Plus className="h-4 w-4" />
         </Button>
       </div>
     </div>
