@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Search, ArrowLeft, ChevronDown, ChevronUp, Utensils } from "lucide-react";
 import { MenuCategory, MenuItem, OrderItemWithMenuData } from "@/lib/types";
-import { getMenuCategories, getMenuItems } from "@/lib/restaurant-service";
+import { getMenuCategories, getMenuItems, updateOrderItem } from "@/lib/restaurant-service";
 import { MenuItemCard } from "./MenuItemCard";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -88,12 +88,39 @@ export function AddItemModal({
   };
 
   const addCourseDelimiter = async () => {
-    // This is a placeholder for a function that would mark the last added item
-    // as the last of the first course
-    toast({
-      title: "Separatore aggiunto",
-      description: "Separatore di portata aggiunto all'ordine"
-    });
+    if (!currentOrderItems || currentOrderItems.length === 0) {
+      toast({
+        title: "Impossibile aggiungere separatore",
+        description: "Non ci sono prodotti nell'ordine",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Remove any existing separators first
+      for (const item of currentOrderItems) {
+        if (item.isLastFirstCourse) {
+          await updateOrderItem(item.id, item.quantity, item.notes, false);
+        }
+      }
+      
+      // Set the last item as the delimiter
+      const lastItem = currentOrderItems[currentOrderItems.length - 1];
+      await updateOrderItem(lastItem.id, lastItem.quantity, lastItem.notes, true);
+      
+      toast({
+        title: "Separatore aggiunto",
+        description: "Separatore di portata aggiunto all'ordine"
+      });
+    } catch (error) {
+      console.error("Error adding course delimiter:", error);
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiungere il separatore di portata",
+        variant: "destructive"
+      });
+    }
   };
 
   const toggleCategory = (categoryId: string) => {
