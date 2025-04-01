@@ -14,6 +14,7 @@ import { AddItemModal } from "@/components/Orders/AddItemModal";
 import { Separator } from "@/components/ui/separator";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CompletedOrdersList } from "@/components/Orders/CompletedOrdersList";
+import { TableTimer } from "@/components/Orders/TableTimer";
 
 const TableOrders = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -450,6 +451,7 @@ const TableOrders = () => {
           <h1 className="text-2xl font-bold">
             Tavolo {table.tableNumber}
           </h1>
+          {order && <TableTimer startTime={order.createdAt} className="ml-3" />}
         </div>
         
         {order && <DropdownMenu>
