@@ -127,3 +127,9 @@ export interface OrderWithItems extends Order {
   items: (OrderItem & { menuItem: MenuItem })[];
   table: RestaurantTable;
 }
+
+// Add the missing type
+export interface OrderItemWithMenuData extends OrderItem {
+  menuItem: MenuItem;
+}
+
