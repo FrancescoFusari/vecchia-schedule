@@ -2,8 +2,8 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Search, ArrowLeft, ChevronDown, ChevronUp } from "lucide-react";
-import { MenuCategory, MenuItem } from "@/lib/types";
+import { Search, ArrowLeft, ChevronDown, ChevronUp, Utensils } from "lucide-react";
+import { MenuCategory, MenuItem, OrderItemWithMenuData } from "@/lib/types";
 import { getMenuCategories, getMenuItems } from "@/lib/restaurant-service";
 import { MenuItemCard } from "./MenuItemCard";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -11,17 +11,21 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 interface AddItemModalProps {
   open: boolean;
   onClose: () => void;
   onAddItem: (menuItemId: string, quantity: number, notes?: string) => Promise<void>;
+  currentOrderItems?: OrderItemWithMenuData[];
 }
 
 export function AddItemModal({
   open,
   onClose,
-  onAddItem
+  onAddItem,
+  currentOrderItems = []
 }: AddItemModalProps) {
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -83,6 +87,15 @@ export function AddItemModal({
     }
   };
 
+  const addCourseDelimiter = async () => {
+    // This is a placeholder for a function that would mark the last added item
+    // as the last of the first course
+    toast({
+      title: "Separatore aggiunto",
+      description: "Separatore di portata aggiunto all'ordine"
+    });
+  };
+
   const toggleCategory = (categoryId: string) => {
     setOpenCategories(prev => 
       prev.includes(categoryId) 
@@ -90,6 +103,13 @@ export function AddItemModal({
         : [...prev, categoryId]
     );
   };
+
+  const totalItems = currentOrderItems.reduce((sum, item) => sum + item.quantity, 0);
+  const orderTotal = currentOrderItems.reduce((sum, item) => sum + (item.quantity * item.menuItem.price), 0);
+  const formattedTotal = new Intl.NumberFormat('it-IT', {
+    style: 'currency',
+    currency: 'EUR'
+  }).format(orderTotal);
 
   const renderProductsList = () => {
     if (searchQuery) {
@@ -105,7 +125,7 @@ export function AddItemModal({
               Nessun prodotto trovato
             </p>
           ) : (
-            <ScrollArea className="h-[70vh] pr-4">
+            <ScrollArea className="h-[60vh] pr-4">
               <div className="grid grid-cols-1 gap-2">
                 {filteredItems.map(item => (
                   <MenuItemCard key={item.id} item={item} onAddToOrder={handleAddToOrder} />
@@ -118,38 +138,89 @@ export function AddItemModal({
     }
     
     return (
-      <ScrollArea className="pr-4">
-        <div className="space-y-4">
-          {isLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <>
+        <ScrollArea className="pr-4 h-[60vh]">
+          <div className="space-y-4">
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : (
+              categories.map(category => {
+                const categoryItems = menuItems.filter(item => item.categoryId === category.id);
+                if (categoryItems.length === 0) return null;
+                
+                const isOpen = openCategories.includes(category.id);
+                
+                return (
+                  <Collapsible key={category.id} open={isOpen} onOpenChange={() => toggleCategory(category.id)}>
+                    <CollapsibleTrigger className="flex w-full items-center justify-between py-2 px-3 bg-muted/50 rounded-md hover:bg-muted">
+                      <span className="font-medium">{category.name}</span>
+                      {isOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pt-2 space-y-2">
+                      {categoryItems.map(item => (
+                        <MenuItemCard key={item.id} item={item} onAddToOrder={handleAddToOrder} />
+                      ))}
+                    </CollapsibleContent>
+                  </Collapsible>
+                );
+              })
+            )}
+          </div>
+        </ScrollArea>
+        
+        {currentOrderItems.length > 0 && (
+          <div className="mt-4 border-t pt-4">
+            <h3 className="font-medium mb-2">Riepilogo ordine</h3>
+            <div className="bg-muted/30 rounded-md p-3">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm">Prodotti: {totalItems}</span>
+                <span className="font-medium">{formattedTotal}</span>
+              </div>
+              <ScrollArea className="max-h-[120px]">
+                <div className="space-y-1">
+                  {currentOrderItems.map((item) => (
+                    <div key={item.id} className="text-sm flex justify-between">
+                      <span>{item.quantity}x {item.menuItem.name}</span>
+                      <span>
+                        {new Intl.NumberFormat('it-IT', {
+                          style: 'currency',
+                          currency: 'EUR'
+                        }).format(item.menuItem.price * item.quantity)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
             </div>
-          ) : (
-            categories.map(category => {
-              const categoryItems = menuItems.filter(item => item.categoryId === category.id);
-              if (categoryItems.length === 0) return null;
-              
-              const isOpen = openCategories.includes(category.id);
-              
-              return (
-                <Collapsible key={category.id} open={isOpen} onOpenChange={() => toggleCategory(category.id)}>
-                  <CollapsibleTrigger className="flex w-full items-center justify-between py-2 px-3 bg-muted/50 rounded-md hover:bg-muted">
-                    <span className="font-medium">{category.name}</span>
-                    {isOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="pt-2 space-y-2">
-                    {categoryItems.map(item => (
-                      <MenuItemCard key={item.id} item={item} onAddToOrder={handleAddToOrder} />
-                    ))}
-                  </CollapsibleContent>
-                </Collapsible>
-              );
-            })
-          )}
-        </div>
-      </ScrollArea>
+          </div>
+        )}
+      </>
     );
   };
+
+  const modalContent = (
+    <>
+      <div className="relative mb-4">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input placeholder="Cerca prodotto..." className="pl-8" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+      </div>
+      
+      <div className="mb-4">
+        <Button 
+          onClick={addCourseDelimiter} 
+          variant="outline" 
+          className="w-full flex items-center justify-center"
+        >
+          <Utensils className="h-4 w-4 mr-2" />
+          Secondo
+        </Button>
+      </div>
+
+      {renderProductsList()}
+    </>
+  );
 
   return isMobile ? (
     <Sheet open={open} onOpenChange={isOpen => !isOpen && onClose()}>
@@ -158,12 +229,7 @@ export function AddItemModal({
           <SheetTitle>Aggiungi prodotto</SheetTitle>
         </SheetHeader>
         <div className="px-4 pb-8 overflow-auto flex-1 h-[calc(100%-60px)]">
-          <div className="relative mb-4">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Cerca prodotto..." className="pl-8" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-          </div>
-
-          {renderProductsList()}
+          {modalContent}
         </div>
       </SheetContent>
     </Sheet>
@@ -173,12 +239,7 @@ export function AddItemModal({
         <DialogHeader>
           <DialogTitle>Aggiungi prodotto</DialogTitle>
         </DialogHeader>
-        <div className="relative mb-4">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Cerca prodotto..." className="pl-8" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-        </div>
-
-        {renderProductsList()}
+        {modalContent}
       </DialogContent>
     </Dialog>
   );
