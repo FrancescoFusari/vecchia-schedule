@@ -47,7 +47,6 @@ export function AddItemModal({
         const categoriesData = await getMenuCategories();
         const categoriesWithItems = categoriesData.filter(category => itemsData.some(item => item.categoryId === category.id));
         setCategories(categoriesWithItems);
-        // Categories are now collapsed by default (we don't set openCategories here)
       } catch (error) {
         console.error("Error fetching menu data:", error);
       } finally {
@@ -62,7 +61,7 @@ export function AddItemModal({
   useEffect(() => {
     if (!open) {
       setSearchQuery("");
-      setOpenCategories([]); // Reset open categories when modal closes
+      setOpenCategories([]);
     }
   }, [open]);
 
@@ -116,19 +115,25 @@ export function AddItemModal({
     }
 
     try {
-      for (const item of localOrderItems) {
-        if (item.isLastFirstCourse) {
-          await updateOrderItem(item.id, item.quantity, item.notes, false);
-        }
+      const lastNonSeparatorIndex = [...localOrderItems].reverse().findIndex(item => !item.isLastFirstCourse);
+      if (lastNonSeparatorIndex === -1) {
+        toast({
+          title: "Avviso",
+          description: "Non ci sono prodotti disponibili per aggiungere un separatore",
+          variant: "destructive"
+        });
+        return;
       }
       
-      const lastItem = localOrderItems[localOrderItems.length - 1];
-      await updateOrderItem(lastItem.id, lastItem.quantity, lastItem.notes, true);
+      const itemIndex = localOrderItems.length - 1 - lastNonSeparatorIndex;
+      const itemToMark = localOrderItems[itemIndex];
+      
+      await updateOrderItem(itemToMark.id, itemToMark.quantity, itemToMark.notes, true);
       
       setLocalOrderItems(prev => {
-        const updated = prev.map(item => ({
+        const updated = prev.map((item, idx) => ({
           ...item,
-          isLastFirstCourse: item.id === lastItem.id
+          isLastFirstCourse: idx === itemIndex
         }));
         return updated;
       });
@@ -231,16 +236,28 @@ export function AddItemModal({
               </div>
               <ScrollArea className="max-h-[120px]">
                 <div className="space-y-1">
-                  {localOrderItems.map((item) => (
-                    <div key={item.id} className="text-sm flex justify-between">
-                      <span>{item.quantity}x {item.menuItem.name}</span>
-                      <span>
-                        {new Intl.NumberFormat('it-IT', {
-                          style: 'currency',
-                          currency: 'EUR'
-                        }).format(item.menuItem.price * item.quantity)}
-                      </span>
-                    </div>
+                  {localOrderItems.map((item, index) => (
+                    <>
+                      <div key={item.id} className="text-sm flex justify-between">
+                        <span>{item.quantity}x {item.menuItem.name}</span>
+                        <span>
+                          {new Intl.NumberFormat('it-IT', {
+                            style: 'currency',
+                            currency: 'EUR'
+                          }).format(item.menuItem.price * item.quantity)}
+                        </span>
+                      </div>
+                      {item.isLastFirstCourse && (
+                        <div className="my-2">
+                          <Separator className="bg-primary/30 h-[2px]" />
+                          <div className="flex justify-center -mt-[1px]">
+                            <span className="bg-background px-2 text-xs text-muted-foreground">
+                              Secondi
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   ))}
                 </div>
               </ScrollArea>
