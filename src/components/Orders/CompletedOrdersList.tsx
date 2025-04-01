@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { formatDistanceToNow } from "date-fns";
 import { it } from "date-fns/locale";
-import { ChevronDown, ChevronUp, Droplet, Droplets, Bread } from "lucide-react";
+import { ChevronDown, ChevronUp, Droplet, Droplets, Utensils } from "lucide-react";
 
 interface CompletedOrdersListProps {
   orders: OrderWithItems[];
@@ -88,7 +88,7 @@ export function CompletedOrdersList({ orders }: CompletedOrdersListProps) {
                     )}
                     {order.bread > 0 && (
                       <div className="flex items-center">
-                        <Bread className="h-4 w-4 mr-1 text-amber-600" />
+                        <Utensils className="h-4 w-4 mr-1 text-amber-600" />
                         <span>{order.bread} pane</span>
                       </div>
                     )}

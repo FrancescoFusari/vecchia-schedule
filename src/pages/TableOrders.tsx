@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -6,7 +7,7 @@ import { RestaurantTable, OrderWithItems } from "@/lib/types";
 import { getTables, getActiveOrder, getCompletedOrders, createOrder, updateOrder, addOrderItem, updateOrderItem, deleteOrderItem } from "@/lib/restaurant-service";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Plus, MoreVertical, Droplets, Droplet, Bread } from "lucide-react";
+import { ArrowLeft, Plus, MoreVertical, Droplets, Droplet, Utensils } from "lucide-react";
 import { CounterControl } from "@/components/Orders/CounterControl";
 import { OrderItemRow } from "@/components/Orders/OrderItemRow";
 import { AddItemModal } from "@/components/Orders/AddItemModal";
@@ -62,7 +63,12 @@ const TableOrders = () => {
         }
 
         const completed = await getCompletedOrders(tableId);
-        setCompletedOrders(completed);
+        // Ensure the status is of the correct type
+        const typedOrders: OrderWithItems[] = completed.map(order => ({
+          ...order,
+          status: order.status as "active" | "completed" | "cancelled"
+        }));
+        setCompletedOrders(typedOrders);
       } catch (error) {
         console.error("Error fetching table data:", error);
         toast({
@@ -243,8 +249,12 @@ const TableOrders = () => {
       setIsSaving(true);
       await updateOrder(order.id, undefined, undefined, undefined, 'completed');
       
-      const updatedCompletedOrders = [...completedOrders, { ...order, status: 'completed' }];
-      setCompletedOrders(updatedCompletedOrders);
+      // Add the completed order to the list with correct typing
+      const completedOrder: OrderWithItems = {
+        ...order,
+        status: 'completed'
+      };
+      setCompletedOrders([completedOrder, ...completedOrders]);
       
       setOrder(null);
       setStillWater(0);
@@ -386,19 +396,16 @@ const TableOrders = () => {
                   label="Acqua Nat."
                   value={stillWater} 
                   onChange={handleStillWaterChange} 
-                  className="text-center" 
                 />
                 <CounterControl
                   label="Acqua Gas." 
                   value={sparklingWater} 
                   onChange={handleSparklingWaterChange} 
-                  className="text-center" 
                 />
                 <CounterControl 
                   label="Pane" 
                   value={bread} 
                   onChange={handleBreadChange} 
-                  className="text-center" 
                 />
               </div>
               
