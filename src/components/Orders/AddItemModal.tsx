@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -36,21 +35,17 @@ export function AddItemModal({ open, onClose, onAddItem }: AddItemModalProps) {
       try {
         setIsLoading(true);
         
-        // Fetch all items initially
         const itemsData = await getMenuItems();
         setMenuItems(itemsData);
         
-        // Fetch categories
         const categoriesData = await getMenuCategories();
         
-        // Filter out categories with no items
         const categoriesWithItems = categoriesData.filter(category => 
           itemsData.some(item => item.categoryId === category.id)
         );
         
         setCategories(categoriesWithItems);
         
-        // Initialize all categories as open
         setOpenCategories(categoriesWithItems.map(category => category.id));
       } catch (error) {
         console.error("Error fetching menu data:", error);
@@ -66,7 +61,6 @@ export function AddItemModal({ open, onClose, onAddItem }: AddItemModalProps) {
 
   useEffect(() => {
     if (!open) {
-      // Reset state when modal closes
       setSelectedItem(null);
       setQuantity(1);
       setNotes("");
@@ -112,7 +106,6 @@ export function AddItemModal({ open, onClose, onAddItem }: AddItemModalProps) {
   };
 
   const renderProductsList = () => {
-    // If searching, show search results
     if (searchQuery) {
       return (
         <div className="space-y-4">
@@ -142,7 +135,6 @@ export function AddItemModal({ open, onClose, onAddItem }: AddItemModalProps) {
       );
     }
 
-    // Otherwise, show collapsible categories with products
     return (
       <ScrollArea className="h-[60vh] pr-4">
         <div className="space-y-4">
@@ -292,14 +284,13 @@ export function AddItemModal({ open, onClose, onAddItem }: AddItemModalProps) {
     </>
   );
 
-  // Use Sheet component for mobile and Dialog for desktop
   return isMobile ? (
     <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <SheetContent className="p-0 pt-6 h-[90vh]" side="bottom">
+      <SheetContent className="p-0 pt-6 h-screen max-h-screen inset-0" side="bottom">
         <SheetHeader className="px-4 pb-2">
           <SheetTitle>Aggiungi prodotto</SheetTitle>
         </SheetHeader>
-        <div className="px-4 pb-8">
+        <div className="px-4 pb-8 overflow-auto flex-1">
           {renderContent()}
         </div>
       </SheetContent>
