@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -474,9 +475,11 @@ const TableOrders = () => {
       <Card>
         <CardContent className="p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">
-              {order ? 'Ordine attivo' : 'Nessun ordine attivo'}
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-semibold">
+                {order ? 'Ordine attivo' : 'Nessun ordine attivo'}
+              </h2>
+            </div>
             
             {!order && <Button onClick={handleAddNewOrder} disabled={isSaving}>
                 {isSaving ? "Creazione..." : "Nuovo ordine"}

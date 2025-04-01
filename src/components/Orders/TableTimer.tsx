@@ -44,11 +44,11 @@ export const TableTimer = ({ startTime, className }: TableTimerProps) => {
   
   return (
     <Badge 
-      variant="outline" 
-      className={`px-3 py-1 flex items-center gap-1.5 bg-background/50 backdrop-blur-sm ${className}`}
+      variant="orange" 
+      className={`px-3 py-1 flex items-center gap-1.5 ${className}`}
     >
       <Clock className="h-3.5 w-3.5" />
-      <span className="font-mono text-xs">{elapsedTime}</span>
+      <span className="font-mono text-xs font-medium">{elapsedTime}</span>
     </Badge>
   );
 };
