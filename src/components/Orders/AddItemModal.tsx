@@ -271,7 +271,7 @@ export function AddItemModal({ open, onClose, onAddItem }: AddItemModalProps) {
   // Use Sheet component for mobile and Dialog for desktop
   return isMobile ? (
     <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <SheetContent className="p-0 pt-6" side="bottom" size="content">
+      <SheetContent className="p-0 pt-6 h-[90vh] max-h-[90vh]" side="bottom">
         <SheetHeader className="px-4 pb-2">
           <SheetTitle>Aggiungi prodotto</SheetTitle>
         </SheetHeader>
