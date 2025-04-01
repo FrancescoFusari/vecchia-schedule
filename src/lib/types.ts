@@ -100,15 +100,6 @@ export interface MenuItem {
   createdAt: string;
 }
 
-export interface OrderRound {
-  id: string;
-  orderId: string;
-  roundNumber: number;
-  status: 'pending' | 'preparing' | 'served' | 'completed';
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface Order {
   id: string;
   tableId: string;
@@ -128,20 +119,9 @@ export interface OrderItem {
   quantity: number;
   notes?: string;
   createdAt: string;
-  roundId?: string; // Link to round
 }
 
 export interface OrderWithItems extends Order {
   items: (OrderItem & { menuItem: MenuItem })[];
   table: RestaurantTable;
-  rounds?: (OrderRound & { 
-    items: (OrderItem & { menuItem: MenuItem })[] 
-  })[];
-}
-
-// A temporary cart item represents an item to be added to the order
-export interface CartItem {
-  menuItem: MenuItem;
-  quantity: number;
-  notes?: string;
 }

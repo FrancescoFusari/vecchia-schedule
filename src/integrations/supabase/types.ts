@@ -142,7 +142,6 @@ export type Database = {
           notes: string | null
           order_id: string
           quantity: number
-          round_id: string | null
         }
         Insert: {
           created_at?: string
@@ -151,7 +150,6 @@ export type Database = {
           notes?: string | null
           order_id: string
           quantity?: number
-          round_id?: string | null
         }
         Update: {
           created_at?: string
@@ -160,7 +158,6 @@ export type Database = {
           notes?: string | null
           order_id?: string
           quantity?: number
-          round_id?: string | null
         }
         Relationships: [
           {
@@ -172,48 +169,6 @@ export type Database = {
           },
           {
             foreignKeyName: "order_items_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "order_items_round_id_fkey"
-            columns: ["round_id"]
-            isOneToOne: false
-            referencedRelation: "order_rounds"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      order_rounds: {
-        Row: {
-          created_at: string
-          id: string
-          order_id: string
-          round_number: number
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          order_id: string
-          round_number: number
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          order_id?: string
-          round_number?: number
-          status?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "order_rounds_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"

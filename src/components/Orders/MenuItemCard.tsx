@@ -1,22 +1,15 @@
 
 import { MenuItem } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
-import { Check, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface MenuItemCardProps {
   item: MenuItem;
   onAddToOrder: (item: MenuItem) => void;
-  isSelected?: boolean;
-  selectionMode?: boolean;
 }
 
-export function MenuItemCard({ 
-  item, 
-  onAddToOrder, 
-  isSelected = false,
-  selectionMode = false
-}: MenuItemCardProps) {
+export function MenuItemCard({ item, onAddToOrder }: MenuItemCardProps) {
   const handleClick = () => {
     onAddToOrder(item);
   };
@@ -28,7 +21,7 @@ export function MenuItemCard({
   }).format(item.price);
 
   return (
-    <Card className={`overflow-hidden hover:shadow-md transition-shadow ${isSelected ? 'ring-2 ring-primary' : ''}`}>
+    <Card className="overflow-hidden hover:shadow-md transition-shadow">
       <CardContent className="p-0">
         <button 
           onClick={handleClick}
@@ -51,13 +44,9 @@ export function MenuItemCard({
               e.stopPropagation();
               handleClick();
             }}
-            aria-label={`${selectionMode ? (isSelected ? 'Rimuovi' : 'Aggiungi') : 'Aggiungi'} ${item.name}`}
+            aria-label={`Aggiungi ${item.name}`}
           >
-            {selectionMode && isSelected ? (
-              <Check className="h-5 w-5 text-primary" />
-            ) : (
-              <Plus className="h-5 w-5 text-primary" />
-            )}
+            <Plus className="h-5 w-5 text-primary" />
           </Button>
         </button>
       </CardContent>

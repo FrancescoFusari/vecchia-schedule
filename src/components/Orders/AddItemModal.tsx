@@ -1,334 +1,307 @@
-
 import { useState, useEffect } from "react";
-import { Dialog, DialogTitle, DialogContent, DialogFooter } from "@/components/ui/dialog";
-import { Sheet, SheetHeader, SheetContent, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, ShoppingCart, ChevronDown, ChevronUp } from "lucide-react";
-import { MenuItem, MenuCategory, CartItem } from "@/lib/types";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Search, ArrowLeft, ChevronDown, ChevronUp } from "lucide-react";
+import { MenuCategory, MenuItem } from "@/lib/types";
 import { getMenuCategories, getMenuItems } from "@/lib/restaurant-service";
 import { MenuItemCard } from "./MenuItemCard";
-import { CartItemCard } from "./CartItemCard";
-import { Separator } from "@/components/ui/separator";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface AddItemModalProps {
-  isOpen: boolean;
+  open: boolean;
   onClose: () => void;
-  onAddItems: (items: CartItem[], roundNumber?: number) => void;
+  onAddItem: (menuItemId: string, quantity: number, notes?: string) => Promise<void>;
 }
 
-export function AddItemModal({ isOpen, onClose, onAddItems }: AddItemModalProps) {
-  const isMobile = useIsMobile();
+export function AddItemModal({ open, onClose, onAddItem }: AddItemModalProps) {
   const [categories, setCategories] = useState<MenuCategory[]>([]);
-  const [items, setItems] = useState<MenuItem[]>([]);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [openCategories, setOpenCategories] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedItems, setSelectedItems] = useState<CartItem[]>([]);
-  const [filteredItems, setFilteredItems] = useState<MenuItem[]>([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const [roundNumber, setRoundNumber] = useState<number>(1);
-  const [loading, setLoading] = useState(true);
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+  const [quantity, setQuantity] = useState(1);
+  const [notes, setNotes] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch menu categories
-        const categoriesData = await getMenuCategories();
-        setCategories(categoriesData);
+        setIsLoading(true);
         
-        if (categoriesData.length > 0) {
-          setActiveCategory(categoriesData[0].id);
-        }
-        
-        // Fetch all menu items
         const itemsData = await getMenuItems();
-        setItems(itemsData);
-        setFilteredItems(itemsData);
+        setMenuItems(itemsData);
         
-        setLoading(false);
+        const categoriesData = await getMenuCategories();
+        
+        const categoriesWithItems = categoriesData.filter(category => 
+          itemsData.some(item => item.categoryId === category.id)
+        );
+        
+        setCategories(categoriesWithItems);
+        
+        setOpenCategories(categoriesWithItems.map(category => category.id));
       } catch (error) {
         console.error("Error fetching menu data:", error);
-        setLoading(false);
+      } finally {
+        setIsLoading(false);
       }
     };
-    
-    if (isOpen) {
+
+    if (open) {
       fetchData();
     }
-  }, [isOpen]);
+  }, [open]);
 
-  // Filter items when search query or active category changes
   useEffect(() => {
-    if (searchQuery) {
-      const filtered = items.filter(item => 
+    if (!open) {
+      setSelectedItem(null);
+      setQuantity(1);
+      setNotes("");
+      setSearchQuery("");
+    }
+  }, [open]);
+
+  const filteredItems = searchQuery 
+    ? menuItems.filter(item => 
         item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
-      setFilteredItems(filtered);
-    } else if (activeCategory) {
-      const filtered = items.filter(item => item.categoryId === activeCategory);
-      setFilteredItems(filtered);
-    } else {
-      setFilteredItems(items);
-    }
-  }, [searchQuery, activeCategory, items]);
+      )
+    : menuItems;
 
-  const handleCategoryChange = (categoryId: string) => {
-    setActiveCategory(categoryId);
-    setSearchQuery("");
+  const handleSelectItem = (item: MenuItem) => {
+    setSelectedItem(item);
   };
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-    if (query) {
-      setActiveCategory(null);
-    } else if (categories.length > 0) {
-      setActiveCategory(categories[0].id);
-    }
-  };
-
-  const handleAddToCart = (item: MenuItem) => {
-    // Check if item is already in cart
-    const existingIndex = selectedItems.findIndex(
-      cartItem => cartItem.menuItem.id === item.id
-    );
+  const handleAddToOrder = async () => {
+    if (!selectedItem) return;
     
-    if (existingIndex >= 0) {
-      // If in selection mode, remove the item
-      setSelectedItems(prev => prev.filter(cartItem => cartItem.menuItem.id !== item.id));
-    } else {
-      // Add new item to cart
-      setSelectedItems(prev => [...prev, { menuItem: item, quantity: 1 }]);
-    }
-  };
-
-  const handleUpdateQuantity = (item: CartItem, quantity: number) => {
-    setSelectedItems(prev => 
-      prev.map(cartItem => 
-        cartItem.menuItem.id === item.menuItem.id 
-          ? { ...cartItem, quantity } 
-          : cartItem
-      )
-    );
-  };
-
-  const handleUpdateNotes = (item: CartItem, notes: string) => {
-    setSelectedItems(prev => 
-      prev.map(cartItem => 
-        cartItem.menuItem.id === item.menuItem.id 
-          ? { ...cartItem, notes } 
-          : cartItem
-      )
-    );
-  };
-
-  const handleRemoveFromCart = (item: CartItem) => {
-    setSelectedItems(prev => 
-      prev.filter(cartItem => cartItem.menuItem.id !== item.menuItem.id)
-    );
-  };
-
-  const calculateTotalItems = () => {
-    return selectedItems.reduce((total, item) => total + item.quantity, 0);
-  };
-
-  const calculateTotalPrice = () => {
-    return selectedItems.reduce(
-      (total, item) => total + (item.menuItem.price * item.quantity), 
-      0
-    );
-  };
-
-  const isItemSelected = (itemId: string) => {
-    return selectedItems.some(item => item.menuItem.id === itemId);
-  };
-
-  const handleAddToOrder = () => {
-    if (selectedItems.length > 0) {
-      onAddItems(selectedItems, roundNumber);
-      setSelectedItems([]);
+    try {
+      setIsSubmitting(true);
+      await onAddItem(selectedItem.id, quantity, notes || undefined);
       onClose();
+    } catch (error) {
+      console.error("Error adding item to order:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const totalItems = calculateTotalItems();
-  const totalPrice = calculateTotalPrice();
-  const formattedTotalPrice = new Intl.NumberFormat('it-IT', {
-    style: 'currency',
-    currency: 'EUR'
-  }).format(totalPrice);
-
-  const toggleCart = () => {
-    setIsCartOpen(!isCartOpen);
+  const handleBackToList = () => {
+    setSelectedItem(null);
   };
 
-  const ModalContent = (
-    <>
-      <div className="flex flex-col h-full">
-        <div className="mb-4">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Cerca prodotti..."
-              value={searchQuery}
-              onChange={handleSearch}
-              className="pl-9"
-            />
-          </div>
-        </div>
+  const toggleCategory = (categoryId: string) => {
+    setOpenCategories(prev => 
+      prev.includes(categoryId)
+        ? prev.filter(id => id !== categoryId)
+        : [...prev, categoryId]
+    );
+  };
 
-        <Tabs defaultValue={categories[0]?.id} value={activeCategory || undefined} className="flex-1 flex flex-col">
-          <TabsList className="mb-2 overflow-auto justify-start h-auto">
-            {categories.map(category => (
-              <TabsTrigger 
-                key={category.id} 
-                value={category.id}
-                onClick={() => handleCategoryChange(category.id)}
-                className="whitespace-nowrap"
-              >
-                {category.name}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          <ScrollArea className="flex-1 -mx-1 px-1">
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-            ) : filteredItems.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Nessun prodotto trovato
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {filteredItems.map(item => (
-                  <MenuItemCard 
-                    key={item.id} 
-                    item={item} 
-                    onAddToOrder={handleAddToCart}
-                    isSelected={isItemSelected(item.id)}
-                    selectionMode={true}
-                  />
-                ))}
-              </div>
-            )}
-          </ScrollArea>
-        </Tabs>
-      </div>
-
-      {selectedItems.length > 0 && (
-        <div className={`${isCartOpen ? 'mt-4' : 'mt-4'}`}>
-          <Button 
-            variant="outline" 
-            className="w-full flex justify-between items-center mb-3"
-            onClick={toggleCart}
-          >
-            <div className="flex items-center">
-              <ShoppingCart className="h-4 w-4 mr-2" />
-              <span>Carrello ({totalItems} {totalItems === 1 ? 'prodotto' : 'prodotti'})</span>
+  const renderProductsList = () => {
+    if (searchQuery) {
+      return (
+        <div className="space-y-4">
+          <h3 className="font-medium">Risultati ricerca</h3>
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
-            <Badge variant="secondary" className="ml-2">{formattedTotalPrice}</Badge>
-            {isCartOpen ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
-          </Button>
-
-          {isCartOpen && (
-            <>
-              <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                {selectedItems.map((item, index) => (
-                  <CartItemCard 
-                    key={item.menuItem.id}
+          ) : filteredItems.length === 0 ? (
+            <p className="text-center py-4 text-muted-foreground">
+              Nessun prodotto trovato
+            </p>
+          ) : (
+            <ScrollArea className="h-[60vh] pr-4">
+              <div className="grid grid-cols-1 gap-2">
+                {filteredItems.map((item) => (
+                  <MenuItemCard
+                    key={item.id}
                     item={item}
-                    onUpdateQuantity={handleUpdateQuantity}
-                    onUpdateNotes={handleUpdateNotes}
-                    onRemove={handleRemoveFromCart}
+                    onAddToOrder={handleSelectItem}
                   />
                 ))}
               </div>
-
-              <div className="mt-4 space-y-3">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center">
-                    <span className="mr-2">Giro:</span>
-                    <select 
-                      value={roundNumber}
-                      onChange={(e) => setRoundNumber(parseInt(e.target.value))}
-                      className="border rounded px-2 py-1 text-sm"
-                    >
-                      <option value={1}>Primo</option>
-                      <option value={2}>Secondo</option>
-                      <option value={3}>Terzo</option>
-                    </select>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-muted-foreground">Totale</p>
-                    <p className="text-lg font-bold text-primary">{formattedTotalPrice}</p>
-                  </div>
-                </div>
-              </div>
-            </>
+            </ScrollArea>
           )}
         </div>
+      );
+    }
+
+    return (
+      <ScrollArea className="h-[60vh] pr-4">
+        <div className="space-y-4">
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            categories.map(category => {
+              const categoryItems = menuItems.filter(item => item.categoryId === category.id);
+              if (categoryItems.length === 0) return null;
+              
+              const isOpen = openCategories.includes(category.id);
+              
+              return (
+                <Collapsible key={category.id} open={isOpen} onOpenChange={() => toggleCategory(category.id)}>
+                  <CollapsibleTrigger className="flex w-full items-center justify-between py-2 px-3 bg-muted/50 rounded-md hover:bg-muted">
+                    <span className="font-medium">{category.name}</span>
+                    {isOpen ? (
+                      <ChevronUp className="h-5 w-5" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5" />
+                    )}
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-2 space-y-2">
+                    {categoryItems.map(item => (
+                      <MenuItemCard
+                        key={item.id}
+                        item={item}
+                        onAddToOrder={handleSelectItem}
+                      />
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
+              );
+            })
+          )}
+        </div>
+      </ScrollArea>
+    );
+  };
+
+  const renderContent = () => (
+    <>
+      {selectedItem ? (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <div className="flex items-center">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handleBackToList} 
+                className="mr-2 h-8 w-8"
+                aria-label="Torna indietro"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <h3 className="font-semibold text-lg">{selectedItem.name}</h3>
+            </div>
+            {selectedItem.description && (
+              <p className="text-sm text-muted-foreground">{selectedItem.description}</p>
+            )}
+            <p className="font-medium">
+              {new Intl.NumberFormat('it-IT', {
+                style: 'currency',
+                currency: 'EUR'
+              }).format(selectedItem.price)}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium" htmlFor="quantity">
+              Quantità
+            </label>
+            <div className="flex items-center">
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm"
+                onClick={() => quantity > 1 && setQuantity(quantity - 1)}
+                aria-label="Diminuisci quantità"
+                className="h-10 w-10"
+              >
+                -
+              </Button>
+              <Input
+                id="quantity"
+                type="number"
+                value={quantity}
+                onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                className="w-16 mx-2 text-center"
+                min="1"
+              />
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm"
+                onClick={() => setQuantity(quantity + 1)}
+                aria-label="Aumenta quantità"
+                className="h-10 w-10"
+              >
+                +
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium" htmlFor="notes">
+              Note (opzionale)
+            </label>
+            <Textarea
+              id="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Es. senza cipolla, ben cotto, ecc."
+              className="resize-none"
+            />
+          </div>
+
+          <div className="flex justify-between pt-2">
+            <Button variant="outline" onClick={handleBackToList}>
+              Indietro
+            </Button>
+            <Button 
+              onClick={handleAddToOrder} 
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Aggiunta in corso..." : "Aggiungi all'ordine"}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="relative mb-4">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Cerca prodotto..."
+              className="pl-8"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          {renderProductsList()}
+        </>
       )}
     </>
   );
 
-  if (isMobile) {
-    return (
-      <Sheet open={isOpen} onOpenChange={onClose}>
-        <SheetContent side="bottom" className="h-[90vh] flex flex-col p-4">
-          <SheetHeader className="text-left pb-2">
-            <SheetTitle>Aggiungi prodotti</SheetTitle>
-          </SheetHeader>
-          
-          <div className="flex-1 overflow-hidden flex flex-col">
-            {ModalContent}
-          </div>
-          
-          <SheetFooter className="mt-2">
-            <div className="flex w-full space-x-2">
-              <Button variant="outline" className="flex-1" onClick={onClose}>
-                Annulla
-              </Button>
-              <Button 
-                className="flex-1" 
-                onClick={handleAddToOrder}
-                disabled={selectedItems.length === 0}
-              >
-                Aggiungi al tavolo
-              </Button>
-            </div>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
-    );
-  }
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[85vh]">
-        <DialogTitle>Aggiungi prodotti</DialogTitle>
-        
-        <div className="flex-1 overflow-hidden flex flex-col">
-          {ModalContent}
+  return isMobile ? (
+    <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <SheetContent className="p-0 pt-6 h-screen max-h-screen inset-0" side="bottom">
+        <SheetHeader className="px-4 pb-2">
+          <SheetTitle>Aggiungi prodotto</SheetTitle>
+        </SheetHeader>
+        <div className="px-4 pb-8 overflow-auto flex-1">
+          {renderContent()}
         </div>
-        
-        <DialogFooter className="mt-4">
-          <Button variant="outline" onClick={onClose}>
-            Annulla
-          </Button>
-          <Button 
-            onClick={handleAddToOrder}
-            disabled={selectedItems.length === 0}
-          >
-            Aggiungi al tavolo
-          </Button>
-        </DialogFooter>
+      </SheetContent>
+    </Sheet>
+  ) : (
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="sm:max-w-md md:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Aggiungi prodotto</DialogTitle>
+        </DialogHeader>
+        {renderContent()}
       </DialogContent>
     </Dialog>
   );

@@ -8,8 +8,8 @@ interface OrderItemRowProps {
   item: OrderItem & {
     menuItem: MenuItem;
   };
-  onUpdateQuantity?: (id: string, quantity: number) => void;
-  onDeleteItem?: (id: string) => void;
+  onUpdateQuantity: (id: string, quantity: number) => void;
+  onDeleteItem: (id: string) => void;
 }
 
 export function OrderItemRow({
@@ -20,7 +20,7 @@ export function OrderItemRow({
   const [isUpdating, setIsUpdating] = useState(false);
 
   const handleIncrement = async () => {
-    if (isUpdating || !onUpdateQuantity) return;
+    if (isUpdating) return;
     try {
       setIsUpdating(true);
       await onUpdateQuantity(item.id, item.quantity + 1);
@@ -30,7 +30,7 @@ export function OrderItemRow({
   };
 
   const handleDecrement = async () => {
-    if (isUpdating || item.quantity <= 1 || !onUpdateQuantity) return;
+    if (isUpdating || item.quantity <= 1) return;
     try {
       setIsUpdating(true);
       await onUpdateQuantity(item.id, item.quantity - 1);
@@ -40,7 +40,7 @@ export function OrderItemRow({
   };
 
   const handleDelete = async () => {
-    if (isUpdating || !onDeleteItem) return;
+    if (isUpdating) return;
     try {
       setIsUpdating(true);
       await onDeleteItem(item.id);
@@ -67,42 +67,36 @@ export function OrderItemRow({
           <p className="text-xs text-muted-foreground mt-1">{item.notes}</p>
         )}
       </div>
-      {(onUpdateQuantity && onDeleteItem) ? (
-        <div className="flex items-center space-x-2 ml-4">
-          <Button 
-            variant="outline" 
-            size="icon" 
-            className="h-8 w-8 rounded-full" 
-            onClick={handleDecrement} 
-            disabled={isUpdating || item.quantity <= 1}
-          >
-            <Minus className="h-3 w-3" />
-          </Button>
-          <span className="w-6 text-center font-medium">{item.quantity}</span>
-          <Button 
-            variant="outline" 
-            size="icon" 
-            className="h-8 w-8 rounded-full" 
-            onClick={handleIncrement} 
-            disabled={isUpdating}
-          >
-            <Plus className="h-3 w-3" />
-          </Button>
-          <Button 
-            variant="outline" 
-            size="icon" 
-            className="h-8 w-8 rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive" 
-            onClick={handleDelete} 
-            disabled={isUpdating}
-          >
-            <Trash className="h-3 w-3" />
-          </Button>
-        </div>
-      ) : (
-        <div className="ml-4">
-          <span className="text-sm font-medium">x{item.quantity}</span>
-        </div>
-      )}
+      <div className="flex items-center space-x-2 ml-4">
+        <Button 
+          variant="outline" 
+          size="icon" 
+          className="h-8 w-8 rounded-full" 
+          onClick={handleDecrement} 
+          disabled={isUpdating || item.quantity <= 1}
+        >
+          <Minus className="h-3 w-3" />
+        </Button>
+        <span className="w-6 text-center font-medium">{item.quantity}</span>
+        <Button 
+          variant="outline" 
+          size="icon" 
+          className="h-8 w-8 rounded-full" 
+          onClick={handleIncrement} 
+          disabled={isUpdating}
+        >
+          <Plus className="h-3 w-3" />
+        </Button>
+        <Button 
+          variant="outline" 
+          size="icon" 
+          className="h-8 w-8 rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive" 
+          onClick={handleDelete} 
+          disabled={isUpdating}
+        >
+          <Trash className="h-3 w-3" />
+        </Button>
+      </div>
     </div>
   );
 }
