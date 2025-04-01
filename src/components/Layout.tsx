@@ -18,7 +18,7 @@ export function Layout() {
   }, [setTheme, theme]);
   
   return (
-    <div className="min-h-screen flex flex-col bg-background transition-colors duration-300">
+    <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
       <Navbar />
       <main className={`flex-1 container mx-auto px-4 py-6 sm:px-6 md:px-8 ${isMobile ? 'pb-24' : ''}`}>
         <Outlet />

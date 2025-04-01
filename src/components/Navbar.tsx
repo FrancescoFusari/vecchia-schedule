@@ -5,11 +5,14 @@ import { CalendarDays, Users, User, MessageSquare, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { useTheme } from "next-themes";
 
 export function Navbar() {
   const { user, isAdmin, signOut } = useAuth();
   const location = useLocation();
   const isMobile = useIsMobile();
+  const { theme } = useTheme();
+  const isDarkTheme = theme === 'dark';
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -33,8 +36,12 @@ export function Navbar() {
         <div className="flex justify-between items-center">
           {!isMobile && (
             <div className="flex space-x-1">
-              <Link to="/" className="flex items-center text-lg font-semibold text-primary">
-                <img src="/lovable-uploads/5cec7ef1-53d9-4fab-ba62-9a1137e84da9.png" alt="La Vecchia Signora" className="h-8 mr-2" />
+              <Link to="/" className="flex items-center text-lg font-semibold text-foreground">
+                <img 
+                  src="/lovable-uploads/5cec7ef1-53d9-4fab-ba62-9a1137e84da9.png" 
+                  alt="La Vecchia Signora" 
+                  className={`h-8 mr-2 ${isDarkTheme ? 'invert' : ''}`} 
+                />
                 <span>La Vecchia Signora</span>
               </Link>
             </div>

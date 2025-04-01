@@ -12,10 +12,12 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { HoursSummary } from "../Reports/HoursSummary";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, BarChart } from "lucide-react";
+
 interface WeeklyCalendarProps {
   onViewChange?: (isWeekView: boolean) => void;
   'data-component'?: string;
 }
+
 export function WeeklyCalendar({
   onViewChange,
   'data-component': dataComponent
@@ -45,6 +47,7 @@ export function WeeklyCalendar({
   });
   const [expandedWeek, setExpandedWeek] = useState<boolean>(false);
   const calendarRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!loading && !user) {
       toast({
@@ -55,6 +58,7 @@ export function WeeklyCalendar({
       navigate("/login");
     }
   }, [user, loading, navigate]);
+
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
@@ -84,6 +88,7 @@ export function WeeklyCalendar({
     };
     fetchData();
   }, [currentDate, user]);
+
   useEffect(() => {
     const refreshCalendar = () => {
       if (user) {
@@ -114,6 +119,7 @@ export function WeeklyCalendar({
       observer.disconnect();
     };
   }, [currentDate, user]);
+
   const handlePrevWeek = () => {
     setCurrentDate(prev => {
       const date = new Date(prev);
@@ -121,6 +127,7 @@ export function WeeklyCalendar({
       return date;
     });
   };
+
   const handleNextWeek = () => {
     setCurrentDate(prev => {
       const date = new Date(prev);
@@ -128,23 +135,28 @@ export function WeeklyCalendar({
       return date;
     });
   };
+
   const handleToday = () => {
     setCurrentDate(new Date());
   };
+
   const handleAddShift = (date: Date, dayOfWeek: number) => {
     setSelectedDate(date);
     setCurrentDayOfWeek(dayOfWeek);
     setIsAddingShift(true);
     setSelectedShift(null);
   };
+
   const handleEditShift = (shift: Shift) => {
     setSelectedShift(shift);
     setIsAddingShift(false);
   };
+
   const handleShiftModalClose = () => {
     setSelectedShift(null);
     setIsAddingShift(false);
   };
+
   const handleSaveShift = async (shift: Shift) => {
     try {
       if (selectedShift) {
@@ -172,6 +184,7 @@ export function WeeklyCalendar({
       });
     }
   };
+
   const handleDeleteShift = async (shiftId: string) => {
     try {
       await shiftService.deleteShift(shiftId);
@@ -190,6 +203,7 @@ export function WeeklyCalendar({
       });
     }
   };
+
   const getUniqueShiftTimes = () => {
     const times = new Set<string>();
     shifts.forEach(shift => {
@@ -197,14 +211,17 @@ export function WeeklyCalendar({
     });
     return Array.from(times).sort();
   };
+
   const handleViewToggle = (isWeekView: boolean) => {
     if (onViewChange) {
       onViewChange(isWeekView);
     }
   };
+
   const toggleExpandedWeek = () => {
     setExpandedWeek(!expandedWeek);
   };
+
   const getShiftsByDayAndTime = () => {
     const shiftsByDay: Record<number, Record<string, Shift[]>> = {};
     for (let day = 0; day < 7; day++) {
@@ -223,6 +240,7 @@ export function WeeklyCalendar({
     });
     return shiftsByDay;
   };
+
   const getShiftsByDay = () => {
     const shiftsByDay: Record<number, Shift[]> = {};
     for (let day = 0; day < 7; day++) {
@@ -241,9 +259,11 @@ export function WeeklyCalendar({
     }
     return shiftsByDay;
   };
+
   const getEmployeeById = (id: string): Employee | undefined => {
     return employees.find(emp => emp.id === id);
   };
+
   const getFormattedDates = () => {
     const dates = [];
     const start = new Date(weekDates.start);
@@ -258,17 +278,21 @@ export function WeeklyCalendar({
     }
     return dates;
   };
+
   const formattedDates = getFormattedDates();
   const shiftsByDayAndTime = getShiftsByDayAndTime();
   const shiftsByDay = getShiftsByDay();
+
   if (loading) {
     return <div className="flex justify-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>;
   }
+
   if (!user) {
     return null;
   }
+
   return <div className="space-y-6 animate-fade-in" ref={calendarRef} data-component={dataComponent}>
       <CalendarHeader date={currentDate} onPrevMonth={handlePrevWeek} onNextMonth={handleNextWeek} onToday={handleToday} isWeekView={true} onViewChange={handleViewToggle} />
       
@@ -286,32 +310,32 @@ export function WeeklyCalendar({
           <HoursSummary shifts={shifts} employees={employees} currentDate={currentDate} />
         </div>}
       
-      {hasError && <div className="bg-red-50 border border-red-200 p-3 rounded-md text-red-800 text-sm">
+      {hasError && <div className="bg-destructive/10 border border-destructive/20 p-3 rounded-md text-destructive-foreground text-sm">
           Si è verificato un errore durante il caricamento dei dati. Prova ad aggiornare la pagina.
         </div>}
       
       {isLoading ? <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div> : <>
-          {!isMobile && <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
-              <div className="grid grid-cols-8 border-b border-gray-200">
-                <div className="py-2 text-center font-semibold text-sm border-r border-gray-200">
+          {!isMobile && <div className="bg-card rounded-lg shadow overflow-hidden border border-border">
+              <div className="grid grid-cols-8 border-b border-border">
+                <div className="py-2 text-center font-semibold text-sm border-r border-border">
                   Orario
                 </div>
-                {DAYS_OF_WEEK.map((day, index) => <div key={day} className="relative py-2 text-center font-semibold text-sm border-r last:border-r-0 border-gray-200">
+                {DAYS_OF_WEEK.map((day, index) => <div key={day} className="relative py-2 text-center font-semibold text-sm border-r last:border-r-0 border-border">
                     <div>{day}</div>
-                    <div className={`mt-1 text-xs ${formattedDates[index].isToday ? "text-primary font-bold" : "text-gray-500"}`}>
+                    <div className={`mt-1 text-xs ${formattedDates[index].isToday ? "text-primary font-bold" : "text-muted-foreground"}`}>
                       {formattedDates[index].dayOfMonth}
                     </div>
                     {formattedDates[index].isToday && <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary"></div>}
                   </div>)}
               </div>
               
-              <div className="divide-y divide-gray-200">
-                {getUniqueShiftTimes().length === 0 ? <div className="text-center py-8 text-gray-500">
+              <div className="divide-y divide-border">
+                {getUniqueShiftTimes().length === 0 ? <div className="text-center py-8 text-muted-foreground">
                     Nessun turno pianificato per questa settimana.
                   </div> : getUniqueShiftTimes().map(time => <div key={time} className="grid grid-cols-8">
-                      <div className="p-2 text-xs font-medium text-gray-700 bg-gray-50 border-r border-gray-200 flex items-center justify-center">
+                      <div className="p-2 text-xs font-medium text-card-foreground bg-secondary border-r border-border flex items-center justify-center">
                         {formatTime(time)}
                       </div>
                       
@@ -320,7 +344,7 @@ export function WeeklyCalendar({
             }).map((_, dayIndex) => {
               const isWeekend = dayIndex > 4;
               const shifts = shiftsByDayAndTime[dayIndex][time] || [];
-              return <div key={dayIndex} className={`p-2 border-r last:border-r-0 border-gray-200 ${isWeekend ? "bg-amber-50/30" : ""} min-h-[60px]`} onClick={() => {
+              return <div key={dayIndex} className={`p-2 border-r last:border-r-0 border-border ${isWeekend ? "bg-secondary/30 dark:bg-secondary/10" : ""} min-h-[60px]`} onClick={() => {
                 if (isAdmin()) {
                   const date = new Date(formattedDates[dayIndex].date);
                   handleAddShift(date, dayIndex);
@@ -352,13 +376,13 @@ export function WeeklyCalendar({
               </div>
             </div>}
           
-          {isMobile && <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200 divide-y divide-gray-200">
+          {isMobile && <div className="bg-card rounded-lg shadow overflow-hidden border border-border divide-y divide-border">
               {DAYS_OF_WEEK.map((day, dayIndex) => {
           const isWeekend = dayIndex > 4;
           const shifts = shiftsByDay[dayIndex] || [];
           const formattedDate = formattedDates[dayIndex];
           const isToday = formattedDate.isToday;
-          return <div key={day} className={`${isWeekend ? "bg-amber-50/30" : ""}`}>
+          return <div key={day} className={`${isWeekend ? "bg-secondary/30 dark:bg-secondary/10" : ""}`}>
                     <div className={`px-4 py-3 flex justify-between items-center ${isToday ? "bg-primary/10" : ""}`} onClick={() => {
               if (isAdmin()) {
                 const date = new Date(formattedDates[dayIndex].date);
@@ -370,7 +394,7 @@ export function WeeklyCalendar({
                           {day} {formattedDate.dayOfMonth}
                         </div>
                       </div>
-                      {isAdmin() && <button className="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded text-gray-700" onClick={e => {
+                      {isAdmin() && <button className="text-xs bg-secondary hover:bg-secondary/80 dark:bg-secondary/40 dark:hover:bg-secondary/60 px-2 py-1 rounded text-foreground" onClick={e => {
                 e.stopPropagation();
                 const date = new Date(formattedDates[dayIndex].date);
                 handleAddShift(date, dayIndex);
@@ -380,7 +404,7 @@ export function WeeklyCalendar({
                     </div>
                     
                     <div className="px-4 py-2 space-y-2">
-                      {shifts.length === 0 ? <div className="text-sm text-gray-500 py-2">Nessun turno</div> : shifts.map(shift => {
+                      {shifts.length === 0 ? <div className="text-sm text-muted-foreground py-2">Nessun turno</div> : shifts.map(shift => {
                 const employee = getEmployeeById(shift.employeeId);
                 if (!employee) return null;
                 const employeeColor = employee.color || "#9CA3AF";
