@@ -13,7 +13,8 @@ const Index = () => {
     if (!loading && !user) {
       navigate("/login");
     } else if (!loading && user) {
-      navigate("/dashboard");
+      // Redirect directly to orders page since it's now accessible to all users
+      navigate("/orders");
     }
   }, [user, loading, navigate]);
 
