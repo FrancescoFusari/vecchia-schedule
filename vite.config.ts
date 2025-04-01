@@ -13,10 +13,9 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
+    mode === 'development' && componentTagger(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['favicon.ico', 'robots.txt', 'apple-touch-icon.png'],
       manifest: {
         name: 'La Vecchia Signora - Schedule',
@@ -44,7 +43,12 @@ export default defineConfig(({ mode }) => ({
           }
         ]
       },
+      devOptions: {
+        enabled: true,
+        type: 'module',
+      },
       workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
