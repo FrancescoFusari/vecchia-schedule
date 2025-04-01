@@ -1,17 +1,16 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Search, ArrowLeft } from "lucide-react";
+import { Search, ArrowLeft, ChevronDown, ChevronUp } from "lucide-react";
 import { MenuCategory, MenuItem } from "@/lib/types";
 import { getMenuCategories, getMenuItems } from "@/lib/restaurant-service";
 import { MenuItemCard } from "./MenuItemCard";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface AddItemModalProps {
   open: boolean;
@@ -23,7 +22,7 @@ export function AddItemModal({ open, onClose, onAddItem }: AddItemModalProps) {
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeCategory, setActiveCategory] = useState<string>("");
+  const [openCategories, setOpenCategories] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [quantity, setQuantity] = useState(1);
@@ -36,18 +35,22 @@ export function AddItemModal({ open, onClose, onAddItem }: AddItemModalProps) {
       try {
         setIsLoading(true);
         
-        // Fetch categories
-        const categoriesData = await getMenuCategories();
-        setCategories(categoriesData);
-        
-        // Set initial active category
-        if (categoriesData.length > 0) {
-          setActiveCategory(categoriesData[0].id);
-        }
-        
         // Fetch all items initially
         const itemsData = await getMenuItems();
         setMenuItems(itemsData);
+        
+        // Fetch categories
+        const categoriesData = await getMenuCategories();
+        
+        // Filter out categories with no items
+        const categoriesWithItems = categoriesData.filter(category => 
+          itemsData.some(item => item.categoryId === category.id)
+        );
+        
+        setCategories(categoriesWithItems);
+        
+        // Initialize all categories as open
+        setOpenCategories(categoriesWithItems.map(category => category.id));
       } catch (error) {
         console.error("Error fetching menu data:", error);
       } finally {
@@ -75,9 +78,7 @@ export function AddItemModal({ open, onClose, onAddItem }: AddItemModalProps) {
         item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()))
       )
-    : activeCategory 
-      ? menuItems.filter(item => item.categoryId === activeCategory)
-      : menuItems;
+    : menuItems;
 
   const handleSelectItem = (item: MenuItem) => {
     setSelectedItem(item);
@@ -99,6 +100,86 @@ export function AddItemModal({ open, onClose, onAddItem }: AddItemModalProps) {
 
   const handleBackToList = () => {
     setSelectedItem(null);
+  };
+
+  const toggleCategory = (categoryId: string) => {
+    setOpenCategories(prev => 
+      prev.includes(categoryId)
+        ? prev.filter(id => id !== categoryId)
+        : [...prev, categoryId]
+    );
+  };
+
+  const renderProductsList = () => {
+    // If searching, show search results
+    if (searchQuery) {
+      return (
+        <div className="space-y-4">
+          <h3 className="font-medium">Risultati ricerca</h3>
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : filteredItems.length === 0 ? (
+            <p className="text-center py-4 text-muted-foreground">
+              Nessun prodotto trovato
+            </p>
+          ) : (
+            <ScrollArea className="h-[60vh] pr-4">
+              <div className="grid grid-cols-1 gap-2">
+                {filteredItems.map((item) => (
+                  <MenuItemCard
+                    key={item.id}
+                    item={item}
+                    onAddToOrder={handleSelectItem}
+                  />
+                ))}
+              </div>
+            </ScrollArea>
+          )}
+        </div>
+      );
+    }
+
+    // Otherwise, show collapsible categories with products
+    return (
+      <ScrollArea className="h-[60vh] pr-4">
+        <div className="space-y-4">
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            categories.map(category => {
+              const categoryItems = menuItems.filter(item => item.categoryId === category.id);
+              const isOpen = openCategories.includes(category.id);
+              
+              return (
+                <Collapsible key={category.id} open={isOpen} onOpenChange={() => toggleCategory(category.id)}>
+                  <CollapsibleTrigger className="flex w-full items-center justify-between py-2 px-3 bg-muted/50 rounded-md hover:bg-muted">
+                    <span className="font-medium">{category.name}</span>
+                    {isOpen ? (
+                      <ChevronUp className="h-5 w-5" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5" />
+                    )}
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-2 space-y-2">
+                    {categoryItems.map(item => (
+                      <MenuItemCard
+                        key={item.id}
+                        item={item}
+                        onAddToOrder={handleSelectItem}
+                      />
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
+              );
+            })
+          )}
+        </div>
+      </ScrollArea>
+    );
   };
 
   const renderContent = () => (
@@ -202,67 +283,7 @@ export function AddItemModal({ open, onClose, onAddItem }: AddItemModalProps) {
             />
           </div>
 
-          {searchQuery ? (
-            <div className="space-y-4">
-              <h3 className="font-medium">Risultati ricerca</h3>
-              {isLoading ? (
-                <div className="flex justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-              ) : filteredItems.length === 0 ? (
-                <p className="text-center py-4 text-muted-foreground">
-                  Nessun prodotto trovato
-                </p>
-              ) : (
-                <ScrollArea className="h-[60vh] pr-4">
-                  <div className="grid grid-cols-1 gap-2">
-                    {filteredItems.map((item) => (
-                      <MenuItemCard
-                        key={item.id}
-                        item={item}
-                        onAddToOrder={handleSelectItem}
-                      />
-                    ))}
-                  </div>
-                </ScrollArea>
-              )}
-            </div>
-          ) : (
-            <Tabs defaultValue={activeCategory} onValueChange={setActiveCategory}>
-              <TabsList className="mb-4 w-full h-auto flex flex-wrap">
-                {categories.map((category) => (
-                  <TabsTrigger 
-                    key={category.id} 
-                    value={category.id}
-                    className="py-1.5 px-3 flex-grow"
-                  >
-                    {category.name}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-              {categories.map((category) => (
-                <TabsContent key={category.id} value={category.id}>
-                  {isLoading ? (
-                    <div className="flex justify-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                    </div>
-                  ) : (
-                    <ScrollArea className="h-[60vh] pr-4">
-                      <div className="grid grid-cols-1 gap-2">
-                        {filteredItems.map((item) => (
-                          <MenuItemCard
-                            key={item.id}
-                            item={item}
-                            onAddToOrder={handleSelectItem}
-                          />
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  )}
-                </TabsContent>
-              ))}
-            </Tabs>
-          )}
+          {renderProductsList()}
         </>
       )}
     </>
