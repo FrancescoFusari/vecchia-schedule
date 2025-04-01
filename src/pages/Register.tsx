@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +9,6 @@ import { authService } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
-
 const Register = () => {
   const [username, setUsername] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -19,74 +17,66 @@ const Register = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { user } = useAuth();
-  
+  const {
+    user
+  } = useAuth();
+
   // Redirect authenticated users away from register page
   useEffect(() => {
     if (user) {
       navigate("/");
     }
   }, [user, navigate]);
-  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (password !== confirmPassword) {
       toast({
         title: "Errore",
         description: "Le password non corrispondono",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-    
     if (password.length < 6) {
       toast({
         title: "Errore",
         description: "La password deve contenere almeno 6 caratteri",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     if (!username.trim() || !firstName.trim()) {
       toast({
         title: "Errore",
         description: "Username e nome sono campi obbligatori",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-    
     setIsLoading(true);
-    
     try {
       await authService.registerEmployee(username, password, firstName, lastName);
       toast({
         title: "Registrazione completata",
-        description: "Il tuo account è stato creato con successo. Ora puoi accedere.",
+        description: "Il tuo account è stato creato con successo. Ora puoi accedere."
       });
       navigate("/login");
     } catch (error: any) {
       console.error("Registration error:", error);
       let errorMessage = "Si è verificato un errore durante la registrazione. Riprova più tardi.";
-      
       if (error.message.includes("already registered")) {
         errorMessage = "Questo username è già registrato. Prova con un altro username.";
       }
-      
       toast({
         title: "Errore di registrazione",
         description: errorMessage,
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setIsLoading(false);
     }
   };
-  
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
+  return <div className="flex items-center justify-center min-h-screen bg-background">
       <div className="w-full max-w-md px-4 py-8">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
@@ -107,59 +97,20 @@ const Register = () => {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="username">Username <span className="text-destructive">*</span></Label>
-                <Input
-                  id="username"
-                  placeholder="nome.cognome"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                />
+                <Input id="username" placeholder="nome.cognome" value={username} onChange={e => setUsername(e.target.value)} required />
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">Nome <span className="text-destructive">*</span></Label>
-                  <Input
-                    id="firstName"
-                    placeholder="Mario"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Cognome</Label>
-                  <Input
-                    id="lastName"
-                    placeholder="Rossi"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
+              
               
               <div className="space-y-2">
                 <Label htmlFor="password">Password <span className="text-destructive">*</span></Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+                <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
                 <p className="text-xs text-muted-foreground">Minimo 6 caratteri</p>
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Conferma Password <span className="text-destructive">*</span></Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                />
+                <Input id="confirmPassword" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
               </div>
               
               <div className="text-sm bg-accent p-3 rounded-md">
@@ -184,8 +135,6 @@ const Register = () => {
           </form>
         </Card>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Register;
