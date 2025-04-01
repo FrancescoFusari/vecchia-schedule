@@ -66,17 +66,16 @@ export function OrderItemRow({
             ) : (
               <span className="font-medium w-8 text-center">{item.quantity}x</span>
             )}
-            <div className="pl-2">
+            <div className="pl-2 flex-1">
               <div className="flex items-center">
                 <span className="flex-1 font-medium">{item.menuItem.name}</span>
-                {item.notes && (
-                  <MessageSquare 
-                    className="h-4 w-4 text-muted-foreground ml-1 cursor-pointer" 
-                    onClick={() => setIsNotesDialogOpen(true)}
-                  />
-                )}
               </div>
-              <div className="flex justify-between items-center">
+              {item.notes && (
+                <p className="text-xs text-muted-foreground mt-1 pr-2">
+                  {item.notes}
+                </p>
+              )}
+              <div className="flex justify-between items-center mt-1">
                 <span className="text-sm text-muted-foreground">{formattedPrice}</span>
               </div>
             </div>

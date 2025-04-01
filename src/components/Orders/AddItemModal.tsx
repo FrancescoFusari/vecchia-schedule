@@ -10,6 +10,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { toast } from "@/hooks/use-toast";
 
 interface AddItemModalProps {
   open: boolean;
@@ -38,7 +39,7 @@ export function AddItemModal({
         const categoriesData = await getMenuCategories();
         const categoriesWithItems = categoriesData.filter(category => itemsData.some(item => item.categoryId === category.id));
         setCategories(categoriesWithItems);
-        // Don't set openCategories here, so they remain collapsed by default
+        // Categories are now collapsed by default (we don't set openCategories here)
       } catch (error) {
         console.error("Error fetching menu data:", error);
       } finally {
@@ -57,59 +58,101 @@ export function AddItemModal({
     }
   }, [open]);
 
-  const filteredItems = searchQuery ? menuItems.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()) || item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase())) : menuItems;
+  const filteredItems = searchQuery 
+    ? menuItems.filter(item => 
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()))
+      ) 
+    : menuItems;
 
-  const handleAddToOrder = async (item: MenuItem) => {
+  const handleAddToOrder = async (item: MenuItem, quantity: number) => {
     try {
-      await onAddItem(item.id, 1); // Add item with quantity 1 and no notes
-      onClose(); // Close the modal after adding
+      await onAddItem(item.id, quantity);
+      // We don't close the modal anymore to allow adding multiple items
+      toast({
+        title: "Prodotto aggiunto",
+        description: `${quantity}x ${item.name} aggiunto all'ordine`
+      });
     } catch (error) {
       console.error("Error adding item to order:", error);
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiungere il prodotto all'ordine",
+        variant: "destructive"
+      });
     }
   };
 
   const toggleCategory = (categoryId: string) => {
-    setOpenCategories(prev => prev.includes(categoryId) ? prev.filter(id => id !== categoryId) : [...prev, categoryId]);
+    setOpenCategories(prev => 
+      prev.includes(categoryId) 
+        ? prev.filter(id => id !== categoryId) 
+        : [...prev, categoryId]
+    );
   };
 
   const renderProductsList = () => {
     if (searchQuery) {
-      return <div className="space-y-4">
-          <h3 className="font-medium">Risultati ricerca</h3>
-          {isLoading ? <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div> : filteredItems.length === 0 ? <p className="text-center py-4 text-muted-foreground">
-              Nessun prodotto trovato
-            </p> : <ScrollArea className="h-[70vh] pr-4">
-              <div className="grid grid-cols-1 gap-2">
-                {filteredItems.map(item => <MenuItemCard key={item.id} item={item} onAddToOrder={handleAddToOrder} />)}
-              </div>
-            </ScrollArea>}
-        </div>;
-    }
-    return <ScrollArea className="pr-4">
+      return (
         <div className="space-y-4">
-          {isLoading ? <div className="flex justify-center py-8">
+          <h3 className="font-medium">Risultati ricerca</h3>
+          {isLoading ? (
+            <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div> : categories.map(category => {
-          const categoryItems = menuItems.filter(item => item.categoryId === category.id);
-          if (categoryItems.length === 0) return null;
-          const isOpen = openCategories.includes(category.id);
-          return <Collapsible key={category.id} open={isOpen} onOpenChange={() => toggleCategory(category.id)}>
+            </div>
+          ) : filteredItems.length === 0 ? (
+            <p className="text-center py-4 text-muted-foreground">
+              Nessun prodotto trovato
+            </p>
+          ) : (
+            <ScrollArea className="h-[70vh] pr-4">
+              <div className="grid grid-cols-1 gap-2">
+                {filteredItems.map(item => (
+                  <MenuItemCard key={item.id} item={item} onAddToOrder={handleAddToOrder} />
+                ))}
+              </div>
+            </ScrollArea>
+          )}
+        </div>
+      );
+    }
+    
+    return (
+      <ScrollArea className="pr-4">
+        <div className="space-y-4">
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            categories.map(category => {
+              const categoryItems = menuItems.filter(item => item.categoryId === category.id);
+              if (categoryItems.length === 0) return null;
+              
+              const isOpen = openCategories.includes(category.id);
+              
+              return (
+                <Collapsible key={category.id} open={isOpen} onOpenChange={() => toggleCategory(category.id)}>
                   <CollapsibleTrigger className="flex w-full items-center justify-between py-2 px-3 bg-muted/50 rounded-md hover:bg-muted">
                     <span className="font-medium">{category.name}</span>
                     {isOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                   </CollapsibleTrigger>
                   <CollapsibleContent className="pt-2 space-y-2">
-                    {categoryItems.map(item => <MenuItemCard key={item.id} item={item} onAddToOrder={handleAddToOrder} />)}
+                    {categoryItems.map(item => (
+                      <MenuItemCard key={item.id} item={item} onAddToOrder={handleAddToOrder} />
+                    ))}
                   </CollapsibleContent>
-                </Collapsible>;
-        })}
+                </Collapsible>
+              );
+            })
+          )}
         </div>
-      </ScrollArea>;
+      </ScrollArea>
+    );
   };
 
-  return isMobile ? <Sheet open={open} onOpenChange={isOpen => !isOpen && onClose()}>
+  return isMobile ? (
+    <Sheet open={open} onOpenChange={isOpen => !isOpen && onClose()}>
       <SheetContent className="p-0 pt-6 h-[100dvh] max-h-[100dvh] inset-0 w-full" side="bottom">
         <SheetHeader className="px-4 pb-2">
           <SheetTitle>Aggiungi prodotto</SheetTitle>
@@ -123,7 +166,9 @@ export function AddItemModal({
           {renderProductsList()}
         </div>
       </SheetContent>
-    </Sheet> : <Dialog open={open} onOpenChange={isOpen => !isOpen && onClose()}>
+    </Sheet>
+  ) : (
+    <Dialog open={open} onOpenChange={isOpen => !isOpen && onClose()}>
       <DialogContent className="sm:max-w-md md:max-w-lg">
         <DialogHeader>
           <DialogTitle>Aggiungi prodotto</DialogTitle>
@@ -135,5 +180,6 @@ export function AddItemModal({
 
         {renderProductsList()}
       </DialogContent>
-    </Dialog>;
+    </Dialog>
+  );
 }
