@@ -299,6 +299,68 @@ export const getActiveOrder = async (tableId: string): Promise<OrderWithItems | 
   }
 };
 
+export const getCompletedOrders = async (tableId: string): Promise<OrderWithItems[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        items:order_items(
+          *,
+          menu_item:menu_items(*)
+        ),
+        table:restaurant_tables(*)
+      `)
+      .eq('table_id', tableId)
+      .eq('status', 'completed')
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (error) throw error;
+    
+    if (!data || data.length === 0) return [];
+    
+    return data.map((order: any) => ({
+      id: order.id,
+      tableId: order.table_id,
+      employeeId: order.employee_id,
+      status: order.status,
+      stillWater: order.still_water,
+      sparklingWater: order.sparkling_water,
+      bread: order.bread,
+      createdAt: order.created_at,
+      updatedAt: order.updated_at,
+      items: order.items.map((item: any) => ({
+        id: item.id,
+        orderId: item.order_id,
+        menuItemId: item.menu_item_id,
+        quantity: item.quantity,
+        notes: item.notes,
+        createdAt: item.created_at,
+        menuItem: {
+          id: item.menu_item.id,
+          categoryId: item.menu_item.category_id,
+          name: item.menu_item.name,
+          description: item.menu_item.description,
+          price: item.menu_item.price,
+          available: item.menu_item.available,
+          createdAt: item.menu_item.created_at
+        }
+      })),
+      table: {
+        id: order.table.id,
+        sectionId: order.table.section_id,
+        tableNumber: order.table.table_number,
+        seats: order.table.seats,
+        createdAt: order.table.created_at
+      }
+    }));
+  } catch (error) {
+    console.error('Error fetching completed orders:', error);
+    throw error;
+  }
+};
+
 export const createOrder = async (
   tableId: string, 
   employeeId: string,

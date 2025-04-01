@@ -3,15 +3,16 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { RestaurantTable, OrderWithItems } from "@/lib/types";
-import { getTables, getActiveOrder, createOrder, updateOrder, addOrderItem, updateOrderItem, deleteOrderItem } from "@/lib/restaurant-service";
+import { getTables, getActiveOrder, getCompletedOrders, createOrder, updateOrder, addOrderItem, updateOrderItem, deleteOrderItem } from "@/lib/restaurant-service";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Plus, MoreVertical } from "lucide-react";
+import { ArrowLeft, Plus, MoreVertical, Droplets, Droplet, Bread } from "lucide-react";
 import { CounterControl } from "@/components/Orders/CounterControl";
 import { OrderItemRow } from "@/components/Orders/OrderItemRow";
 import { AddItemModal } from "@/components/Orders/AddItemModal";
 import { Separator } from "@/components/ui/separator";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { CompletedOrdersList } from "@/components/Orders/CompletedOrdersList";
 
 const TableOrders = () => {
   const { tableId } = useParams<{ tableId: string; }>();
@@ -20,6 +21,7 @@ const TableOrders = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [table, setTable] = useState<RestaurantTable | null>(null);
   const [order, setOrder] = useState<OrderWithItems | null>(null);
+  const [completedOrders, setCompletedOrders] = useState<OrderWithItems[]>([]);
   const [stillWater, setStillWater] = useState(0);
   const [sparklingWater, setSparklingWater] = useState(0);
   const [bread, setBread] = useState(0);
@@ -58,6 +60,9 @@ const TableOrders = () => {
           setSparklingWater(activeOrder.sparklingWater);
           setBread(activeOrder.bread);
         }
+
+        const completed = await getCompletedOrders(tableId);
+        setCompletedOrders(completed);
       } catch (error) {
         console.error("Error fetching table data:", error);
         toast({
@@ -237,12 +242,19 @@ const TableOrders = () => {
     try {
       setIsSaving(true);
       await updateOrder(order.id, undefined, undefined, undefined, 'completed');
+      
+      const updatedCompletedOrders = [...completedOrders, { ...order, status: 'completed' }];
+      setCompletedOrders(updatedCompletedOrders);
+      
+      setOrder(null);
+      setStillWater(0);
+      setSparklingWater(0);
+      setBread(0);
+      
       toast({
         title: "Completato",
         description: "Ordine completato con successo"
       });
-
-      navigate('/orders');
     } catch (error) {
       console.error("Error completing order:", error);
       toast({
@@ -352,15 +364,42 @@ const TableOrders = () => {
               </p>
               
               <div className="grid grid-cols-3 gap-4 mt-4">
-                <CounterControl label="Acqua Nat." value={stillWater} onChange={setStillWater} />
-                <CounterControl label="Acqua Gas." value={sparklingWater} onChange={setSparklingWater} />
-                <CounterControl label="Pane" value={bread} onChange={setBread} />
+                <CounterControl 
+                  label="Acqua Nat." 
+                  value={stillWater} 
+                  onChange={setStillWater} 
+                />
+                <CounterControl 
+                  label="Acqua Gas." 
+                  value={sparklingWater} 
+                  onChange={setSparklingWater} 
+                />
+                <CounterControl 
+                  label="Pane" 
+                  value={bread} 
+                  onChange={setBread} 
+                />
               </div>
             </div> : <div className="space-y-6">
               <div className="grid grid-cols-3 gap-4">
-                <CounterControl label="Acqua Nat." value={stillWater} onChange={handleStillWaterChange} className="text-center" />
-                <CounterControl label="Acqua Gas." value={sparklingWater} onChange={handleSparklingWaterChange} className="text-center" />
-                <CounterControl label="Pane" value={bread} onChange={handleBreadChange} className="text-center" />
+                <CounterControl 
+                  label="Acqua Nat."
+                  value={stillWater} 
+                  onChange={handleStillWaterChange} 
+                  className="text-center" 
+                />
+                <CounterControl
+                  label="Acqua Gas." 
+                  value={sparklingWater} 
+                  onChange={handleSparklingWaterChange} 
+                  className="text-center" 
+                />
+                <CounterControl 
+                  label="Pane" 
+                  value={bread} 
+                  onChange={handleBreadChange} 
+                  className="text-center" 
+                />
               </div>
               
               <Separator />
@@ -378,7 +417,14 @@ const TableOrders = () => {
                   {order.items.length === 0 ? <p className="text-muted-foreground text-center py-4">
                       Nessun prodotto nell'ordine
                     </p> : <div className="space-y-1">
-                      {order.items.map(item => <OrderItemRow key={item.id} item={item} onUpdateQuantity={handleUpdateQuantity} onDeleteItem={handleDeleteItem} />)}
+                      {order.items.map(item => 
+                        <OrderItemRow 
+                          key={item.id} 
+                          item={item} 
+                          onUpdateQuantity={handleUpdateQuantity} 
+                          onDeleteItem={handleDeleteItem} 
+                        />
+                      )}
                     </div>}
                 </div>
                 
@@ -386,15 +432,22 @@ const TableOrders = () => {
                   <span>Totale</span>
                   <span>
                     {new Intl.NumberFormat('it-IT', {
-                  style: 'currency',
-                  currency: 'EUR'
-                }).format(calculateTotal())}
+                      style: 'currency',
+                      currency: 'EUR'
+                    }).format(calculateTotal())}
                   </span>
                 </div>
               </div>
             </div>}
         </CardContent>
       </Card>
+
+      {completedOrders.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold mb-4">Ordini completati</h2>
+          <CompletedOrdersList orders={completedOrders} />
+        </div>
+      )}
 
       <AddItemModal open={isItemModalOpen} onClose={() => setIsItemModalOpen(false)} onAddItem={handleAddItem} />
     </div>;
