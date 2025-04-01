@@ -1,4 +1,3 @@
-
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { RestaurantSection, RestaurantTable, Order } from "@/lib/types";
 import { Link } from "react-router-dom";
@@ -39,7 +38,6 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
         setIsLoading(true);
         const tablesData = await getTables(section.id);
         
-        // Check which tables have active orders
         const tablesWithOrderStatus = await Promise.all(
           tablesData.map(async (table) => {
             const activeOrder = await getActiveOrder(table.id);
@@ -51,7 +49,6 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
           })
         );
         
-        // Sort tables by number
         const sortedTables = tablesWithOrderStatus.sort((a, b) => 
           a.tableNumber - b.tableNumber
         );
@@ -60,7 +57,6 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
         const activeTablesFiltered = sortedTables.filter(table => table.hasActiveOrder);
         setActiveTables(activeTablesFiltered);
         
-        // Set isOpen to true only if this section has active tables
         if (activeTablesFiltered.length > 0 && !isOpen) {
           setIsOpen(true);
         }
@@ -73,7 +69,6 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
 
     fetchTables();
 
-    // Set up real-time listeners for table changes
     const tablesChannel = supabase
       .channel('restaurant_tables_changes')
       .on('postgres_changes', {
@@ -82,12 +77,10 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
         table: 'restaurant_tables',
         filter: `section_id=eq.${section.id}`
       }, () => {
-        // Refresh the tables whenever there's a change
         fetchTables();
       })
       .subscribe();
       
-    // Set up real-time listeners for order changes
     const ordersChannel = supabase
       .channel('orders_changes')
       .on('postgres_changes', {
@@ -95,12 +88,10 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
         schema: 'public',
         table: 'orders'
       }, () => {
-        // Refresh the tables to update active status
         fetchTables();
       })
       .subscribe();
 
-    // Clean up the channel subscription when the component unmounts
     return () => {
       supabase.removeChannel(tablesChannel);
       supabase.removeChannel(ordersChannel);
@@ -172,7 +163,6 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
                             }`}
                         >
                           <span className="text-lg font-semibold">{table.tableNumber}</span>
-                          <span className="text-xs">{table.seats} posti</span>
                           
                           {table.hasActiveOrder && table.orderCreatedAt && (
                             <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-full px-1">
@@ -205,7 +195,6 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
                           bg-primary/10 text-blue-700 border-primary hover:bg-primary/20"
                       >
                         <span className="text-lg font-semibold">{table.tableNumber}</span>
-                        <span className="text-xs">{table.seats} posti</span>
                         
                         {table.orderCreatedAt && (
                           <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-full px-1">
