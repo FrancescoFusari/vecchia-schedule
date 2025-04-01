@@ -6,7 +6,9 @@ import {
   MenuItem, 
   Order, 
   OrderItem, 
-  OrderWithItems 
+  OrderWithItems,
+  OrderRound,
+  CartItem
 } from "./types";
 
 // Restaurant Sections
@@ -248,6 +250,13 @@ export const getActiveOrder = async (tableId: string): Promise<OrderWithItems | 
           *,
           menu_item:menu_items(*)
         ),
+        rounds:order_rounds(
+          *,
+          items:order_items(
+            *,
+            menu_item:menu_items(*)
+          )
+        ),
         table:restaurant_tables(*)
       `)
       .eq('table_id', tableId)
@@ -268,22 +277,51 @@ export const getActiveOrder = async (tableId: string): Promise<OrderWithItems | 
       bread: data.bread,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
-      items: data.items.map((item: any) => ({
-        id: item.id,
-        orderId: item.order_id,
-        menuItemId: item.menu_item_id,
-        quantity: item.quantity,
-        notes: item.notes,
-        createdAt: item.created_at,
-        menuItem: {
-          id: item.menu_item.id,
-          categoryId: item.menu_item.category_id,
-          name: item.menu_item.name,
-          description: item.menu_item.description,
-          price: item.menu_item.price,
-          available: item.menu_item.available,
-          createdAt: item.menu_item.created_at
-        }
+      items: data.items
+        .filter((item: any) => !item.round_id) // Items not assigned to a round
+        .map((item: any) => ({
+          id: item.id,
+          orderId: item.order_id,
+          menuItemId: item.menu_item_id,
+          quantity: item.quantity,
+          notes: item.notes,
+          roundId: item.round_id,
+          createdAt: item.created_at,
+          menuItem: {
+            id: item.menu_item.id,
+            categoryId: item.menu_item.category_id,
+            name: item.menu_item.name,
+            description: item.menu_item.description,
+            price: item.menu_item.price,
+            available: item.menu_item.available,
+            createdAt: item.menu_item.created_at
+          }
+        })),
+      rounds: data.rounds?.map((round: any) => ({
+        id: round.id,
+        orderId: round.order_id,
+        roundNumber: round.round_number,
+        status: round.status,
+        createdAt: round.created_at,
+        updatedAt: round.updated_at,
+        items: round.items.map((item: any) => ({
+          id: item.id,
+          orderId: item.order_id,
+          menuItemId: item.menu_item_id,
+          quantity: item.quantity,
+          notes: item.notes,
+          roundId: item.round_id,
+          createdAt: item.created_at,
+          menuItem: {
+            id: item.menu_item.id,
+            categoryId: item.menu_item.category_id,
+            name: item.menu_item.name,
+            description: item.menu_item.description,
+            price: item.menu_item.price,
+            available: item.menu_item.available,
+            createdAt: item.menu_item.created_at
+          }
+        }))
       })),
       table: {
         id: data.table.id,
@@ -384,11 +422,112 @@ export const updateOrder = async (
   }
 };
 
+// Create a new round for an order
+export const createOrderRound = async (
+  orderId: string,
+  roundNumber: number
+): Promise<OrderRound> => {
+  try {
+    const { data, error } = await supabase
+      .from('order_rounds')
+      .insert({ 
+        order_id: orderId,
+        round_number: roundNumber,
+        status: 'pending'
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    
+    return {
+      id: data.id,
+      orderId: data.order_id,
+      roundNumber: data.round_number,
+      status: data.status,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    };
+  } catch (error) {
+    console.error('Error creating order round:', error);
+    throw error;
+  }
+};
+
+// Update the status of a round
+export const updateRoundStatus = async (
+  id: string,
+  status: 'pending' | 'preparing' | 'served' | 'completed'
+): Promise<OrderRound> => {
+  try {
+    const { data, error } = await supabase
+      .from('order_rounds')
+      .update({ status })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    
+    return {
+      id: data.id,
+      orderId: data.order_id,
+      roundNumber: data.round_number,
+      status: data.status,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at
+    };
+  } catch (error) {
+    console.error('Error updating round status:', error);
+    throw error;
+  }
+};
+
+// Add multiple items at once
+export const addOrderItems = async (
+  orderId: string,
+  items: CartItem[],
+  roundId?: string
+): Promise<OrderItem[]> => {
+  try {
+    // Prepare array of items to insert
+    const itemsToInsert = items.map(item => ({
+      order_id: orderId,
+      menu_item_id: item.menuItem.id,
+      quantity: item.quantity,
+      notes: item.notes,
+      round_id: roundId
+    }));
+
+    const { data, error } = await supabase
+      .from('order_items')
+      .insert(itemsToInsert)
+      .select();
+
+    if (error) throw error;
+    
+    return data.map((item: any) => ({
+      id: item.id,
+      orderId: item.order_id,
+      menuItemId: item.menu_item_id,
+      quantity: item.quantity,
+      notes: item.notes,
+      roundId: item.round_id,
+      createdAt: item.created_at
+    }));
+  } catch (error) {
+    console.error('Error adding order items:', error);
+    throw error;
+  }
+};
+
+// For backward compatibility
 export const addOrderItem = async (
   orderId: string,
   menuItemId: string,
   quantity: number,
-  notes?: string
+  notes?: string,
+  roundId?: string
 ): Promise<OrderItem> => {
   try {
     const { data, error } = await supabase
@@ -397,7 +536,8 @@ export const addOrderItem = async (
         order_id: orderId,
         menu_item_id: menuItemId,
         quantity,
-        notes
+        notes,
+        round_id: roundId
       })
       .select()
       .single();
@@ -410,6 +550,7 @@ export const addOrderItem = async (
       menuItemId: data.menu_item_id,
       quantity: data.quantity,
       notes: data.notes,
+      roundId: data.round_id,
       createdAt: data.created_at
     };
   } catch (error) {

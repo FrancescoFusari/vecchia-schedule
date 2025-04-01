@@ -2,16 +2,34 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
-import { RestaurantTable, OrderWithItems } from "@/lib/types";
-import { getTables, getActiveOrder, createOrder, updateOrder, addOrderItem, updateOrderItem, deleteOrderItem } from "@/lib/restaurant-service";
+import { RestaurantTable, OrderWithItems, CartItem, OrderRound } from "@/lib/types";
+import { 
+  getTables, 
+  getActiveOrder, 
+  createOrder, 
+  updateOrder, 
+  addOrderItem, 
+  addOrderItems,
+  updateOrderItem, 
+  deleteOrderItem,
+  createOrderRound,
+  updateRoundStatus
+} from "@/lib/restaurant-service";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Plus, MoreVertical } from "lucide-react";
+import { ArrowLeft, Plus, MoreVertical, Layers } from "lucide-react";
 import { CounterControl } from "@/components/Orders/CounterControl";
 import { OrderItemRow } from "@/components/Orders/OrderItemRow";
 import { AddItemModal } from "@/components/Orders/AddItemModal";
+import { RoundItem } from "@/components/Orders/RoundItem";
 import { Separator } from "@/components/ui/separator";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 
 const TableOrders = () => {
   const { tableId } = useParams<{ tableId: string; }>();
@@ -25,6 +43,7 @@ const TableOrders = () => {
   const [bread, setBread] = useState(0);
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState("items");
 
   useEffect(() => {
     if (!user) {
@@ -143,7 +162,7 @@ const TableOrders = () => {
     try {
       setIsSaving(true);
       console.log("Creating order with user ID:", user.id);
-      const newOrder = await createOrder(tableId, user.id, stillWater, sparklingWater, bread);
+      await createOrder(tableId, user.id, stillWater, sparklingWater, bread);
 
       const fullOrder = await getActiveOrder(tableId);
       setOrder(fullOrder);
@@ -163,6 +182,50 @@ const TableOrders = () => {
     }
   };
 
+  const handleAddItems = async (items: CartItem[], roundId?: string) => {
+    if (!order || !user) return;
+    try {
+      setIsSaving(true);
+      
+      // If roundId is undefined and createNewRound is true, create a new round
+      let actualRoundId = roundId;
+      if (!roundId && items.length > 0 && order.rounds) {
+        // Calculate the next round number
+        const nextRoundNumber = order.rounds.length > 0 
+          ? Math.max(...order.rounds.map(r => r.roundNumber)) + 1 
+          : 1;
+          
+        // Create new round
+        const newRound = await createOrderRound(order.id, nextRoundNumber);
+        actualRoundId = newRound.id;
+      }
+      
+      // Add items to the order
+      await addOrderItems(order.id, items, actualRoundId);
+
+      // Refresh order data
+      const updatedOrder = await getActiveOrder(tableId!);
+      setOrder(updatedOrder);
+      
+      toast({
+        title: "Aggiunto",
+        description: items.length === 1 
+          ? "Prodotto aggiunto all'ordine" 
+          : `${items.length} prodotti aggiunti all'ordine`
+      });
+    } catch (error) {
+      console.error("Error adding items to order:", error);
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiungere i prodotti all'ordine",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // For backward compatibility with single item addition
   const handleAddItem = async (menuItemId: string, quantity: number, notes?: string) => {
     if (!order || !user) return;
     try {
@@ -192,6 +255,31 @@ const TableOrders = () => {
     try {
       await updateOrderItem(itemId, quantity);
 
+      // Update local state
+      if (order.rounds) {
+        // Check if item is in a round
+        let foundInRound = false;
+        const updatedRounds = order.rounds.map(round => {
+          const updatedItems = round.items.map(item => {
+            if (item.id === itemId) {
+              foundInRound = true;
+              return { ...item, quantity };
+            }
+            return item;
+          });
+          return { ...round, items: updatedItems };
+        });
+        
+        if (foundInRound) {
+          setOrder({
+            ...order,
+            rounds: updatedRounds
+          });
+          return;
+        }
+      }
+      
+      // Otherwise update in regular items
       setOrder({
         ...order,
         items: order.items.map(item => item.id === itemId ? {
@@ -214,10 +302,36 @@ const TableOrders = () => {
     try {
       await deleteOrderItem(itemId);
 
+      // Update local state
+      if (order.rounds) {
+        // Check if item is in a round
+        let foundInRound = false;
+        const updatedRounds = order.rounds.map(round => {
+          const updatedItems = round.items.filter(item => {
+            if (item.id === itemId) {
+              foundInRound = true;
+              return false;
+            }
+            return true;
+          });
+          return { ...round, items: updatedItems };
+        });
+        
+        if (foundInRound) {
+          setOrder({
+            ...order,
+            rounds: updatedRounds
+          });
+          return;
+        }
+      }
+      
+      // Otherwise remove from regular items
       setOrder({
         ...order,
         items: order.items.filter(item => item.id !== itemId)
       });
+      
       toast({
         title: "Rimosso",
         description: "Prodotto rimosso dall'ordine"
@@ -229,6 +343,39 @@ const TableOrders = () => {
         description: "Impossibile rimuovere il prodotto",
         variant: "destructive"
       });
+    }
+  };
+
+  const handleUpdateRoundStatus = async (roundId: string, status: 'pending' | 'preparing' | 'served' | 'completed') => {
+    if (!order || !user) return;
+    try {
+      setIsSaving(true);
+      await updateRoundStatus(roundId, status);
+      
+      // Update local state
+      if (order.rounds) {
+        const updatedRounds = order.rounds.map(round => 
+          round.id === roundId ? { ...round, status } : round
+        );
+        setOrder({
+          ...order,
+          rounds: updatedRounds
+        });
+      }
+      
+      toast({
+        title: "Aggiornato",
+        description: `Stato della portata aggiornato a "${status}"`
+      });
+    } catch (error) {
+      console.error("Error updating round status:", error);
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiornare lo stato della portata",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -280,9 +427,29 @@ const TableOrders = () => {
 
   const calculateTotal = () => {
     if (!order) return 0;
-    return order.items.reduce((total, item) => {
+    
+    // Calculate total for items not in rounds
+    const regularItemsTotal = order.items.reduce((total, item) => {
       return total + item.menuItem.price * item.quantity;
     }, 0);
+    
+    // Calculate total for items in rounds
+    const roundsTotal = order.rounds?.reduce((total, round) => {
+      return total + round.items.reduce((roundTotal, item) => {
+        return roundTotal + item.menuItem.price * item.quantity;
+      }, 0);
+    }, 0) || 0;
+    
+    return regularItemsTotal + roundsTotal;
+  };
+
+  // Get existing rounds for select options
+  const getExistingRounds = () => {
+    if (!order || !order.rounds) return [];
+    return order.rounds.map(round => ({
+      id: round.id,
+      roundNumber: round.roundNumber
+    }));
   };
 
   if (!user) {
@@ -365,38 +532,113 @@ const TableOrders = () => {
               
               <Separator />
               
-              <div>
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-semibold">Prodotti</h3>
-                  <Button variant="outline" size="sm" onClick={() => setIsItemModalOpen(true)} className="flex items-center">
-                    <Plus className="h-4 w-4 mr-1" />
-                    Aggiungi
-                  </Button>
-                </div>
+              <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="w-full grid grid-cols-2">
+                  <TabsTrigger value="items" className="relative">
+                    Prodotti
+                    {order.items.length > 0 && (
+                      <span className="ml-1 text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">
+                        {order.items.length}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="rounds" className="relative flex items-center gap-1">
+                    <Layers className="h-4 w-4" />
+                    Portate
+                    {order.rounds && order.rounds.length > 0 && (
+                      <span className="text-xs bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">
+                        {order.rounds.length}
+                      </span>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
                 
-                <div className="max-h-96 overflow-y-auto pr-1">
-                  {order.items.length === 0 ? <p className="text-muted-foreground text-center py-4">
-                      Nessun prodotto nell'ordine
-                    </p> : <div className="space-y-1">
-                      {order.items.map(item => <OrderItemRow key={item.id} item={item} onUpdateQuantity={handleUpdateQuantity} onDeleteItem={handleDeleteItem} />)}
-                    </div>}
-                </div>
+                <TabsContent value="items" className="mt-4">
+                  <div>
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="font-semibold">Prodotti</h3>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setIsItemModalOpen(true)} 
+                        className="flex items-center"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Aggiungi
+                      </Button>
+                    </div>
+                    
+                    <div className="max-h-96 overflow-y-auto pr-1">
+                      {order.items.length === 0 ? <p className="text-muted-foreground text-center py-4">
+                          Nessun prodotto nell'ordine
+                        </p> : <div className="space-y-1">
+                          {order.items.map(item => <OrderItemRow 
+                            key={item.id} 
+                            item={item} 
+                            onUpdateQuantity={handleUpdateQuantity} 
+                            onDeleteItem={handleDeleteItem} 
+                          />)}
+                        </div>}
+                    </div>
+                  </div>
+                </TabsContent>
                 
-                <div className="flex justify-between items-center mt-6 text-lg font-semibold">
-                  <span>Totale</span>
-                  <span>
-                    {new Intl.NumberFormat('it-IT', {
-                  style: 'currency',
-                  currency: 'EUR'
-                }).format(calculateTotal())}
-                  </span>
-                </div>
+                <TabsContent value="rounds" className="mt-4">
+                  <div>
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="font-semibold">Portate</h3>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setIsItemModalOpen(true)}
+                        className="flex items-center"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Aggiungi
+                      </Button>
+                    </div>
+                    
+                    <div className="max-h-96 overflow-y-auto pr-1">
+                      {!order.rounds || order.rounds.length === 0 ? (
+                        <p className="text-muted-foreground text-center py-4">
+                          Nessuna portata nell'ordine
+                        </p>
+                      ) : (
+                        <div className="space-y-1">
+                          {order.rounds.map(round => (
+                            <RoundItem 
+                              key={round.id} 
+                              round={round} 
+                              onUpdateStatus={handleUpdateRoundStatus}
+                            />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+              
+              <div className="flex justify-between items-center mt-6 text-lg font-semibold">
+                <span>Totale</span>
+                <span>
+                  {new Intl.NumberFormat('it-IT', {
+                    style: 'currency',
+                    currency: 'EUR'
+                  }).format(calculateTotal())}
+                </span>
               </div>
             </div>}
         </CardContent>
       </Card>
 
-      <AddItemModal open={isItemModalOpen} onClose={() => setIsItemModalOpen(false)} onAddItem={handleAddItem} />
+      {order && <AddItemModal 
+        open={isItemModalOpen} 
+        onClose={() => setIsItemModalOpen(false)} 
+        onAddItems={handleAddItems}
+        rounds={getExistingRounds()}
+        createNewRound={true}
+      />}
     </div>;
 };
 
