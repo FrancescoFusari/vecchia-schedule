@@ -181,10 +181,44 @@ const TableOrders = () => {
     if (!order || !user) return;
     try {
       setIsSaving(true);
+      
+      const hasSeparator = order.items.some(item => item.isLastFirstCourse);
+      
       await addOrderItem(order.id, menuItemId, quantity, notes);
 
       const updatedOrder = await getActiveOrder(tableId!);
-      setOrder(updatedOrder);
+      
+      if (hasSeparator) {
+        const separatorIndex = order.items.findIndex(item => item.isLastFirstCourse);
+        
+        if (separatorIndex !== -1 && updatedOrder) {
+          const newItem = updatedOrder.items[updatedOrder.items.length - 1];
+          
+          const itemsWithoutNewest = updatedOrder.items.slice(0, updatedOrder.items.length - 1);
+          
+          const firstCourseItems = itemsWithoutNewest.slice(0, separatorIndex + 1);
+          const secondCourseItems = itemsWithoutNewest.slice(separatorIndex + 1);
+          
+          const rearrangedItems = [
+            ...firstCourseItems,
+            ...secondCourseItems,
+            newItem
+          ];
+          
+          if (firstCourseItems.length > 0) {
+            firstCourseItems[firstCourseItems.length - 1].isLastFirstCourse = true;
+          }
+          
+          setOrder({
+            ...updatedOrder,
+            items: rearrangedItems
+          });
+        } else {
+          setOrder(updatedOrder);
+        }
+      } else {
+        setOrder(updatedOrder);
+      }
     } catch (error) {
       console.error("Error adding item to order:", error);
       toast({
@@ -224,9 +258,20 @@ const TableOrders = () => {
     try {
       await deleteOrderItem(itemId);
 
+      const deletedItemWasSeparator = order.items.find(item => item.id === itemId)?.isLastFirstCourse;
+      
+      const updatedItems = order.items.filter(item => item.id !== itemId);
+      
+      if (deletedItemWasSeparator && updatedItems.length > 0) {
+        const deletedItemIndex = order.items.findIndex(item => item.id === itemId);
+        if (deletedItemIndex > 0) {
+          updatedItems[deletedItemIndex - 1].isLastFirstCourse = true;
+        }
+      }
+      
       setOrder({
         ...order,
-        items: order.items.filter(item => item.id !== itemId)
+        items: updatedItems
       });
       toast({
         title: "Rimosso",
@@ -303,12 +348,12 @@ const TableOrders = () => {
     
     const updatedItems = [...order.items];
     if (updatedItems.length > 0) {
+      updatedItems.forEach(item => {
+        item.isLastFirstCourse = false;
+      });
+      
       const lastItem = updatedItems[updatedItems.length - 1];
-      const updatedLastItem = {
-        ...lastItem,
-        isLastFirstCourse: true
-      };
-      updatedItems[updatedItems.length - 1] = updatedLastItem;
+      lastItem.isLastFirstCourse = true;
       
       setOrder({
         ...order,
