@@ -39,18 +39,21 @@ export function WaterControl({
 
   return (
     <div className={`flex flex-col items-center ${className}`}>
-      <div className="flex items-center mb-3 gap-2">
-        <span className="text-sm font-medium">Acqua</span>
+      <span className="text-sm font-medium mb-2">Acqua</span>
+      
+      <div className="flex flex-col items-center mb-3">
         <Toggle 
           pressed={isSparkling} 
           onPressedChange={onTypeChange}
           size="sm"
-          className="h-6 px-2 data-[state=on]:bg-blue-500/20 border border-input"
+          className="h-8 px-3 data-[state=on]:bg-blue-500/20 border border-input flex items-center gap-2"
           aria-label="Toggle sparkling water"
         >
           {isSparkling ? <Droplets className="h-3.5 w-3.5" /> : <Droplet className="h-3.5 w-3.5" />}
+          <span className="text-xs">{isSparkling ? "Frizzante" : "Naturale"}</span>
         </Toggle>
       </div>
+      
       <div className="flex items-center">
         <Button
           variant="outline"

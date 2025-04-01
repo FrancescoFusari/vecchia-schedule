@@ -93,10 +93,6 @@ const TableOrders = () => {
       const sparklingWater = isSparkling ? value : 0;
       
       await updateOrder(order.id, stillWater, sparklingWater, undefined);
-      toast({
-        title: "Aggiornato",
-        description: `Acqua ${isSparkling ? "frizzante" : "naturale"} aggiornata`
-      });
     } catch (error) {
       console.error("Error updating water:", error);
       toast({
@@ -119,10 +115,6 @@ const TableOrders = () => {
       const sparklingWater = sparklingValue ? waterAmount : 0;
       
       await updateOrder(order.id, stillWater, sparklingWater, undefined);
-      toast({
-        title: "Aggiornato",
-        description: `Tipo di acqua cambiato a ${sparklingValue ? "frizzante" : "naturale"}`
-      });
     } catch (error) {
       console.error("Error updating water type:", error);
       toast({
