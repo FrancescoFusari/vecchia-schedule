@@ -175,11 +175,12 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
                           <span className="text-xs">{table.seats} posti</span>
                           
                           {table.hasActiveOrder && table.orderCreatedAt && (
-                            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 translate-y-1/2 z-10">
+                            <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-full px-1">
                               <TableTimer 
                                 startTime={table.orderCreatedAt} 
-                                variant="blue" 
+                                variant="orange" 
                                 size="sm"
+                                className="bg-orange-600/20 w-full justify-center"
                               />
                             </div>
                           )}
@@ -207,11 +208,12 @@ export function SectionCard({ section, className = "" }: SectionCardProps) {
                         <span className="text-xs">{table.seats} posti</span>
                         
                         {table.orderCreatedAt && (
-                          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 translate-y-1/2 z-10">
+                          <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-full px-1">
                             <TableTimer 
                               startTime={table.orderCreatedAt} 
-                              variant="blue" 
+                              variant="orange" 
                               size="sm"
+                              className="bg-orange-600/20 w-full justify-center"
                             />
                           </div>
                         )}
