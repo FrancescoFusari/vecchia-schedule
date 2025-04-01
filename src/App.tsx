@@ -25,8 +25,12 @@ const queryClient = new QueryClient();
 
 function App() {
   useEffect(() => {
-    // Register the service worker
-    registerServiceWorker();
+    // Try to register the service worker
+    try {
+      registerServiceWorker();
+    } catch (error) {
+      console.error("Error registering service worker:", error);
+    }
   }, []);
 
   return (
