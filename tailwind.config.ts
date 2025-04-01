@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -53,6 +52,14 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        sidebar: {
+          DEFAULT: "hsl(var(--background))",
+          foreground: "hsl(var(--foreground))",
+          border: "hsl(var(--border))",
+          accent: "hsl(var(--accent))",
+          "accent-foreground": "hsl(var(--accent-foreground))",
+          ring: "hsl(var(--ring))",
+        }
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -84,6 +91,14 @@ export default {
           from: { opacity: "1" },
           to: { opacity: "0" },
         },
+        scaleIn: {
+          from: { transform: "scale(0.95)", opacity: "0" },
+          to: { transform: "scale(1)", opacity: "1" },
+        },
+        slideUp: {
+          from: { transform: "translateY(10px)", opacity: "0" },
+          to: { transform: "translateY(0)", opacity: "1" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -92,6 +107,8 @@ export default {
         slideUp: "slideUp 0.3s ease-out",
         fadeIn: "fadeIn 0.3s ease-out",
         fadeOut: "fadeOut 0.3s ease-out",
+        scaleIn: "scaleIn 0.3s ease-out forwards",
+        slideUp: "slideUp 0.4s ease-out forwards",
       },
     },
   },

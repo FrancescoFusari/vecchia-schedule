@@ -18,7 +18,7 @@ export function ShiftItem({ shift, employee, onClick }: ShiftItemProps) {
   const employeeColor = employee.color || "#9CA3AF";
   
   // Generate color styles based on employee color
-  const bgColor = `bg-opacity-15 text-opacity-90 border border-opacity-20`;
+  const bgColor = `bg-opacity-20 text-opacity-90 border border-opacity-20 dark:bg-opacity-25 dark:text-opacity-95 dark:border-opacity-30`;
   const customStyle = {
     backgroundColor: `${employeeColor}20`, // 20% opacity
     color: employeeColor,

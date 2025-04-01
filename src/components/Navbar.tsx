@@ -1,14 +1,16 @@
 
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, Users, User, MessageSquare, LogOut } from "lucide-react";
+import { CalendarDays, Users, User, MessageSquare, LogOut, Moon, Sun } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTheme } from "next-themes";
 
 export function Navbar() {
   const { user, isAdmin, signOut } = useAuth();
   const location = useLocation();
   const isMobile = useIsMobile();
+  const { theme, setTheme } = useTheme();
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -26,8 +28,12 @@ export function Navbar() {
     signOut();
   };
 
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
+
   return (
-    <nav className={`bg-white shadow-sm ${isMobile ? 'fixed bottom-0 left-0 right-0 z-50 border-t' : 'border-b'}`}>
+    <nav className={`bg-card shadow-sm ${isMobile ? 'fixed bottom-0 left-0 right-0 z-50 border-t' : 'border-b'} border-border transition-colors duration-300`}>
       <div className={`container mx-auto ${isMobile ? 'px-2 py-2' : 'px-4 py-3'}`}>
         <div className="flex justify-between items-center">
           {!isMobile && (
@@ -92,13 +98,30 @@ export function Navbar() {
               </Link>
             )}
             
+            {/* Add theme toggle button */}
+            {!isMobile && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleTheme}
+                className="ml-2"
+                aria-label="Toggle theme"
+              >
+                {theme === "dark" ? (
+                  <Sun className="h-4 w-4" />
+                ) : (
+                  <Moon className="h-4 w-4" />
+                )}
+              </Button>
+            )}
+            
             {/* Add logout button if not on mobile */}
             {!isMobile && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleLogout}
-                className="flex items-center text-red-500 hover:bg-red-50 hover:text-red-600 ml-2"
+                className="flex items-center text-destructive hover:bg-destructive/10 hover:text-destructive ml-2"
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Logout</span>
