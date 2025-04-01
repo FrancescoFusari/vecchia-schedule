@@ -88,6 +88,8 @@ export function AddItemModal({
   };
 
   const addCourseDelimiter = async () => {
+    console.log("Current order items:", currentOrderItems);
+    
     if (!currentOrderItems || currentOrderItems.length === 0) {
       toast({
         title: "Impossibile aggiungere separatore",
@@ -239,6 +241,7 @@ export function AddItemModal({
           onClick={addCourseDelimiter} 
           variant="outline" 
           className="w-full flex items-center justify-center"
+          disabled={!currentOrderItems || currentOrderItems.length === 0}
         >
           <Utensils className="h-4 w-4 mr-2" />
           Secondo
