@@ -1,4 +1,3 @@
-
 export type Role = "admin" | "employee";
 
 export interface User {
@@ -68,4 +67,61 @@ export interface MonthSummary {
   totalHours: number;
   month: number;
   year: number;
+}
+
+export interface RestaurantSection {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface RestaurantTable {
+  id: string;
+  sectionId: string;
+  tableNumber: number;
+  seats: number;
+  createdAt: string;
+}
+
+export interface MenuCategory {
+  id: string;
+  name: string;
+  displayOrder: number;
+  createdAt: string;
+}
+
+export interface MenuItem {
+  id: string;
+  categoryId: string;
+  name: string;
+  description?: string;
+  price: number;
+  available: boolean;
+  createdAt: string;
+}
+
+export interface Order {
+  id: string;
+  tableId: string;
+  employeeId: string;
+  status: 'active' | 'completed' | 'cancelled';
+  stillWater: number;
+  sparklingWater: number;
+  bread: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OrderItem {
+  id: string;
+  orderId: string;
+  menuItemId: string;
+  quantity: number;
+  notes?: string;
+  createdAt: string;
+}
+
+export interface OrderWithItems extends Order {
+  items: (OrderItem & { menuItem: MenuItem })[];
+  table: RestaurantTable;
 }

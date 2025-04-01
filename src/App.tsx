@@ -16,6 +16,8 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { Toaster } from "@/components/ui/toaster";
 
 import Communications from "./pages/Communications";
+import Orders from "./pages/Orders";
+import TableOrders from "./pages/TableOrders";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +35,8 @@ function App() {
                 <Route path="/templates" element={<Templates />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/communications" element={<Communications />} />
+                <Route path="/orders" element={<Orders />} />
+                <Route path="/orders/tables/:tableId" element={<TableOrders />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
               <Route path="/login" element={<Login />} />

@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useTheme } from "next-themes";
+import { OrdersNavButton } from "@/components/Orders/OrdersNavButton";
 
 export function Navbar() {
   const { user, isAdmin, signOut } = useAuth();
@@ -25,6 +26,9 @@ export function Navbar() {
   
   // Show profile for regular users
   const showProfile = !showDashboard;
+  
+  // Show orders button for regular users (employees)
+  const showOrders = !isAdmin();
 
   const handleLogout = () => {
     signOut();
@@ -71,6 +75,11 @@ export function Navbar() {
                 <span className={isMobile ? "text-[10px] leading-tight" : ""}>Comunicazioni</span>
               </Button>
             </Link>
+            
+            {/* Orders link for employees */}
+            {showOrders && (
+              <OrdersNavButton isMobile={isMobile} />
+            )}
 
             {/* Only render dashboard link for admin users */}
             {showDashboard && (
