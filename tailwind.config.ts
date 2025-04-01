@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -75,13 +76,13 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
-        slideDown: {
-          from: { height: "0" },
-          to: { height: "var(--radix-collapsible-content-height)" },
+        "collapsible-down": {
+          from: { height: "0", opacity: "0" },
+          to: { height: "var(--radix-collapsible-content-height)", opacity: "1" },
         },
-        slideUp: {
-          from: { height: "var(--radix-collapsible-content-height)" },
-          to: { height: "0" },
+        "collapsible-up": {
+          from: { height: "var(--radix-collapsible-content-height)", opacity: "1" },
+          to: { height: "0", opacity: "0" },
         },
         fadeIn: {
           from: { opacity: "0" },
@@ -103,8 +104,8 @@ export default {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        slideDown: "slideDown 0.3s ease-out",
-        slideUp: "slideUp 0.3s ease-out",
+        "collapsible-down": "collapsible-down 0.2s ease-out",
+        "collapsible-up": "collapsible-up 0.2s ease-out",
         fadeIn: "fadeIn 0.3s ease-out",
         fadeOut: "fadeOut 0.3s ease-out",
         scaleIn: "scaleIn 0.3s ease-out forwards",

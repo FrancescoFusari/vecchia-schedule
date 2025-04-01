@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -152,6 +153,8 @@ export function AddItemModal({ open, onClose, onAddItem }: AddItemModalProps) {
           ) : (
             categories.map(category => {
               const categoryItems = menuItems.filter(item => item.categoryId === category.id);
+              if (categoryItems.length === 0) return null;
+              
               const isOpen = openCategories.includes(category.id);
               
               return (
@@ -292,7 +295,7 @@ export function AddItemModal({ open, onClose, onAddItem }: AddItemModalProps) {
   // Use Sheet component for mobile and Dialog for desktop
   return isMobile ? (
     <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <SheetContent className="p-0 pt-6 h-[90vh] max-h-[90vh]" side="bottom">
+      <SheetContent className="p-0 pt-6 h-[90vh]" side="bottom">
         <SheetHeader className="px-4 pb-2">
           <SheetTitle>Aggiungi prodotto</SheetTitle>
         </SheetHeader>
