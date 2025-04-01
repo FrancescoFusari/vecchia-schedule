@@ -205,10 +205,6 @@ const TableOrders = () => {
             newItem
           ];
           
-          if (firstCourseItems.length > 0) {
-            firstCourseItems[firstCourseItems.length - 1].isLastFirstCourse = true;
-          }
-          
           setOrder({
             ...updatedOrder,
             items: rearrangedItems
@@ -256,15 +252,18 @@ const TableOrders = () => {
   const handleDeleteItem = async (itemId: string) => {
     if (!order || !user) return;
     try {
-      await deleteOrderItem(itemId);
-
       const deletedItemWasSeparator = order.items.find(item => item.id === itemId)?.isLastFirstCourse;
+      
+      await deleteOrderItem(itemId);
       
       const updatedItems = order.items.filter(item => item.id !== itemId);
       
       if (deletedItemWasSeparator && updatedItems.length > 0) {
         const deletedItemIndex = order.items.findIndex(item => item.id === itemId);
         if (deletedItemIndex > 0) {
+          const previousItemId = updatedItems[deletedItemIndex - 1].id;
+          await updateOrderItem(previousItemId, updatedItems[deletedItemIndex - 1].quantity, 
+            updatedItems[deletedItemIndex - 1].notes, true);
           updatedItems[deletedItemIndex - 1].isLastFirstCourse = true;
         }
       }
@@ -343,22 +342,43 @@ const TableOrders = () => {
     }
   };
 
-  const handleAddSecondCourse = () => {
-    if (!order || !user) return;
+  const handleAddSecondCourse = async () => {
+    if (!order || !user || order.items.length === 0) return;
     
-    const updatedItems = [...order.items];
-    if (updatedItems.length > 0) {
-      updatedItems.forEach(item => {
-        item.isLastFirstCourse = false;
-      });
+    try {
+      setIsSaving(true);
       
-      const lastItem = updatedItems[updatedItems.length - 1];
-      lastItem.isLastFirstCourse = true;
+      for (const item of order.items) {
+        if (item.isLastFirstCourse) {
+          await updateOrderItem(item.id, item.quantity, item.notes, false);
+        }
+      }
+      
+      const lastItem = order.items[order.items.length - 1];
+      await updateOrderItem(lastItem.id, lastItem.quantity, lastItem.notes, true);
+      
+      const updatedItems = [...order.items];
+      updatedItems.forEach(item => item.isLastFirstCourse = false);
+      updatedItems[updatedItems.length - 1].isLastFirstCourse = true;
       
       setOrder({
         ...order,
         items: updatedItems
       });
+      
+      toast({
+        title: "Aggiornato",
+        description: "Separazione dei corsi aggiornata"
+      });
+    } catch (error) {
+      console.error("Error adding second course:", error);
+      toast({
+        title: "Errore",
+        description: "Impossibile aggiungere il secondo corso",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 

@@ -274,6 +274,7 @@ export const getActiveOrder = async (tableId: string): Promise<OrderWithItems | 
         menuItemId: item.menu_item_id,
         quantity: item.quantity,
         notes: item.notes,
+        isLastFirstCourse: item.is_last_first_course,
         createdAt: item.created_at,
         menuItem: {
           id: item.menu_item.id,
@@ -336,6 +337,7 @@ export const getCompletedOrders = async (tableId: string): Promise<OrderWithItem
         menuItemId: item.menu_item_id,
         quantity: item.quantity,
         notes: item.notes,
+        isLastFirstCourse: item.is_last_first_course,
         createdAt: item.created_at,
         menuItem: {
           id: item.menu_item.id,
@@ -450,7 +452,8 @@ export const addOrderItem = async (
   orderId: string,
   menuItemId: string,
   quantity: number,
-  notes?: string
+  notes?: string,
+  isLastFirstCourse: boolean = false
 ): Promise<OrderItem> => {
   try {
     const { data, error } = await supabase
@@ -459,7 +462,8 @@ export const addOrderItem = async (
         order_id: orderId,
         menu_item_id: menuItemId,
         quantity,
-        notes
+        notes,
+        is_last_first_course: isLastFirstCourse
       })
       .select()
       .single();
@@ -472,6 +476,7 @@ export const addOrderItem = async (
       menuItemId: data.menu_item_id,
       quantity: data.quantity,
       notes: data.notes,
+      isLastFirstCourse: data.is_last_first_course,
       createdAt: data.created_at
     };
   } catch (error) {
@@ -483,15 +488,17 @@ export const addOrderItem = async (
 export const updateOrderItem = async (
   id: string,
   quantity: number,
-  notes?: string
+  notes?: string,
+  isLastFirstCourse?: boolean
 ): Promise<OrderItem> => {
   try {
+    const updateData: any = { quantity };
+    if (notes !== undefined) updateData.notes = notes;
+    if (isLastFirstCourse !== undefined) updateData.is_last_first_course = isLastFirstCourse;
+    
     const { data, error } = await supabase
       .from('order_items')
-      .update({ 
-        quantity,
-        notes
-      })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
@@ -504,6 +511,7 @@ export const updateOrderItem = async (
       menuItemId: data.menu_item_id,
       quantity: data.quantity,
       notes: data.notes,
+      isLastFirstCourse: data.is_last_first_course,
       createdAt: data.created_at
     };
   } catch (error) {

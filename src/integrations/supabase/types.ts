@@ -138,6 +138,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_last_first_course: boolean | null
           menu_item_id: string
           notes: string | null
           order_id: string
@@ -147,6 +148,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_last_first_course?: boolean | null
           menu_item_id: string
           notes?: string | null
           order_id: string
@@ -156,6 +158,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_last_first_course?: boolean | null
           menu_item_id?: string
           notes?: string | null
           order_id?: string
