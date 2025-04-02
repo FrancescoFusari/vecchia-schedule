@@ -19,15 +19,19 @@ export function PrintOrderButton({ order, table, disabled = false }: PrintOrderB
     try {
       setIsPrinting(true);
       
-      // Generate PDF
+      // Generate PDF optimized for thermal printer
       const doc = PrintService.generateOrderPDF(order, table);
       
-      // Use blob approach instead of datauristring to avoid blank page
+      // Use blob approach for better compatibility
       const blob = doc.output('blob');
       const url = URL.createObjectURL(blob);
       
-      // Open PDF in a new window
-      const printWindow = window.open(url, '_blank');
+      // Open PDF in a new window with specific dimensions for thermal receipt
+      const printWindow = window.open(
+        url, 
+        '_blank',
+        'width=800,height=600,menubar=no,toolbar=no,location=no'
+      );
       
       if (!printWindow) {
         toast({
@@ -38,12 +42,46 @@ export function PrintOrderButton({ order, table, disabled = false }: PrintOrderB
         return;
       }
       
-      // Print automatically when the PDF is loaded
-      printWindow.addEventListener('load', () => {
+      // Add special styling for the print window
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Stampa Ordine - Tavolo ${table.tableNumber}</title>
+            <style>
+              body {
+                margin: 0;
+                padding: 0;
+                display: flex;
+                justify-content: center;
+              }
+              
+              @media print {
+                @page {
+                  size: 80mm auto;  /* Width of thermal paper */
+                  margin: 0;
+                }
+                body {
+                  width: 80mm;
+                }
+                embed, iframe, object {
+                  width: 100%;
+                  height: auto;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            <iframe src="${url}" style="width:100%; height:100vh; border:none;"></iframe>
+          </body>
+        </html>
+      `);
+      
+      // Print automatically when the iframe is loaded
+      printWindow.document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
           printWindow.print();
           // We don't close the window automatically to let the user decide
-        }, 500);
+        }, 1000);
       });
       
       // Clean up the blob URL when done
