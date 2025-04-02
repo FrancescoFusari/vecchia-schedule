@@ -198,9 +198,9 @@ export class PrintService {
     y += LINE_HEIGHT;
     
     // Trim the document to the actual content height
-    if (typeof doc.internal.pageSize.setHeight === 'function') {
-      doc.internal.pageSize.setHeight(y + THERMAL_MARGIN);
-    }
+    // Fix: Instead of using setHeight which doesn't exist, modify the internal pageSize directly
+    const pdfHeight = y + THERMAL_MARGIN;
+    doc.internal.pageSize.height = pdfHeight;
     
     return doc;
   }
