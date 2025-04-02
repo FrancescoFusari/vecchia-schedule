@@ -184,11 +184,22 @@ export class PrintService {
     doc.text('Grazie per la Sua visita!', PAPER_WIDTH / 2, y, { align: 'center' });
     y += LINE_HEIGHT * 1.5;
     
-    // Add cut line indicator
+    // Add cut line indicator using dashed line pattern
+    // Instead of setLineDash, we'll create a dashed line manually
     doc.setLineWidth(0.2);
-    doc.setLineDash([1, 1]);
-    doc.line(PAPER_MARGIN, y, PAPER_WIDTH - PAPER_MARGIN, y);
-    doc.setLineDash([]);
+    
+    // Draw dashed line manually
+    const dashLength = 1;
+    const gapLength = 1;
+    const startX = PAPER_MARGIN;
+    const endX = PAPER_WIDTH - PAPER_MARGIN;
+    const lineY = y;
+    
+    for (let x = startX; x < endX; x += dashLength + gapLength) {
+      const segmentEnd = Math.min(x + dashLength, endX);
+      doc.line(x, lineY, segmentEnd, lineY);
+    }
+    
     doc.setFontSize(FONT_SIZE_SMALL);
     doc.text('✂ - - - - - - - - - - - - - - - - - - - - - - - - - ✂', PAPER_WIDTH / 2, y + 2, { align: 'center' });
     
