@@ -56,7 +56,6 @@ export class PrintService {
     doc.setFont('helvetica', 'bold');
     doc.text('Qt', MARGIN, y);
     doc.text('Prodotto', MARGIN + 10, y);
-    doc.text('Prezzo', PAPER_WIDTH - MARGIN - 15, y, { align: 'right' });
     y += LINE_HEIGHT;
     
     // Add separator
@@ -106,16 +105,9 @@ export class PrintService {
       // Item quantity
       doc.text(`${item.quantity}x`, MARGIN, y);
       
-      // Item name and price
+      // Item name (without price)
       const itemName = item.menuItem.name;
       doc.text(itemName, MARGIN + 10, y);
-      
-      const itemPrice = new Intl.NumberFormat('it-IT', {
-        style: 'currency',
-        currency: 'EUR'
-      }).format(item.menuItem.price * item.quantity);
-      
-      doc.text(itemPrice, PAPER_WIDTH - MARGIN - 15, y, { align: 'right' });
       
       // Add notes if present
       if (item.notes) {
@@ -162,19 +154,6 @@ export class PrintService {
     // Add separator
     doc.setLineWidth(0.1);
     doc.line(MARGIN, y, PAPER_WIDTH - MARGIN, y);
-    y += LINE_HEIGHT;
-    
-    // Calculate total
-    const total = order.items.reduce((sum, item) => sum + (item.menuItem.price * item.quantity), 0);
-    const totalFormatted = new Intl.NumberFormat('it-IT', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(total);
-    
-    // Add total
-    doc.setFont('helvetica', 'bold');
-    doc.text('TOTALE', MARGIN, y);
-    doc.text(totalFormatted, PAPER_WIDTH - MARGIN - 15, y, { align: 'right' });
     y += LINE_HEIGHT * 2;
     
     // Add footer

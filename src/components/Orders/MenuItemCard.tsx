@@ -28,12 +28,6 @@ export function MenuItemCard({ item, onAddToOrder }: MenuItemCardProps) {
     setQuantity(1); // Reset quantity after adding
   };
 
-  // Format price to show €X.XX
-  const formattedPrice = new Intl.NumberFormat('it-IT', {
-    style: 'currency',
-    currency: 'EUR'
-  }).format(item.price);
-
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow">
       <CardContent className="p-0">
@@ -45,7 +39,6 @@ export function MenuItemCard({ item, onAddToOrder }: MenuItemCardProps) {
                 {item.description}
               </p>
             )}
-            <p className="text-sm font-semibold mt-1.5 text-primary">{formattedPrice}</p>
           </div>
           <div className="flex items-center">
             <div className="flex items-center mr-2">

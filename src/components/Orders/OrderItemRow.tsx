@@ -43,11 +43,6 @@ export function OrderItemRow({
     setIsNotesDialogOpen(false);
   };
 
-  const formattedPrice = new Intl.NumberFormat('it-IT', {
-    style: 'currency',
-    currency: 'EUR'
-  }).format(item.menuItem.price);
-
   return (
     <>
       <div className="flex items-center justify-between py-2 px-1">
@@ -75,9 +70,6 @@ export function OrderItemRow({
                   {item.notes}
                 </p>
               )}
-              <div className="flex justify-between items-center mt-1">
-                <span className="text-sm text-muted-foreground">{formattedPrice}</span>
-              </div>
             </div>
           </div>
         </div>
