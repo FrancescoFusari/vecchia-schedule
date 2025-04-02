@@ -22,9 +22,12 @@ export function PrintOrderButton({ order, table, disabled = false }: PrintOrderB
       // Generate PDF
       const doc = PrintService.generateOrderPDF(order, table);
       
+      // Use blob approach instead of datauristring to avoid blank page
+      const blob = doc.output('blob');
+      const url = URL.createObjectURL(blob);
+      
       // Open PDF in a new window
-      const pdfData = doc.output('datauristring');
-      const printWindow = window.open(pdfData);
+      const printWindow = window.open(url, '_blank');
       
       if (!printWindow) {
         toast({
@@ -36,13 +39,17 @@ export function PrintOrderButton({ order, table, disabled = false }: PrintOrderB
       }
       
       // Print automatically when the PDF is loaded
-      printWindow.onload = () => {
+      printWindow.addEventListener('load', () => {
         setTimeout(() => {
           printWindow.print();
-          // Close the window after printing (most browsers will prompt before closing)
-          // printWindow.close();
+          // We don't close the window automatically to let the user decide
         }, 500);
-      };
+      });
+      
+      // Clean up the blob URL when done
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 5000);
       
       toast({
         title: "Stampa",
