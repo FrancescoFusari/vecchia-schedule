@@ -17,7 +17,8 @@ export class PrintService {
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
-      format: [THERMAL_WIDTH, 297]  // Start with standard height, will trim later
+      format: [THERMAL_WIDTH, 297],  // Start with standard height, will trim later
+      hotfixes: ["px_scaling"] // Add this to fix text rendering issues
     });
     
     // Set initial y position
@@ -26,6 +27,7 @@ export class PrintService {
     // Add restaurant name as header
     doc.setFontSize(TEXT_SIZE_HEADER);
     doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0); // Ensure text color is black
     
     // Center the header
     const restaurantName = 'LA VECCHIA SIGNORA';

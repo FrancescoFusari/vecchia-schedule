@@ -42,7 +42,7 @@ export function PrintOrderButton({ order, table, disabled = false }: PrintOrderB
         return;
       }
       
-      // Add special styling for the print window
+      // Add special styling for the print window with improved visibility settings
       printWindow.document.write(`
         <html>
           <head>
@@ -53,6 +53,14 @@ export function PrintOrderButton({ order, table, disabled = false }: PrintOrderB
                 padding: 0;
                 display: flex;
                 justify-content: center;
+                background-color: #f0f0f0;
+              }
+              
+              iframe {
+                width: 100%;
+                height: 100vh;
+                border: none;
+                background-color: white;
               }
               
               @media print {
@@ -62,8 +70,9 @@ export function PrintOrderButton({ order, table, disabled = false }: PrintOrderB
                 }
                 body {
                   width: 80mm;
+                  background-color: white;
                 }
-                embed, iframe, object {
+                iframe {
                   width: 100%;
                   height: auto;
                 }
@@ -72,17 +81,19 @@ export function PrintOrderButton({ order, table, disabled = false }: PrintOrderB
           </head>
           <body>
             <iframe src="${url}" style="width:100%; height:100vh; border:none;"></iframe>
+            <script>
+              // Add print trigger on iframe load
+              document.querySelector('iframe').onload = function() {
+                setTimeout(function() {
+                  window.focus();
+                  // Optional: window.print();
+                  // We'll let user decide when to print
+                }, 1000);
+              };
+            </script>
           </body>
         </html>
       `);
-      
-      // Print automatically when the iframe is loaded
-      printWindow.document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(() => {
-          printWindow.print();
-          // We don't close the window automatically to let the user decide
-        }, 1000);
-      });
       
       // Clean up the blob URL when done
       setTimeout(() => {
