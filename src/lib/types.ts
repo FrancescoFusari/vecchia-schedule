@@ -1,4 +1,3 @@
-
 export type Role = "admin" | "employee";
 
 export interface User {
@@ -133,3 +132,9 @@ export interface OrderItemWithMenuData extends OrderItem {
   menuItem: MenuItem;
 }
 
+// New interface for print document data
+export interface PrintData {
+  order: OrderWithItems;
+  table: RestaurantTable;
+  timestamp: string;
+}

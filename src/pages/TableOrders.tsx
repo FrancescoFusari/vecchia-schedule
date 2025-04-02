@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CompletedOrdersList } from "@/components/Orders/CompletedOrdersList";
 import { TableTimer } from "@/components/Orders/TableTimer";
+import { PrintOrderButton } from "@/components/Orders/PrintOrderButton";
 
 const TableOrders = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -455,21 +455,25 @@ const TableOrders = () => {
           {order && <TableTimer startTime={order.createdAt} className="ml-3" />}
         </div>
         
-        {order && <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleCompleteOrder}>
-                Completa ordine
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleCancelOrder} className="text-destructive">
-                Annulla ordine
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>}
+        <div className="flex items-center gap-2">
+          {order && <PrintOrderButton order={order} table={table} />}
+          
+          {order && <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleCompleteOrder}>
+                  Completa ordine
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleCancelOrder} className="text-destructive">
+                  Annulla ordine
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>}
+        </div>
       </div>
 
       <Card>
