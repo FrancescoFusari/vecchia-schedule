@@ -20,6 +20,7 @@ import { registerServiceWorker } from "@/utils/pwaUtils";
 import Communications from "./pages/Communications";
 import Orders from "./pages/Orders";
 import TableOrders from "./pages/TableOrders";
+import Index from "./pages/Index";
 
 const queryClient = new QueryClient();
 
@@ -45,7 +46,8 @@ function App() {
           <AuthProvider>
             <Routes>
               <Route path="/" element={<Layout />}>
-                <Route index element={<Calendar />} />
+                <Route index element={<Index />} />
+                <Route path="/calendar" element={<Calendar />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/employees" element={<Employees />} />
                 <Route path="/templates" element={<Templates />} />
