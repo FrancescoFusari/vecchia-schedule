@@ -19,15 +19,15 @@ export function PrintOrderButton({ order, table, disabled = false }: PrintOrderB
     try {
       setIsPrinting(true);
       
-      // Generate PDF
+      // Generate PDF optimized for thermal receipt printer
       const doc = PrintService.generateOrderPDF(order, table);
       
-      // Use blob approach instead of datauristring to avoid blank page
+      // Use blob approach for better printing compatibility
       const blob = doc.output('blob');
       const url = URL.createObjectURL(blob);
       
-      // Open PDF in a new window
-      const printWindow = window.open(url, '_blank');
+      // Open PDF in a new window with specific settings for receipt printing
+      const printWindow = window.open(url, '_blank', 'width=800,height=600');
       
       if (!printWindow) {
         toast({
@@ -38,15 +38,41 @@ export function PrintOrderButton({ order, table, disabled = false }: PrintOrderB
         return;
       }
       
-      // Print automatically when the PDF is loaded
-      printWindow.addEventListener('load', () => {
-        setTimeout(() => {
-          printWindow.print();
-          // We don't close the window automatically to let the user decide
-        }, 500);
-      });
+      // Add custom print CSS to the new window
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Stampa Ordine #${order.id.slice(-4)}</title>
+            <style>
+              @page {
+                margin: 0;
+                size: 80mm auto;  /* Width 80mm, height auto */
+              }
+              body {
+                margin: 0;
+                padding: 0;
+              }
+              img {
+                width: 100%;
+                height: auto;
+              }
+            </style>
+          </head>
+          <body>
+            <img src="${url}" />
+            <script>
+              window.onload = function() {
+                setTimeout(function() {
+                  window.print();
+                }, 500);
+              }
+            </script>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
       
-      // Clean up the blob URL when done
+      // Clean up the blob URL after a delay
       setTimeout(() => {
         URL.revokeObjectURL(url);
       }, 5000);
