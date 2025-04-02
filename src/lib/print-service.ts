@@ -18,7 +18,8 @@ export class PrintService {
       orientation: 'portrait',
       unit: 'mm',
       format: [THERMAL_WIDTH, 297],  // Start with standard height, will trim later
-      hotfixes: ["px_scaling"] // Add this to fix text rendering issues
+      hotfixes: ["px_scaling"], // Fix text rendering issues
+      compress: false // Disable compression for better compatibility
     });
     
     // Set initial y position
@@ -27,7 +28,7 @@ export class PrintService {
     // Add restaurant name as header
     doc.setFontSize(TEXT_SIZE_HEADER);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 0, 0); // Ensure text color is black
+    doc.setTextColor(0, 0, 0); // Force black text color
     
     // Center the header
     const restaurantName = 'LA VECCHIA SIGNORA';
@@ -200,7 +201,6 @@ export class PrintService {
     y += LINE_HEIGHT;
     
     // Trim the document to the actual content height
-    // Fix: Instead of using setHeight which doesn't exist, modify the internal pageSize directly
     const pdfHeight = y + THERMAL_MARGIN;
     doc.internal.pageSize.height = pdfHeight;
     

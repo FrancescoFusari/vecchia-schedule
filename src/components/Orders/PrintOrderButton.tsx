@@ -80,16 +80,15 @@ export function PrintOrderButton({ order, table, disabled = false }: PrintOrderB
             </style>
           </head>
           <body>
-            <iframe src="${url}" style="width:100%; height:100vh; border:none;"></iframe>
+            <object data="${url}" type="application/pdf" width="100%" height="100%">
+              <embed src="${url}" type="application/pdf" width="100%" height="100%">
+                <p>This browser does not support PDFs. Please download the PDF to view it: 
+                <a href="${url}">Download PDF</a>.</p>
+              </embed>
+            </object>
             <script>
-              // Add print trigger on iframe load
-              document.querySelector('iframe').onload = function() {
-                setTimeout(function() {
-                  window.focus();
-                  // Optional: window.print();
-                  // We'll let user decide when to print
-                }, 1000);
-              };
+              // Focus window to give better print experience
+              window.focus();
             </script>
           </body>
         </html>
