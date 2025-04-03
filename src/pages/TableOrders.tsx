@@ -425,36 +425,40 @@ const TableOrders = () => {
   };
 
   const handlePdfGenerated = (dataUrl: string) => {
+    console.log("PDF URL received in parent component:", dataUrl.substring(0, 100) + "...");
     setPdfDataUrl(dataUrl);
   };
 
   const handleClosePdf = () => {
+    if (pdfDataUrl && pdfDataUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(pdfDataUrl);
+    }
     setPdfDataUrl(null);
   };
 
   const handlePrintPdf = () => {
-    const printWindow = window.open('', '_blank');
-    if (printWindow && pdfDataUrl) {
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>Stampa Ordine - Tavolo ${table?.tableNumber}</title>
-            <style>
-              body { margin: 0; padding: 0; }
-              iframe { width: 100%; height: 100vh; border: 0; }
-            </style>
-          </head>
-          <body>
-            <iframe src="${pdfDataUrl}" onload="setTimeout(function() { window.print(); window.close(); }, 1000)"></iframe>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-    } else {
+    if (!pdfDataUrl) return;
+    
+    try {
+      const printWindow = window.open(pdfDataUrl, '_blank');
+      if (!printWindow) {
+        toast({
+          title: "Attenzione",
+          description: "Popup bloccati. Per favore, abilita i popup per questa pagina.",
+          variant: "destructive"
+        });
+      } else {
+        printWindow.addEventListener('load', () => {
+          setTimeout(() => {
+            printWindow.print();
+          }, 500);
+        });
+      }
+    } catch (error) {
+      console.error("Error opening print window:", error);
       toast({
-        title: "Attenzione",
-        description: "Popup bloccati. Per favore, abilita i popup per questa pagina.",
+        title: "Errore",
+        description: "Impossibile aprire la finestra di stampa",
         variant: "destructive"
       });
     }
@@ -666,17 +670,11 @@ const TableOrders = () => {
                 className="relative w-full border rounded overflow-hidden" 
                 style={{ height: '600px' }}
               >
-                <object 
-                  data={pdfDataUrl} 
-                  type="application/pdf" 
+                <iframe 
+                  src={pdfDataUrl} 
                   className="absolute inset-0 w-full h-full"
-                >
-                  <embed 
-                    src={pdfDataUrl} 
-                    type="application/pdf" 
-                    className="absolute inset-0 w-full h-full"
-                  />
-                </object>
+                  title="PDF Preview"
+                />
               </div>
             </CardContent>
           </Card>
