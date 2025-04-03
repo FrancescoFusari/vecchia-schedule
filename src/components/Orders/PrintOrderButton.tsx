@@ -26,17 +26,16 @@ export function PrintOrderButton({
       setIsPrinting(true);
       console.log("Starting print process for order:", order.id);
       
-      // Generate PDF directly using the data URL approach
+      // Generate PDF directly using the PrintService
       const doc = PrintService.generateOrderPDF(order, table);
       
-      // Convert to blob URL for more reliable rendering
-      const blob = doc.output('blob');
-      const blobUrl = URL.createObjectURL(blob);
-      console.log("PDF generated successfully as blob URL");
+      // Convert to data URL for embedded viewing
+      const dataUrl = doc.output('dataurlstring');
+      console.log("PDF generated successfully, data URL length:", dataUrl.length);
       
-      // Send the blob URL to the parent component
+      // Send the data URL to the parent component
       if (onPrintGenerated) {
-        onPrintGenerated(blobUrl);
+        onPrintGenerated(dataUrl);
       }
       
       toast({

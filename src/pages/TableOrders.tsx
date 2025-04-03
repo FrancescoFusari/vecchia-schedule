@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -425,14 +426,11 @@ const TableOrders = () => {
   };
 
   const handlePdfGenerated = (dataUrl: string) => {
-    console.log("PDF URL received in parent component:", dataUrl.substring(0, 100) + "...");
+    console.log("PDF URL received in parent component:", dataUrl.substring(0, 50) + "...");
     setPdfDataUrl(dataUrl);
   };
 
   const handleClosePdf = () => {
-    if (pdfDataUrl && pdfDataUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(pdfDataUrl);
-    }
     setPdfDataUrl(null);
   };
 
@@ -440,20 +438,34 @@ const TableOrders = () => {
     if (!pdfDataUrl) return;
     
     try {
-      const printWindow = window.open(pdfDataUrl, '_blank');
+      // Open the PDF in a new window
+      const printWindow = window.open();
       if (!printWindow) {
         toast({
           title: "Attenzione",
           description: "Popup bloccati. Per favore, abilita i popup per questa pagina.",
           variant: "destructive"
         });
-      } else {
-        printWindow.addEventListener('load', () => {
-          setTimeout(() => {
-            printWindow.print();
-          }, 500);
-        });
+        return;
       }
+      
+      // Set up the print window HTML content with the embedded PDF
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Stampa Ordine - Tavolo ${table?.tableNumber}</title>
+            <style>
+              body { margin: 0; padding: 0; }
+              iframe { width: 100%; height: 100vh; border: 0; }
+            </style>
+          </head>
+          <body>
+            <iframe src="${pdfDataUrl}" onload="setTimeout(function() { window.print(); }, 500)"></iframe>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
     } catch (error) {
       console.error("Error opening print window:", error);
       toast({
@@ -667,13 +679,14 @@ const TableOrders = () => {
               
               <div 
                 ref={pdfContainerRef} 
-                className="relative w-full border rounded overflow-hidden" 
+                className="relative w-full border rounded overflow-hidden flex justify-center bg-white" 
                 style={{ height: '600px' }}
               >
-                <iframe 
+                <embed 
                   src={pdfDataUrl} 
-                  className="absolute inset-0 w-full h-full"
-                  title="PDF Preview"
+                  type="application/pdf"
+                  className="w-full h-full"
+                  style={{ display: 'block' }}
                 />
               </div>
             </CardContent>
