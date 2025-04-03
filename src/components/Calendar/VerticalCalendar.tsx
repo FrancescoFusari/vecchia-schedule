@@ -2,17 +2,17 @@
 import { useState, useEffect } from "react";
 import { Shift, Employee, ShiftTemplate } from "@/lib/types";
 import { formatDate, formatEmployeeName, formatMonthYear } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, Filter, User } from "lucide-react";
+import { ChevronLeft, ChevronRight, Filter, User, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ShiftItem } from "./ShiftItem";
 import { useAuth } from "@/hooks/useAuth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DAYS_OF_WEEK } from "@/lib/constants";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 
 interface VerticalCalendarProps {
   shifts: Shift[];
@@ -241,70 +241,80 @@ export function VerticalCalendar({
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
       ) : filteredDays.length === 0 ? (
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <p className="text-muted-foreground">
-              {(showOnlyUserShifts || selectedTemplate) ? 
-                "Nessun turno corrisponde ai filtri selezionati" : 
-                "Nessun turno programmato per questo mese"}
-            </p>
-            {(showOnlyUserShifts || selectedTemplate) && (
-              <Button 
-                variant="link" 
-                onClick={clearFilters} 
-                className="mt-2"
-              >
-                Cancella filtri
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+        <div className="bg-muted/20 p-6 rounded-md text-center">
+          <p className="text-muted-foreground">
+            {(showOnlyUserShifts || selectedTemplate) ? 
+              "Nessun turno corrisponde ai filtri selezionati" : 
+              "Nessun turno programmato per questo mese"}
+          </p>
+          {(showOnlyUserShifts || selectedTemplate) && (
+            <Button 
+              variant="link" 
+              onClick={clearFilters} 
+              className="mt-2"
+            >
+              Cancella filtri
+            </Button>
+          )}
+        </div>
       ) : (
         <div className="space-y-3">
           {filteredDays.map((day) => (
-            <Card key={day.date.toISOString()} className={day.isToday ? "border-primary" : ""}>
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-center">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Badge variant={day.isToday ? "default" : "outline"} className="text-xs font-normal">
-                      {day.dayName} {day.dayNumber}
-                    </Badge>
-                  </CardTitle>
-                  {isAdmin() && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-8 px-2 text-xs"
-                      onClick={() => onAddShift(day.date, day.dayOfWeek)}
-                    >
-                      + Aggiungi
-                    </Button>
-                  )}
+            <div 
+              key={day.date.toISOString()} 
+              className={cn(
+                "py-2 px-1",
+                day.isToday ? "bg-primary/5 rounded-md" : ""
+              )}
+            >
+              <div className="flex justify-between items-center mb-3">
+                <div className="flex items-center gap-2">
+                  <Badge 
+                    variant={day.isToday ? "default" : "outline"} 
+                    className={cn(
+                      "text-xs font-normal capitalize",
+                      day.isToday ? "" : "bg-muted/20"
+                    )}
+                  >
+                    <CalendarIcon className="h-3 w-3 mr-1" />
+                    {day.dayName} {day.dayNumber}
+                  </Badge>
                 </div>
-              </CardHeader>
-              <CardContent className="pb-3">
-                {day.shifts.length > 0 ? (
-                  <div className="space-y-1">
-                    {day.shifts.map((shift) => {
-                      const employee = getEmployeeById(shift.employeeId);
-                      if (!employee) return null;
-                      
-                      return (
-                        <ShiftItem 
-                          key={shift.id} 
-                          shift={shift} 
-                          employee={employee}
-                          onClick={() => onEditShift(shift)}
-                          highlight={shouldHighlightShift(shift)}
-                        />
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Nessun turno programmato</p>
+                {isAdmin() && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-7 px-2 text-xs"
+                    onClick={() => onAddShift(day.date, day.dayOfWeek)}
+                  >
+                    + Aggiungi
+                  </Button>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+              
+              {day.shifts.length > 0 ? (
+                <div className="space-y-1.5 pl-1">
+                  {day.shifts.map((shift) => {
+                    const employee = getEmployeeById(shift.employeeId);
+                    if (!employee) return null;
+                    
+                    return (
+                      <ShiftItem 
+                        key={shift.id} 
+                        shift={shift} 
+                        employee={employee}
+                        onClick={() => onEditShift(shift)}
+                        highlight={shouldHighlightShift(shift)}
+                      />
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground pl-1 py-1">Nessun turno programmato</p>
+              )}
+              
+              <Separator className="mt-3" />
+            </div>
           ))}
         </div>
       )}

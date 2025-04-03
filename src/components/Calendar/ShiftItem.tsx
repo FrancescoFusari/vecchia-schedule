@@ -3,6 +3,7 @@ import { Shift, Employee } from "@/lib/types";
 import { cn, formatEmployeeName, formatTo12Hour } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Clock } from "lucide-react";
 
 interface ShiftItemProps {
   shift: Shift;
@@ -38,7 +39,7 @@ export function ShiftItem({ shift, employee, onClick, highlight = false }: Shift
             <div
               onClick={onClick}
               className={cn(
-                "shift-item px-2 py-1 mb-1 rounded-md text-xs font-medium truncate",
+                "shift-item px-2 py-1 mb-1 rounded-md text-xs font-medium flex justify-between items-center",
                 bgColor,
                 "hover:cursor-pointer hover:brightness-95 transition-all",
                 highlight ? "ring-1 ring-primary/30" : ""
@@ -46,7 +47,11 @@ export function ShiftItem({ shift, employee, onClick, highlight = false }: Shift
               style={customStyle}
             >
               <div className="truncate">
-                {formatEmployeeName(employee.firstName, employee.lastName)} {formattedStartTime}-{formattedEndTime}
+                {formatEmployeeName(employee.firstName, employee.lastName)}
+              </div>
+              <div className="flex items-center gap-1 bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap ml-1">
+                <Clock className="h-2.5 w-2.5" />
+                <span>{formattedStartTime}-{formattedEndTime}</span>
               </div>
             </div>
           </TooltipTrigger>
@@ -61,14 +66,20 @@ export function ShiftItem({ shift, employee, onClick, highlight = false }: Shift
   return (
     <div
       className={cn(
-        "shift-item px-2 py-1 mb-1 rounded-md text-xs font-medium truncate",
+        "shift-item px-2 py-1 mb-1 rounded-md text-xs font-medium flex justify-between items-center",
         bgColor,
         "cursor-default",
         highlight ? "ring-1 ring-primary/30" : ""
       )}
       style={customStyle}
     >
-      {formatEmployeeName(employee.firstName, employee.lastName)} {formattedStartTime}-{formattedEndTime}
+      <div className="truncate">
+        {formatEmployeeName(employee.firstName, employee.lastName)}
+      </div>
+      <div className="flex items-center gap-1 bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap ml-1">
+        <Clock className="h-2.5 w-2.5" />
+        <span>{formattedStartTime}-{formattedEndTime}</span>
+      </div>
     </div>
   );
 }
