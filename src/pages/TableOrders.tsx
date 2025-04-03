@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
@@ -6,7 +6,7 @@ import { RestaurantTable, OrderWithItems } from "@/lib/types";
 import { getTables, getActiveOrder, getCompletedOrders, createOrder, updateOrder, addOrderItem, updateOrderItem, deleteOrderItem } from "@/lib/restaurant-service";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Plus, MoreVertical, Utensils } from "lucide-react";
+import { ArrowLeft, Plus, MoreVertical, Utensils, Printer, X } from "lucide-react";
 import { CounterControl } from "@/components/Orders/CounterControl";
 import { WaterControl } from "@/components/Orders/WaterControl";
 import { OrderItemRow } from "@/components/Orders/OrderItemRow";
@@ -27,6 +27,8 @@ const TableOrders = () => {
   const [bread, setBread] = useState(0);
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [pdfDataUrl, setPdfDataUrl] = useState<string | null>(null);
+  const pdfContainerRef = useRef<HTMLDivElement>(null);
   const { tableId } = useParams<{ tableId: string; }>();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -422,6 +424,42 @@ const TableOrders = () => {
     }, 0);
   };
 
+  const handlePdfGenerated = (dataUrl: string) => {
+    setPdfDataUrl(dataUrl);
+  };
+
+  const handleClosePdf = () => {
+    setPdfDataUrl(null);
+  };
+
+  const handlePrintPdf = () => {
+    const printWindow = window.open('', '_blank');
+    if (printWindow && pdfDataUrl) {
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Stampa Ordine - Tavolo ${table?.tableNumber}</title>
+            <style>
+              body { margin: 0; padding: 0; }
+              iframe { width: 100%; height: 100vh; border: 0; }
+            </style>
+          </head>
+          <body>
+            <iframe src="${pdfDataUrl}" onload="setTimeout(function() { window.print(); window.close(); }, 1000)"></iframe>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+    } else {
+      toast({
+        title: "Attenzione",
+        description: "Popup bloccati. Per favore, abilita i popup per questa pagina.",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (!user) {
     return null;
   }
@@ -456,7 +494,7 @@ const TableOrders = () => {
         </div>
         
         <div className="flex items-center gap-2">
-          {order && <PrintOrderButton order={order} table={table} />}
+          {order && <PrintOrderButton order={order} table={table} onPrintGenerated={handlePdfGenerated} />}
           
           {order && <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -595,6 +633,55 @@ const TableOrders = () => {
             </div>}
         </CardContent>
       </Card>
+
+      {pdfDataUrl && (
+        <div className="mt-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Anteprima scontrino</h2>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handlePrintPdf}
+                    className="flex items-center gap-1"
+                  >
+                    <Printer className="h-4 w-4" />
+                    Stampa
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleClosePdf}
+                    className="flex items-center"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              <div 
+                ref={pdfContainerRef} 
+                className="relative w-full border rounded overflow-hidden" 
+                style={{ height: '600px' }}
+              >
+                <object 
+                  data={pdfDataUrl} 
+                  type="application/pdf" 
+                  className="absolute inset-0 w-full h-full"
+                >
+                  <embed 
+                    src={pdfDataUrl} 
+                    type="application/pdf" 
+                    className="absolute inset-0 w-full h-full"
+                  />
+                </object>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {completedOrders.length > 0 && (
         <div className="mt-8">
