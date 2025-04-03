@@ -1,8 +1,9 @@
 
-import { DAYS_OF_WEEK } from "@/lib/constants";
-import { Shift, Employee } from "@/lib/types";
 import { ShiftItem } from "./ShiftItem";
+import { Button } from "@/components/ui/button";
 import { MobileCalendarNavigation } from "./MobileCalendarNavigation";
+import { Shift, Employee } from "@/lib/types";
+import { useNavigate } from "react-router-dom";
 
 interface MobileWeeklyCalendarProps {
   visibleDays: number[];
@@ -20,6 +21,7 @@ interface MobileWeeklyCalendarProps {
   shouldHighlightShift: (shift: Shift) => boolean;
   isAtMonthStart: boolean;
   isAtMonthEnd: boolean;
+  onSwitchToVertical?: () => void;
 }
 
 export function MobileWeeklyCalendar({
@@ -33,79 +35,80 @@ export function MobileWeeklyCalendar({
   getEmployeeById,
   shouldHighlightShift,
   isAtMonthStart,
-  isAtMonthEnd
+  isAtMonthEnd,
+  onSwitchToVertical
 }: MobileWeeklyCalendarProps) {
+  const navigate = useNavigate();
+  
   return (
-    <div className="bg-card rounded-lg shadow overflow-hidden border border-border divide-y divide-border">
+    <div className="animate-in fade-in-50 duration-300">
       <MobileCalendarNavigation 
         visibleDays={visibleDays}
         formattedDates={formattedDates}
         onLoadMoreDays={onLoadMoreDays}
         isAtMonthStart={isAtMonthStart}
         isAtMonthEnd={isAtMonthEnd}
+        onSwitchToVertical={onSwitchToVertical}
       />
       
-      {visibleDays.map(dayIndex => {
-        const day = DAYS_OF_WEEK[dayIndex];
-        const isWeekend = dayIndex > 4;
-        const shifts = shiftsByDay[dayIndex] || [];
-        const formattedDate = formattedDates[dayIndex];
-        const isToday = formattedDate.isToday;
-        
-        return (
-          <div key={day} className={`${isWeekend ? "bg-secondary/30 dark:bg-secondary/10" : ""}`}>
-            <div 
-              className={`px-4 py-3 flex justify-between items-center ${isToday ? "bg-primary/10" : ""}`} 
-              onClick={() => {
-                if (isAdmin()) {
-                  const date = new Date(formattedDates[dayIndex].date);
-                  onAddShift(date, dayIndex);
-                }
-              }}
-            >
-              <div className="flex items-center">
-                <div className={`font-semibold ${isToday ? "text-primary" : ""}`}>
-                  {day} {formattedDate.dayOfMonth}
+      <div className="divide-y divide-border">
+        {visibleDays.map(dayIndex => {
+          if (!formattedDates[dayIndex]) return null;
+          
+          const date = formattedDates[dayIndex].date;
+          const isToday = formattedDates[dayIndex].isToday;
+          const shifts = shiftsByDay[dayIndex] || [];
+          
+          return (
+            <div key={dayIndex} className={`py-3 px-4 ${isToday ? 'bg-primary/5' : ''}`}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center">
+                  <span className={`text-sm font-medium ${isToday ? 'text-primary' : ''}`}>
+                    {date.toLocaleDateString('it', { weekday: 'long' })}
+                  </span>
+                  <span className={`ml-2 text-sm ${isToday ? 'font-bold text-primary' : 'text-muted-foreground'}`}>
+                    {date.getDate()}
+                  </span>
                 </div>
+                
+                {isAdmin() && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-7 text-xs"
+                    onClick={() => onAddShift(date, dayIndex)}
+                  >
+                    + Turno
+                  </Button>
+                )}
               </div>
-              {isAdmin() && (
-                <button 
-                  className="text-xs bg-secondary hover:bg-secondary/80 dark:bg-secondary/40 dark:hover:bg-secondary/60 px-2 py-1 rounded text-foreground" 
-                  onClick={e => {
-                    e.stopPropagation();
-                    const date = new Date(formattedDates[dayIndex].date);
-                    onAddShift(date, dayIndex);
-                  }}
-                >
-                  + Turno
-                </button>
-              )}
-            </div>
-            
-            <div className="px-4 py-2 space-y-2">
-              {shifts.length === 0 ? (
-                <div className="text-sm text-muted-foreground py-2">Nessun turno</div>
+              
+              {shifts.length > 0 ? (
+                <div>
+                  {shifts.map(shift => {
+                    const employee = getEmployeeById(shift.employeeId);
+                    if (!employee) return null;
+                    
+                    return (
+                      <ShiftItem 
+                        key={shift.id}
+                        shift={shift} 
+                        employee={employee} 
+                        onClick={() => onEditShift(shift)}
+                        highlight={shouldHighlightShift(shift)}
+                      />
+                    );
+                  })}
+                </div>
               ) : (
-                shifts.map(shift => {
-                  const employee = getEmployeeById(shift.employeeId);
-                  if (!employee) return null;
-                  const isUserShift = shouldHighlightShift(shift);
-                  
-                  return (
-                    <ShiftItem 
-                      key={shift.id} 
-                      shift={shift}
-                      employee={employee}
-                      onClick={isAdmin() ? () => onEditShift(shift) : undefined}
-                      highlight={isUserShift}
-                    />
-                  );
-                })
+                <div className="text-sm text-muted-foreground py-2">
+                  Nessun turno pianificato
+                </div>
               )}
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }

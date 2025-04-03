@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { CalendarHeader } from "./CalendarHeader";
 import { formatDate, getWeekDates } from "@/lib/utils";
@@ -17,11 +16,13 @@ import { MobileWeeklyCalendar } from "./MobileWeeklyCalendar";
 interface WeeklyCalendarProps {
   onViewChange?: (isWeekView: boolean) => void;
   'data-component'?: string;
+  onSwitchToVertical?: () => void;
 }
 
 export function WeeklyCalendar({
   onViewChange,
-  'data-component': dataComponent
+  'data-component': dataComponent,
+  onSwitchToVertical
 }: WeeklyCalendarProps) {
   const { isAdmin, user, loading } = useAuth();
   const navigate = useNavigate();
@@ -63,7 +64,6 @@ export function WeeklyCalendar({
       }
       setVisibleDays(visibleIndices);
       
-      // Call updateMonthBoundaries with the initial visible days
       updateMonthBoundaries(visibleIndices);
     } else {
       setVisibleDays([0, 1, 2, 3, 4, 5, 6]);
@@ -181,7 +181,6 @@ export function WeeklyCalendar({
     }
   };
 
-  // Move the updateMonthBoundaries inside the component to have access to state and getFormattedDates
   const updateMonthBoundaries = (days: number[]) => {
     if (!days.length) return;
     
@@ -208,7 +207,6 @@ export function WeeklyCalendar({
       const formattedDates = getFormattedDates();
       
       if (direction === 'prev') {
-        // Load previous days
         const firstVisibleDay = visibleDays[0];
         let newVisibleDays = [...visibleDays];
         
@@ -218,21 +216,17 @@ export function WeeklyCalendar({
             const prevDate = new Date(formattedDates[prevDayIndex].date);
             const currentMonth = currentDate.getMonth();
             
-            // Only add the day if it's in the current month
             if (prevDate.getMonth() === currentMonth) {
               newVisibleDays = [prevDayIndex, ...newVisibleDays];
-              // Limit the total number of visible days
               if (newVisibleDays.length > 6) {
                 newVisibleDays = newVisibleDays.slice(0, 6);
               }
             } else if (prevDate.getMonth() !== currentMonth && !isAtMonthStart) {
-              // If we're trying to go to the previous month and not at month start,
-              // adjust the currentDate to the previous month
               const newDate = new Date(currentDate);
-              newDate.setDate(1); // Go to first day of current month
-              newDate.setDate(0); // Go to last day of previous month
+              newDate.setDate(1);
+              newDate.setDate(0);
               setCurrentDate(newDate);
-              return; // Exit early as we're changing months
+              return;
             }
           }
         }
@@ -240,7 +234,6 @@ export function WeeklyCalendar({
         setVisibleDays(newVisibleDays);
         updateMonthBoundaries(newVisibleDays);
       } else {
-        // Load next days
         const lastVisibleDay = visibleDays[visibleDays.length - 1];
         let newVisibleDays = [...visibleDays];
         
@@ -250,20 +243,16 @@ export function WeeklyCalendar({
             const nextDate = new Date(formattedDates[nextDayIndex].date);
             const currentMonth = currentDate.getMonth();
             
-            // Only add the day if it's in the current month
             if (nextDate.getMonth() === currentMonth) {
               newVisibleDays = [...newVisibleDays, nextDayIndex];
-              // Limit the total number of visible days
               if (newVisibleDays.length > 6) {
                 newVisibleDays = newVisibleDays.slice(newVisibleDays.length - 6);
               }
             } else if (nextDate.getMonth() !== currentMonth && !isAtMonthEnd) {
-              // If we're trying to go to the next month and not at month end,
-              // adjust the currentDate to the next month
               const newDate = new Date(currentDate);
-              newDate.setMonth(newDate.getMonth() + 1, 1); // Go to first day of next month
+              newDate.setMonth(newDate.getMonth() + 1, 1);
               setCurrentDate(newDate);
-              return; // Exit early as we're changing months
+              return;
             }
           }
         }
@@ -511,6 +500,7 @@ export function WeeklyCalendar({
               shouldHighlightShift={shouldHighlightShift}
               isAtMonthStart={isAtMonthStart}
               isAtMonthEnd={isAtMonthEnd}
+              onSwitchToVertical={onSwitchToVertical}
             />
           )}
         </>

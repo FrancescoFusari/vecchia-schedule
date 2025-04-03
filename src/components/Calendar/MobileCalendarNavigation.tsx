@@ -1,6 +1,7 @@
 
 import { useEffect, useRef } from "react";
-import { Calendar } from "lucide-react";
+import { Calendar, List } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface MobileCalendarNavigationProps {
   visibleDays: number[];
@@ -12,6 +13,7 @@ interface MobileCalendarNavigationProps {
   onLoadMoreDays: (direction: 'prev' | 'next') => void;
   isAtMonthStart: boolean;
   isAtMonthEnd: boolean;
+  onSwitchToVertical?: () => void;
 }
 
 export function MobileCalendarNavigation({
@@ -19,7 +21,8 @@ export function MobileCalendarNavigation({
   formattedDates,
   onLoadMoreDays,
   isAtMonthStart,
-  isAtMonthEnd
+  isAtMonthEnd,
+  onSwitchToVertical
 }: MobileCalendarNavigationProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -92,22 +95,36 @@ export function MobileCalendarNavigation({
       />
       
       <div className="w-full overflow-x-auto py-2 scrollbar-hide" ref={scrollRef}>
-        <div className="text-sm font-medium flex items-center gap-1">
-          <Calendar className="h-4 w-4 shrink-0 mr-1" />
-          <span className="text-muted-foreground mr-2 capitalize">{getCurrentMonth()}</span>
-          <div className="flex items-center min-w-max">
-            {visibleDays.map(dayIndex => {
-              if (!formattedDates[dayIndex]) return null;
-              return (
-                <span key={dayIndex} className={`${formattedDates[dayIndex].isToday ? 'text-primary font-bold bg-primary/10 px-1.5 py-0.5 rounded' : 'px-1'}`}>
-                  {formattedDates[dayIndex].dayOfMonth}
-                </span>
-              );
-            }).reduce((prev, curr, i) => {
-              if (!curr) return prev;
-              return [prev, <span key={`sep-${i}`} className="text-muted-foreground mx-0.5">-</span>, curr] as any;
-            })}
+        <div className="text-sm font-medium flex items-center gap-1 justify-between">
+          <div className="flex items-center">
+            <Calendar className="h-4 w-4 shrink-0 mr-1" />
+            <span className="text-muted-foreground mr-2 capitalize">{getCurrentMonth()}</span>
+            <div className="flex items-center min-w-max">
+              {visibleDays.map(dayIndex => {
+                if (!formattedDates[dayIndex]) return null;
+                return (
+                  <span key={dayIndex} className={`${formattedDates[dayIndex].isToday ? 'text-primary font-bold bg-primary/10 px-1.5 py-0.5 rounded' : 'px-1'}`}>
+                    {formattedDates[dayIndex].dayOfMonth}
+                  </span>
+                );
+              }).reduce((prev, curr, i) => {
+                if (!curr) return prev;
+                return [prev, <span key={`sep-${i}`} className="text-muted-foreground mx-0.5">-</span>, curr] as any;
+              })}
+            </div>
           </div>
+          
+          {onSwitchToVertical && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="ml-2 h-8 w-8" 
+              onClick={onSwitchToVertical}
+              title="Vista verticale"
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
       

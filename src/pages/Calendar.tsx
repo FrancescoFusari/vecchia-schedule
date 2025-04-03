@@ -1,9 +1,10 @@
 
 import { MonthlyCalendar } from "@/components/Calendar/MonthlyCalendar";
 import { WeeklyCalendar } from "@/components/Calendar/WeeklyCalendar";
+import { VerticalCalendar } from "@/components/Calendar/VerticalCalendar";
 import { useEffect, useState } from "react";
 import { Employee, ShiftTemplate } from "@/lib/types";
-import { employeeService, templateService } from "@/lib/supabase";
+import { employeeService, templateService, shiftService } from "@/lib/supabase";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Avatar } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -12,16 +13,28 @@ import { useAuth } from "@/hooks/useAuth";
 import { CalendarPlus, ChevronDown, ChevronRight, User } from "lucide-react";
 import { ShiftAssignmentModal } from "@/components/Shifts/ShiftAssignmentModal";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ShiftModal } from "@/components/Shifts/ShiftModal";
+import { toast } from "@/hooks/use-toast";
 
 const Calendar = () => {
   const isMobile = useIsMobile();
   const { isAdmin } = useAuth();
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [isWeekView, setIsWeekView] = useState(isMobile);
+  const [isWeekView, setIsWeekView] = useState(false);
+  const [isVerticalView, setIsVerticalView] = useState(isMobile);
   const [templates, setTemplates] = useState<ShiftTemplate[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState(false);
   const [isEmployeeListOpen, setIsEmployeeListOpen] = useState(!isMobile);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [isLoading, setIsLoading] = useState(true);
+  const [shifts, setShifts] = useState([]);
+  
+  // State for shift modal
+  const [selectedShift, setSelectedShift] = useState(null);
+  const [isAddingShift, setIsAddingShift] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [currentDayOfWeek, setCurrentDayOfWeek] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -47,14 +60,16 @@ const Calendar = () => {
   }, []);
 
   useEffect(() => {
-    setIsWeekView(isMobile);
+    setIsVerticalView(isMobile);
     if (isMobile) {
       setIsEmployeeListOpen(false);
+      setIsWeekView(false);
     }
   }, [isMobile]);
   
   const handleViewChange = (weekView: boolean) => {
     setIsWeekView(weekView);
+    setIsVerticalView(false);
   };
   
   const handleEmployeeClick = (employee: Employee) => {
@@ -66,7 +81,10 @@ const Calendar = () => {
   
   const handleAssignmentComplete = () => {
     setIsAssignmentModalOpen(false);
-    if (isWeekView) {
+    // Refresh the current view
+    if (isVerticalView) {
+      fetchShiftsForCurrentMonth();
+    } else if (isWeekView) {
       const weeklyCalendarElement = document.querySelector('[data-component="weekly-calendar"]');
       if (weeklyCalendarElement) {
         weeklyCalendarElement.classList.add('refresh-trigger');
@@ -83,6 +101,113 @@ const Calendar = () => {
         }, 100);
       }
     }
+  };
+  
+  // Function to fetch shifts for the vertical calendar
+  const fetchShiftsForCurrentMonth = async () => {
+    try {
+      setIsLoading(true);
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      
+      const startDate = firstDay.toISOString().split('T')[0];
+      const endDate = lastDay.toISOString().split('T')[0];
+      
+      const shiftsData = await shiftService.getShifts(startDate, endDate);
+      setShifts(shiftsData);
+    } catch (error) {
+      console.error("Error fetching shifts:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante il caricamento dei turni.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isVerticalView) {
+      fetchShiftsForCurrentMonth();
+    }
+  }, [isVerticalView, currentDate]);
+
+  // Handle shift modal for vertical calendar
+  const handleAddShift = (date: Date, dayOfWeek: number) => {
+    setSelectedDate(date);
+    setCurrentDayOfWeek(dayOfWeek);
+    setIsAddingShift(true);
+    setSelectedShift(null);
+  };
+
+  const handleEditShift = (shift) => {
+    setSelectedShift(shift);
+    setIsAddingShift(false);
+  };
+
+  const handleShiftModalClose = () => {
+    setSelectedShift(null);
+    setIsAddingShift(false);
+  };
+
+  const handleSaveShift = async (shift) => {
+    try {
+      if (selectedShift) {
+        const updatedShift = await shiftService.updateShift(shift);
+        setShifts(prev => prev.map(s => s.id === updatedShift.id ? updatedShift : s));
+        toast({
+          title: "Turno aggiornato",
+          description: "Il turno è stato aggiornato con successo."
+        });
+      } else {
+        const newShift = await shiftService.createShift(shift);
+        setShifts(prev => [...prev, newShift]);
+        toast({
+          title: "Turno aggiunto",
+          description: "Il nuovo turno è stato aggiunto con successo."
+        });
+      }
+      handleShiftModalClose();
+      if (isVerticalView) {
+        fetchShiftsForCurrentMonth();
+      }
+    } catch (error) {
+      console.error("Error saving shift:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante il salvataggio del turno.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteShift = async (shiftId) => {
+    try {
+      await shiftService.deleteShift(shiftId);
+      setShifts(prev => prev.filter(s => s.id !== shiftId));
+      toast({
+        title: "Turno eliminato",
+        description: "Il turno è stato eliminato con successo."
+      });
+      handleShiftModalClose();
+      if (isVerticalView) {
+        fetchShiftsForCurrentMonth();
+      }
+    } catch (error) {
+      console.error("Error deleting shift:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante l'eliminazione del turno.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDateChange = (date: Date) => {
+    setCurrentDate(date);
   };
   
   return (
@@ -149,7 +274,18 @@ const Calendar = () => {
       )}
       
       <div className="flex-grow">
-        {isWeekView ? (
+        {isVerticalView ? (
+          <VerticalCalendar 
+            shifts={shifts}
+            employees={employees}
+            templates={templates}
+            currentDate={currentDate}
+            onDateChange={handleDateChange}
+            isLoading={isLoading}
+            onAddShift={handleAddShift}
+            onEditShift={handleEditShift}
+          />
+        ) : isWeekView ? (
           <WeeklyCalendar onViewChange={handleViewChange} key="weekly" data-component="weekly-calendar" />
         ) : (
           <MonthlyCalendar onViewChange={handleViewChange} key="monthly" data-component="monthly-calendar" />
@@ -162,8 +298,21 @@ const Calendar = () => {
           onClose={() => setIsAssignmentModalOpen(false)}
           employee={selectedEmployee}
           templates={templates}
-          currentMonth={new Date()}
+          currentMonth={currentDate}
           onShiftsAdded={handleAssignmentComplete}
+        />
+      )}
+
+      {(isAddingShift || selectedShift) && (
+        <ShiftModal 
+          isOpen={isAddingShift || !!selectedShift} 
+          onClose={handleShiftModalClose} 
+          shift={selectedShift} 
+          date={selectedDate} 
+          dayOfWeek={currentDayOfWeek} 
+          employees={employees} 
+          onSave={handleSaveShift} 
+          onDelete={handleDeleteShift} 
         />
       )}
     </div>
