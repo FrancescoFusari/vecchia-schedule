@@ -8,9 +8,10 @@ interface ShiftItemProps {
   shift: Shift;
   employee: Employee;
   onClick?: () => void;
+  highlight?: boolean;
 }
 
-export function ShiftItem({ shift, employee, onClick }: ShiftItemProps) {
+export function ShiftItem({ shift, employee, onClick, highlight = false }: ShiftItemProps) {
   const { isAdmin } = useAuth();
   const duration = shift.duration;
   
@@ -20,9 +21,9 @@ export function ShiftItem({ shift, employee, onClick }: ShiftItemProps) {
   // Generate color styles based on employee color
   const bgColor = `bg-opacity-20 text-opacity-90 border border-opacity-20 dark:bg-opacity-25 dark:text-opacity-95 dark:border-opacity-30`;
   const customStyle = {
-    backgroundColor: `${employeeColor}20`, // 20% opacity
+    backgroundColor: highlight ? `${employeeColor}40` : `${employeeColor}20`, // 40% opacity when highlighted
     color: employeeColor,
-    borderColor: `${employeeColor}30`, // 30% opacity
+    borderColor: highlight ? `${employeeColor}70` : `${employeeColor}30`, // 70% opacity when highlighted
   };
   
   // Format times to show only hours
@@ -39,7 +40,8 @@ export function ShiftItem({ shift, employee, onClick }: ShiftItemProps) {
               className={cn(
                 "shift-item px-2 py-1 mb-1 rounded-md text-xs font-medium truncate",
                 bgColor,
-                "hover:cursor-pointer hover:brightness-95 transition-all"
+                "hover:cursor-pointer hover:brightness-95 transition-all",
+                highlight ? "ring-1 ring-primary/30" : ""
               )}
               style={customStyle}
             >
@@ -61,7 +63,8 @@ export function ShiftItem({ shift, employee, onClick }: ShiftItemProps) {
       className={cn(
         "shift-item px-2 py-1 mb-1 rounded-md text-xs font-medium truncate",
         bgColor,
-        "cursor-default"
+        "cursor-default",
+        highlight ? "ring-1 ring-primary/30" : ""
       )}
       style={customStyle}
     >

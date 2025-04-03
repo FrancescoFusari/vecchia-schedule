@@ -1,7 +1,7 @@
+
 import { useState, useEffect, useRef } from "react";
 import { CalendarHeader } from "./CalendarHeader";
-import { DAYS_OF_WEEK } from "@/lib/constants";
-import { formatDate, getWeekDates, formatMonthYear, formatTime } from "@/lib/utils";
+import { formatDate, getWeekDates } from "@/lib/utils";
 import { Shift, Employee } from "@/lib/types";
 import { useAuth } from "@/hooks/useAuth";
 import { employeeService, shiftService } from "@/lib/supabase";
@@ -10,8 +10,9 @@ import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { HoursSummary } from "../Reports/HoursSummary";
-import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp, BarChart } from "lucide-react";
+import { WeeklyCalendarHeader } from "./WeeklyCalendarHeader";
+import { DesktopWeeklyCalendar } from "./DesktopWeeklyCalendar";
+import { MobileWeeklyCalendar } from "./MobileWeeklyCalendar";
 
 interface WeeklyCalendarProps {
   onViewChange?: (isWeekView: boolean) => void;
@@ -22,11 +23,7 @@ export function WeeklyCalendar({
   onViewChange,
   'data-component': dataComponent
 }: WeeklyCalendarProps) {
-  const {
-    isAdmin,
-    user,
-    loading
-  } = useAuth();
+  const { isAdmin, user, loading } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -46,7 +43,31 @@ export function WeeklyCalendar({
     end: new Date()
   });
   const [expandedWeek, setExpandedWeek] = useState<boolean>(false);
+  const [visibleDays, setVisibleDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]);
+  const [currentUserEmployee, setCurrentUserEmployee] = useState<Employee | null>(null);
+  const [showOnlyUserShifts, setShowOnlyUserShifts] = useState(false);
   const calendarRef = useRef<HTMLDivElement>(null);
+
+  // Set initial visible days based on current day of week when on mobile
+  useEffect(() => {
+    if (isMobile) {
+      const today = new Date();
+      let currentDayIndex = today.getDay();
+      // Convert Sunday (0) to 6 to match our 0-based Monday-Sunday index
+      currentDayIndex = currentDayIndex === 0 ? 6 : currentDayIndex - 1;
+      
+      // Set visible days to include current day and the next 3 days
+      const visibleIndices = [];
+      for (let i = 0; i < 4; i++) {
+        const dayIndex = (currentDayIndex + i) % 7;
+        visibleIndices.push(dayIndex);
+      }
+      setVisibleDays(visibleIndices);
+    } else {
+      // On desktop, show all days
+      setVisibleDays([0, 1, 2, 3, 4, 5, 6]);
+    }
+  }, [isMobile]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -67,6 +88,13 @@ export function WeeklyCalendar({
         setHasError(false);
         const employeeData = await employeeService.getEmployees();
         setEmployees(employeeData);
+
+        // Find if the current user has an associated employee profile
+        if (user && user.id) {
+          const matchingEmployee = employeeData.find(emp => emp.userId === user.id);
+          setCurrentUserEmployee(matchingEmployee || null);
+        }
+
         const weekRange = getWeekDates(currentDate);
         setWeekDates(weekRange);
         const formattedStartDate = formatDate(weekRange.start);
@@ -138,6 +166,44 @@ export function WeeklyCalendar({
 
   const handleToday = () => {
     setCurrentDate(new Date());
+    if (isMobile) {
+      const today = new Date();
+      let currentDayIndex = today.getDay();
+      // Convert Sunday (0) to 6 to match our 0-based Monday-Sunday index
+      currentDayIndex = currentDayIndex === 0 ? 6 : currentDayIndex - 1;
+      
+      // Update visible days to start from current day
+      const visibleIndices = [];
+      for (let i = 0; i < 4; i++) {
+        const dayIndex = (currentDayIndex + i) % 7;
+        visibleIndices.push(dayIndex);
+      }
+      setVisibleDays(visibleIndices);
+    }
+  };
+
+  const handleNavPrevDay = () => {
+    if (isMobile) {
+      // Get the first visible day and calculate the previous day
+      const firstVisibleDay = visibleDays[0];
+      const prevDay = (firstVisibleDay - 1 + 7) % 7;
+      
+      // Create a new array by adding the previous day and removing the last day
+      const newVisibleDays = [prevDay, ...visibleDays.slice(0, 3)];
+      setVisibleDays(newVisibleDays);
+    }
+  };
+
+  const handleNavNextDay = () => {
+    if (isMobile) {
+      // Get the last visible day and calculate the next day
+      const lastVisibleDay = visibleDays[visibleDays.length - 1];
+      const nextDay = (lastVisibleDay + 1) % 7;
+      
+      // Create a new array by removing the first day and adding the next day
+      const newVisibleDays = [...visibleDays.slice(1), nextDay];
+      setVisibleDays(newVisibleDays);
+    }
   };
 
   const handleAddShift = (date: Date, dayOfWeek: number) => {
@@ -230,7 +296,12 @@ export function WeeklyCalendar({
         shiftsByDay[day][time] = [];
       });
     }
-    shifts.forEach(shift => {
+    
+    const filteredShifts = showOnlyUserShifts && currentUserEmployee 
+      ? shifts.filter(shift => shift.employeeId === currentUserEmployee.id)
+      : shifts;
+      
+    filteredShifts.forEach(shift => {
       const shiftDate = new Date(shift.date);
       let dayOfWeek = shiftDate.getDay();
       dayOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
@@ -246,7 +317,12 @@ export function WeeklyCalendar({
     for (let day = 0; day < 7; day++) {
       shiftsByDay[day] = [];
     }
-    shifts.forEach(shift => {
+    
+    const filteredShifts = showOnlyUserShifts && currentUserEmployee 
+      ? shifts.filter(shift => shift.employeeId === currentUserEmployee.id)
+      : shifts;
+      
+    filteredShifts.forEach(shift => {
       const shiftDate = new Date(shift.date);
       let dayOfWeek = shiftDate.getDay();
       dayOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
@@ -279,9 +355,19 @@ export function WeeklyCalendar({
     return dates;
   };
 
+  const toggleShowOnlyUserShifts = () => {
+    setShowOnlyUserShifts(!showOnlyUserShifts);
+  };
+
+  const shouldHighlightShift = (shift: Shift) => {
+    if (!currentUserEmployee) return false;
+    return shift.employeeId === currentUserEmployee.id;
+  };
+
   const formattedDates = getFormattedDates();
   const shiftsByDayAndTime = getShiftsByDayAndTime();
   const shiftsByDay = getShiftsByDay();
+  const uniqueShiftTimes = getUniqueShiftTimes();
 
   if (loading) {
     return <div className="flex justify-center py-12">
@@ -293,145 +379,86 @@ export function WeeklyCalendar({
     return null;
   }
 
-  return <div className="space-y-6 animate-fade-in" ref={calendarRef} data-component={dataComponent}>
-      <CalendarHeader date={currentDate} onPrevMonth={handlePrevWeek} onNextMonth={handleNextWeek} onToday={handleToday} isWeekView={true} onViewChange={handleViewToggle} />
+  return (
+    <div className="space-y-6 animate-fade-in" ref={calendarRef} data-component={dataComponent}>
+      <CalendarHeader 
+        date={currentDate} 
+        onPrevMonth={handlePrevWeek} 
+        onNextMonth={handleNextWeek} 
+        onToday={handleToday} 
+        isWeekView={true} 
+        onViewChange={handleViewToggle} 
+      />
       
-      {isAdmin()}
+      <WeeklyCalendarHeader 
+        isAdmin={isAdmin}
+        currentUserEmployee={currentUserEmployee}
+        expandedWeek={expandedWeek}
+        showOnlyUserShifts={showOnlyUserShifts}
+        onToggleExpandWeek={toggleExpandedWeek}
+        onToggleUserShifts={toggleShowOnlyUserShifts}
+      />
       
-      {isAdmin() && <div className="flex justify-start">
-          <Button onClick={toggleExpandedWeek} variant="outline" size="sm" className="gap-1 bg-primary/5 border-primary/20 hover:bg-primary/10">
-            <BarChart className="h-4 w-4" />
-            Riepilogo Ore Settimanali
-            {expandedWeek ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </Button>
-        </div>}
-      
-      {expandedWeek && <div className="animate-in slide-in-from-top-5 duration-300">
+      {expandedWeek && (
+        <div className="animate-in slide-in-from-top-5 duration-300">
           <HoursSummary shifts={shifts} employees={employees} currentDate={currentDate} />
-        </div>}
+        </div>
+      )}
       
-      {hasError && <div className="bg-destructive/10 border border-destructive/20 p-3 rounded-md text-destructive-foreground text-sm">
+      {hasError && (
+        <div className="bg-destructive/10 border border-destructive/20 p-3 rounded-md text-destructive-foreground text-sm">
           Si è verificato un errore durante il caricamento dei dati. Prova ad aggiornare la pagina.
-        </div>}
+        </div>
+      )}
       
-      {isLoading ? <div className="flex justify-center py-12">
+      {isLoading ? (
+        <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        </div> : <>
-          {!isMobile && <div className="bg-card rounded-lg shadow overflow-hidden border border-border">
-              <div className="grid grid-cols-8 border-b border-border">
-                <div className="py-2 text-center font-semibold text-sm border-r border-border">
-                  Orario
-                </div>
-                {DAYS_OF_WEEK.map((day, index) => <div key={day} className="relative py-2 text-center font-semibold text-sm border-r last:border-r-0 border-border">
-                    <div>{day}</div>
-                    <div className={`mt-1 text-xs ${formattedDates[index].isToday ? "text-primary font-bold" : "text-muted-foreground"}`}>
-                      {formattedDates[index].dayOfMonth}
-                    </div>
-                    {formattedDates[index].isToday && <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary"></div>}
-                  </div>)}
-              </div>
-              
-              <div className="divide-y divide-border">
-                {getUniqueShiftTimes().length === 0 ? <div className="text-center py-8 text-muted-foreground">
-                    Nessun turno pianificato per questa settimana.
-                  </div> : getUniqueShiftTimes().map(time => <div key={time} className="grid grid-cols-8">
-                      <div className="p-2 text-xs font-medium text-card-foreground bg-secondary border-r border-border flex items-center justify-center">
-                        {formatTime(time)}
-                      </div>
-                      
-                      {Array.from({
-              length: 7
-            }).map((_, dayIndex) => {
-              const isWeekend = dayIndex > 4;
-              const shifts = shiftsByDayAndTime[dayIndex][time] || [];
-              return <div key={dayIndex} className={`p-2 border-r last:border-r-0 border-border ${isWeekend ? "bg-secondary/30 dark:bg-secondary/10" : ""} min-h-[60px]`} onClick={() => {
-                if (isAdmin()) {
-                  const date = new Date(formattedDates[dayIndex].date);
-                  handleAddShift(date, dayIndex);
-                }
-              }}>
-                            <div className="space-y-1">
-                              {shifts.map(shift => {
-                    const employee = getEmployeeById(shift.employeeId);
-                    if (!employee) return null;
-                    const employeeColor = employee.color || "#9CA3AF";
-                    const customStyle = {
-                      backgroundColor: `${employeeColor}20`,
-                      color: employeeColor,
-                      borderColor: `${employeeColor}30`
-                    };
-                    return <div key={shift.id} className="px-2 py-1 rounded-md text-xs font-medium truncate border cursor-pointer" style={customStyle} onClick={e => {
-                      e.stopPropagation();
-                      if (isAdmin()) {
-                        handleEditShift(shift);
-                      }
-                    }}>
-                                    {employee.firstName} {employee.lastName.charAt(0)} {formatTime(shift.startTime)}-{formatTime(shift.endTime)}
-                                  </div>;
-                  })}
-                            </div>
-                          </div>;
-            })}
-                    </div>)}
-              </div>
-            </div>}
+        </div>
+      ) : (
+        <>
+          {!isMobile && (
+            <DesktopWeeklyCalendar 
+              formattedDates={formattedDates}
+              uniqueShiftTimes={uniqueShiftTimes}
+              shiftsByDayAndTime={shiftsByDayAndTime}
+              isAdmin={isAdmin}
+              onAddShift={handleAddShift}
+              onEditShift={handleEditShift}
+              getEmployeeById={getEmployeeById}
+              shouldHighlightShift={shouldHighlightShift}
+            />
+          )}
           
-          {isMobile && <div className="bg-card rounded-lg shadow overflow-hidden border border-border divide-y divide-border">
-              {DAYS_OF_WEEK.map((day, dayIndex) => {
-          const isWeekend = dayIndex > 4;
-          const shifts = shiftsByDay[dayIndex] || [];
-          const formattedDate = formattedDates[dayIndex];
-          const isToday = formattedDate.isToday;
-          return <div key={day} className={`${isWeekend ? "bg-secondary/30 dark:bg-secondary/10" : ""}`}>
-                    <div className={`px-4 py-3 flex justify-between items-center ${isToday ? "bg-primary/10" : ""}`} onClick={() => {
-              if (isAdmin()) {
-                const date = new Date(formattedDates[dayIndex].date);
-                handleAddShift(date, dayIndex);
-              }
-            }}>
-                      <div className="flex items-center">
-                        <div className={`font-semibold ${isToday ? "text-primary" : ""}`}>
-                          {day} {formattedDate.dayOfMonth}
-                        </div>
-                      </div>
-                      {isAdmin() && <button className="text-xs bg-secondary hover:bg-secondary/80 dark:bg-secondary/40 dark:hover:bg-secondary/60 px-2 py-1 rounded text-foreground" onClick={e => {
-                e.stopPropagation();
-                const date = new Date(formattedDates[dayIndex].date);
-                handleAddShift(date, dayIndex);
-              }}>
-                          + Turno
-                        </button>}
-                    </div>
-                    
-                    <div className="px-4 py-2 space-y-2">
-                      {shifts.length === 0 ? <div className="text-sm text-muted-foreground py-2">Nessun turno</div> : shifts.map(shift => {
-                const employee = getEmployeeById(shift.employeeId);
-                if (!employee) return null;
-                const employeeColor = employee.color || "#9CA3AF";
-                const customStyle = {
-                  backgroundColor: `${employeeColor}20`,
-                  color: employeeColor,
-                  borderColor: `${employeeColor}30`
-                };
-                return <div key={shift.id} className="px-3 py-2 rounded-md text-sm font-medium border flex justify-between" style={customStyle} onClick={() => {
-                  if (isAdmin()) {
-                    handleEditShift(shift);
-                  }
-                }}>
-                              <span>
-                                {employee.firstName} {employee.lastName.charAt(0)}
-                              </span>
-                              <span className="font-semibold">
-                                {formatTime(shift.startTime)}-{formatTime(shift.endTime)}
-                              </span>
-                            </div>;
-              })}
-                    </div>
-                  </div>;
-        })}
-            </div>}
-        </>}
+          {isMobile && (
+            <MobileWeeklyCalendar 
+              visibleDays={visibleDays}
+              formattedDates={formattedDates}
+              shiftsByDay={shiftsByDay}
+              onAddShift={handleAddShift}
+              onEditShift={handleEditShift}
+              onPrevDays={handleNavPrevDay}
+              onNextDays={handleNavNextDay}
+              isAdmin={isAdmin}
+              getEmployeeById={getEmployeeById}
+              shouldHighlightShift={shouldHighlightShift}
+            />
+          )}
+        </>
+      )}
       
-      {(isAddingShift || selectedShift) && <ShiftModal isOpen={isAddingShift || !!selectedShift} onClose={handleShiftModalClose} shift={selectedShift} date={selectedDate} dayOfWeek={currentDayOfWeek} employees={employees} onSave={handleSaveShift} onDelete={handleDeleteShift} />}
-    </div>;
+      {(isAddingShift || selectedShift) && (
+        <ShiftModal 
+          isOpen={isAddingShift || !!selectedShift} 
+          onClose={handleShiftModalClose} 
+          shift={selectedShift} 
+          date={selectedDate} 
+          dayOfWeek={currentDayOfWeek} 
+          employees={employees} 
+          onSave={handleSaveShift} 
+          onDelete={handleDeleteShift} 
+        />
+      )}
+    </div>
+  );
 }
