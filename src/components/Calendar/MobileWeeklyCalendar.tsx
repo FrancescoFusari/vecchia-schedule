@@ -14,11 +14,12 @@ interface MobileWeeklyCalendarProps {
   shiftsByDay: Record<number, Shift[]>;
   onAddShift: (date: Date, dayOfWeek: number) => void;
   onEditShift: (shift: Shift) => void;
-  onPrevDays: () => void;
-  onNextDays: () => void;
+  onLoadMoreDays: (direction: 'prev' | 'next') => void;
   isAdmin: () => boolean;
   getEmployeeById: (id: string) => Employee | undefined;
   shouldHighlightShift: (shift: Shift) => boolean;
+  isAtMonthStart: boolean;
+  isAtMonthEnd: boolean;
 }
 
 export function MobileWeeklyCalendar({
@@ -27,19 +28,21 @@ export function MobileWeeklyCalendar({
   shiftsByDay,
   onAddShift,
   onEditShift,
-  onPrevDays,
-  onNextDays,
+  onLoadMoreDays,
   isAdmin,
   getEmployeeById,
-  shouldHighlightShift
+  shouldHighlightShift,
+  isAtMonthStart,
+  isAtMonthEnd
 }: MobileWeeklyCalendarProps) {
   return (
     <div className="bg-card rounded-lg shadow overflow-hidden border border-border divide-y divide-border">
       <MobileCalendarNavigation 
         visibleDays={visibleDays}
         formattedDates={formattedDates}
-        onPrevDays={onPrevDays}
-        onNextDays={onNextDays}
+        onLoadMoreDays={onLoadMoreDays}
+        isAtMonthStart={isAtMonthStart}
+        isAtMonthEnd={isAtMonthEnd}
       />
       
       {visibleDays.map(dayIndex => {

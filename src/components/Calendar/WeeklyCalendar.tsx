@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { CalendarHeader } from "./CalendarHeader";
 import { formatDate, getWeekDates } from "@/lib/utils";
@@ -46,25 +45,25 @@ export function WeeklyCalendar({
   const [visibleDays, setVisibleDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]);
   const [currentUserEmployee, setCurrentUserEmployee] = useState<Employee | null>(null);
   const [showOnlyUserShifts, setShowOnlyUserShifts] = useState(false);
+  const [isAtMonthStart, setIsAtMonthStart] = useState<boolean>(false);
+  const [isAtMonthEnd, setIsAtMonthEnd] = useState<boolean>(false);
   const calendarRef = useRef<HTMLDivElement>(null);
 
-  // Set initial visible days based on current day of week when on mobile
   useEffect(() => {
     if (isMobile) {
       const today = new Date();
       let currentDayIndex = today.getDay();
-      // Convert Sunday (0) to 6 to match our 0-based Monday-Sunday index
       currentDayIndex = currentDayIndex === 0 ? 6 : currentDayIndex - 1;
       
-      // Set visible days to include current day and the next 3 days
       const visibleIndices = [];
       for (let i = 0; i < 4; i++) {
         const dayIndex = (currentDayIndex + i) % 7;
         visibleIndices.push(dayIndex);
       }
       setVisibleDays(visibleIndices);
+      
+      updateMonthBoundaries(visibleIndices);
     } else {
-      // On desktop, show all days
       setVisibleDays([0, 1, 2, 3, 4, 5, 6]);
     }
   }, [isMobile]);
@@ -89,7 +88,6 @@ export function WeeklyCalendar({
         const employeeData = await employeeService.getEmployees();
         setEmployees(employeeData);
 
-        // Find if the current user has an associated employee profile
         if (user && user.id) {
           const matchingEmployee = employeeData.find(emp => emp.userId === user.id);
           setCurrentUserEmployee(matchingEmployee || null);
@@ -169,10 +167,8 @@ export function WeeklyCalendar({
     if (isMobile) {
       const today = new Date();
       let currentDayIndex = today.getDay();
-      // Convert Sunday (0) to 6 to match our 0-based Monday-Sunday index
       currentDayIndex = currentDayIndex === 0 ? 6 : currentDayIndex - 1;
       
-      // Update visible days to start from current day
       const visibleIndices = [];
       for (let i = 0; i < 4; i++) {
         const dayIndex = (currentDayIndex + i) % 7;
@@ -182,27 +178,51 @@ export function WeeklyCalendar({
     }
   };
 
-  const handleNavPrevDay = () => {
+  const handleLoadMoreDays = (direction: 'prev' | 'next') => {
     if (isMobile) {
-      // Get the first visible day and calculate the previous day
-      const firstVisibleDay = visibleDays[0];
-      const prevDay = (firstVisibleDay - 1 + 7) % 7;
-      
-      // Create a new array by adding the previous day and removing the last day
-      const newVisibleDays = [prevDay, ...visibleDays.slice(0, 3)];
-      setVisibleDays(newVisibleDays);
-    }
-  };
-
-  const handleNavNextDay = () => {
-    if (isMobile) {
-      // Get the last visible day and calculate the next day
-      const lastVisibleDay = visibleDays[visibleDays.length - 1];
-      const nextDay = (lastVisibleDay + 1) % 7;
-      
-      // Create a new array by removing the first day and adding the next day
-      const newVisibleDays = [...visibleDays.slice(1), nextDay];
-      setVisibleDays(newVisibleDays);
+      if (direction === 'prev') {
+        const firstVisibleDay = visibleDays[0];
+        let newVisibleDays = [...visibleDays];
+        
+        for (let i = 1; i <= 2; i++) {
+          const prevDayIndex = (firstVisibleDay - i + 7) % 7;
+          if (!newVisibleDays.includes(prevDayIndex)) {
+            const prevDate = new Date(formattedDates[prevDayIndex].date);
+            const currentMonth = currentDate.getMonth();
+            
+            if (prevDate.getMonth() === currentMonth) {
+              newVisibleDays = [prevDayIndex, ...newVisibleDays];
+              if (newVisibleDays.length > 6) {
+                newVisibleDays = newVisibleDays.slice(0, 6);
+              }
+            }
+          }
+        }
+        
+        setVisibleDays(newVisibleDays);
+        updateMonthBoundaries(newVisibleDays);
+      } else {
+        const lastVisibleDay = visibleDays[visibleDays.length - 1];
+        let newVisibleDays = [...visibleDays];
+        
+        for (let i = 1; i <= 2; i++) {
+          const nextDayIndex = (lastVisibleDay + i) % 7;
+          if (!newVisibleDays.includes(nextDayIndex)) {
+            const nextDate = new Date(formattedDates[nextDayIndex].date);
+            const currentMonth = currentDate.getMonth();
+            
+            if (nextDate.getMonth() === currentMonth) {
+              newVisibleDays = [...newVisibleDays, nextDayIndex];
+              if (newVisibleDays.length > 6) {
+                newVisibleDays = newVisibleDays.slice(newVisibleDays.length - 6);
+              }
+            }
+          }
+        }
+        
+        setVisibleDays(newVisibleDays);
+        updateMonthBoundaries(newVisibleDays);
+      }
     }
   };
 
@@ -437,11 +457,12 @@ export function WeeklyCalendar({
               shiftsByDay={shiftsByDay}
               onAddShift={handleAddShift}
               onEditShift={handleEditShift}
-              onPrevDays={handleNavPrevDay}
-              onNextDays={handleNavNextDay}
+              onLoadMoreDays={handleLoadMoreDays}
               isAdmin={isAdmin}
               getEmployeeById={getEmployeeById}
               shouldHighlightShift={shouldHighlightShift}
+              isAtMonthStart={isAtMonthStart}
+              isAtMonthEnd={isAtMonthEnd}
             />
           )}
         </>
@@ -462,3 +483,18 @@ export function WeeklyCalendar({
     </div>
   );
 }
+
+const updateMonthBoundaries = (days: number[]) => {
+  if (!days.length) return;
+  
+  const firstVisibleDay = days[0];
+  const lastVisibleDay = days[days.length - 1];
+  
+  const firstDate = new Date(formattedDates[firstVisibleDay]?.date);
+  const lastDate = new Date(formattedDates[lastVisibleDay]?.date);
+  
+  setIsAtMonthStart(firstDate.getDate() <= 3);
+  
+  const lastDayOfMonth = new Date(firstDate.getFullYear(), firstDate.getMonth() + 1, 0).getDate();
+  setIsAtMonthEnd(lastDate.getDate() >= lastDayOfMonth - 2);
+};
