@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -425,9 +424,9 @@ const TableOrders = () => {
     }, 0);
   };
 
-  const handlePdfGenerated = (dataUrl: string) => {
-    console.log("PDF URL received in parent component:", dataUrl.substring(0, 50) + "...");
-    setPdfDataUrl(dataUrl);
+  const handlePdfGenerated = (htmlContent: string) => {
+    console.log("HTML receipt received in parent component");
+    setPdfDataUrl(htmlContent);
   };
 
   const handleClosePdf = () => {
@@ -438,8 +437,8 @@ const TableOrders = () => {
     if (!pdfDataUrl) return;
     
     try {
-      // Open the PDF in a new window
-      const printWindow = window.open();
+      // Create a new window for printing
+      const printWindow = window.open('', '_blank');
       if (!printWindow) {
         toast({
           title: "Attenzione",
@@ -449,23 +448,17 @@ const TableOrders = () => {
         return;
       }
       
-      // Set up the print window HTML content with the embedded PDF
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>Stampa Ordine - Tavolo ${table?.tableNumber}</title>
-            <style>
-              body { margin: 0; padding: 0; }
-              iframe { width: 100%; height: 100vh; border: 0; }
-            </style>
-          </head>
-          <body>
-            <iframe src="${pdfDataUrl}" onload="setTimeout(function() { window.print(); }, 500)"></iframe>
-          </body>
-        </html>
-      `);
+      // Write the HTML content directly to the new window
+      printWindow.document.write(pdfDataUrl);
+      
+      // Add print functionality
       printWindow.document.close();
+      printWindow.focus();
+      
+      // Slight delay to ensure content is loaded
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
     } catch (error) {
       console.error("Error opening print window:", error);
       toast({
@@ -679,14 +672,14 @@ const TableOrders = () => {
               
               <div 
                 ref={pdfContainerRef} 
-                className="relative w-full border rounded overflow-hidden flex justify-center bg-white" 
+                className="relative w-full border rounded overflow-hidden bg-white" 
                 style={{ height: '600px' }}
               >
-                <embed 
-                  src={pdfDataUrl} 
-                  type="application/pdf"
+                <iframe 
+                  srcDoc={pdfDataUrl} 
                   className="w-full h-full"
-                  style={{ display: 'block' }}
+                  style={{ border: 'none' }}
+                  title="Receipt Preview"
                 />
               </div>
             </CardContent>

@@ -10,7 +10,7 @@ interface PrintOrderButtonProps {
   order: OrderWithItems;
   table: RestaurantTable;
   disabled?: boolean;
-  onPrintGenerated?: (pdfDataUrl: string) => void;
+  onPrintGenerated?: (htmlContent: string) => void;
 }
 
 export function PrintOrderButton({ 
@@ -26,16 +26,13 @@ export function PrintOrderButton({
       setIsPrinting(true);
       console.log("Starting print process for order:", order.id);
       
-      // Generate PDF directly using the PrintService
-      const doc = PrintService.generateOrderPDF(order, table);
+      // Generate HTML receipt
+      const htmlContent = PrintService.generateOrderReceiptHTML(order, table);
+      console.log("HTML receipt generated successfully");
       
-      // Convert to data URL for embedded viewing
-      const dataUrl = doc.output('dataurlstring');
-      console.log("PDF generated successfully, data URL length:", dataUrl.length);
-      
-      // Send the data URL to the parent component
+      // Send the HTML content to the parent component
       if (onPrintGenerated) {
-        onPrintGenerated(dataUrl);
+        onPrintGenerated(htmlContent);
       }
       
       toast({

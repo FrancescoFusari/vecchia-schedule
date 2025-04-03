@@ -1,55 +1,9 @@
 
-import jsPDF from 'jspdf';
 import { OrderWithItems, RestaurantTable } from './types';
 
-// Configure for thermal printer with 80mm width (standard for Epson TM-T20III)
-const THERMAL_WIDTH = 80; // 80mm width
-const THERMAL_MARGIN = 3; // margin in mm
-const LINE_HEIGHT = 5; // line height in mm
-const TEXT_SIZE_HEADER = 10; // header text size
-const TEXT_SIZE_NORMAL = 8; // normal text size
-const TEXT_SIZE_SMALL = 7; // small text size
-
 export class PrintService {
-  static generateOrderPDF(order: OrderWithItems, table: RestaurantTable): jsPDF {
-    // Create a PDF document with improved settings for compatibility
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: [THERMAL_WIDTH, 297],  // Start with standard height, will trim later
-      hotfixes: ["px_scaling"], // Fix text rendering issues
-      compress: false, // Disable compression for better compatibility
-      putOnlyUsedFonts: true // Better font handling
-    });
-    
-    // Force white background
-    doc.setFillColor(255, 255, 255);
-    doc.rect(0, 0, THERMAL_WIDTH, 297, 'F');
-    
-    // Set initial y position
-    let y = THERMAL_MARGIN;
-    
+  static generateOrderReceiptHTML(order: OrderWithItems, table: RestaurantTable): string {
     try {
-      // Add restaurant name as header with forced values for better compatibility
-      doc.setFontSize(TEXT_SIZE_HEADER);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(0, 0, 0); // Force black text color
-      
-      // Center the header
-      const restaurantName = 'LA VECCHIA SIGNORA';
-      const textWidth = doc.getTextWidth(restaurantName);
-      const centerX = Math.max(1, (THERMAL_WIDTH - textWidth) / 2); // Prevent negative values
-      doc.text(restaurantName, centerX, y);
-      y += LINE_HEIGHT * 1.5;
-      
-      // Add order information
-      doc.setFontSize(TEXT_SIZE_NORMAL);
-      doc.setFont('helvetica', 'normal');
-      
-      // Table number
-      doc.text(`Tavolo: ${table.tableNumber}`, THERMAL_MARGIN, y);
-      y += LINE_HEIGHT;
-      
       // Format date and time
       const orderDate = new Date(order.createdAt);
       const dateString = orderDate.toLocaleDateString('it-IT');
@@ -58,237 +12,257 @@ export class PrintService {
         minute: '2-digit' 
       });
       
-      doc.text(`Data: ${dateString} ${timeString}`, THERMAL_MARGIN, y);
-      y += LINE_HEIGHT * 1.2;
+      // Calculate total
+      let totalAmount = 0;
+      order.items.forEach(item => {
+        totalAmount += item.quantity * item.menuItem.price;
+      });
       
-      // Add dashed separator line
-      this.drawDashedLine(doc, THERMAL_MARGIN, y, THERMAL_WIDTH - THERMAL_MARGIN, y);
-      y += LINE_HEIGHT * 0.8;
-      
-      // Add items header
-      doc.setFont('helvetica', 'bold');
-      doc.text('Qt', THERMAL_MARGIN, y);
-      doc.text('Prodotto', THERMAL_MARGIN + 8, y);
-      doc.text('Prezzo', THERMAL_WIDTH - THERMAL_MARGIN - 15, y);
-      y += LINE_HEIGHT * 0.8;
-      
-      // Add separator
-      this.drawDashedLine(doc, THERMAL_MARGIN, y, THERMAL_WIDTH - THERMAL_MARGIN, y);
-      y += LINE_HEIGHT * 0.8;
-      
-      // Add items
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(TEXT_SIZE_NORMAL);
-      
-      let firstCoursePrinted = false;
-      let secondCoursePrinted = false;
-      
-      // Track if we need to show section headers
+      // Check for course separation
       const hasFirstCourse = order.items.some(item => !item.isLastFirstCourse);
       const hasSecondCourse = order.items.some(item => item.isLastFirstCourse) || 
                              order.items.findIndex(item => item.isLastFirstCourse) < order.items.length - 1;
       
-      let totalAmount = 0;
+      // Start building HTML
+      let html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Ordine Tavolo ${table.tableNumber}</title>
+          <style>
+            body {
+              font-family: 'Helvetica', 'Arial', sans-serif;
+              margin: 0;
+              padding: 0;
+              background-color: white;
+              width: 80mm;
+              margin: 0 auto;
+            }
+            .receipt {
+              padding: 5mm;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 5mm;
+            }
+            .header h1 {
+              font-size: 14pt;
+              margin: 0;
+              padding: 0;
+            }
+            .info {
+              margin-bottom: 5mm;
+              font-size: 10pt;
+            }
+            .divider {
+              border-top: 1px dashed #000;
+              margin: 3mm 0;
+            }
+            .item-header, .item {
+              display: flex;
+              justify-content: space-between;
+              font-size: 10pt;
+              margin-bottom: 2mm;
+            }
+            .item-header {
+              font-weight: bold;
+            }
+            .qty {
+              width: 10mm;
+            }
+            .name {
+              flex: 1;
+              padding-left: 2mm;
+            }
+            .price {
+              width: 20mm;
+              text-align: right;
+            }
+            .notes {
+              font-size: 8pt;
+              font-style: italic;
+              margin-left: 12mm;
+              margin-bottom: 2mm;
+            }
+            .section-title {
+              font-weight: bold;
+              margin: 3mm 0;
+            }
+            .total {
+              display: flex;
+              justify-content: space-between;
+              font-weight: bold;
+              margin-top: 5mm;
+              font-size: 12pt;
+            }
+            .footer {
+              text-align: center;
+              margin-top: 8mm;
+              font-size: 9pt;
+            }
+            .cut-line {
+              text-align: center;
+              margin-top: 10mm;
+              border-top: 1px dashed #000;
+              position: relative;
+            }
+            .cut-line:before {
+              content: "✂";
+              position: absolute;
+              left: -4mm;
+              top: -3mm;
+              font-size: 8pt;
+            }
+            @media print {
+              body {
+                width: 80mm;
+                margin: 0;
+              }
+              .receipt {
+                padding: 0;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="receipt">
+            <div class="header">
+              <h1>LA VECCHIA SIGNORA</h1>
+            </div>
+            
+            <div class="info">
+              <div>Tavolo: ${table.tableNumber}</div>
+              <div>Data: ${dateString} ${timeString}</div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="item-header">
+              <div class="qty">Qt</div>
+              <div class="name">Prodotto</div>
+              <div class="price">Prezzo</div>
+            </div>
+            
+            <div class="divider"></div>
+      `;
       
-      // Handle case with no items
+      // Check if we have any items
       if (!order.items || order.items.length === 0) {
-        doc.text("Nessun prodotto nell'ordine", THERMAL_MARGIN, y);
-        y += LINE_HEIGHT;
+        html += `<div class="item"><div colspan="3">Nessun prodotto nell'ordine</div></div>`;
       } else {
-        // Process each order item
+        // Process first course if we have course separation
+        let firstCoursePrinted = false;
+        let secondCoursePrinted = false;
+        
+        // Add items
         for (let i = 0; i < order.items.length; i++) {
           const item = order.items[i];
-          
-          // Prevent errors if menuItem is undefined
-          if (!item.menuItem) {
-            console.error("Missing menuItem for item:", item);
-            continue;
-          }
-          
           const prevItem = i > 0 ? order.items[i - 1] : null;
           
           // Check if we need to print course headers
           if (hasFirstCourse && hasSecondCourse) {
             if (!firstCoursePrinted) {
-              doc.setFont('helvetica', 'bold');
-              doc.text('PRIMI', THERMAL_MARGIN, y);
-              y += LINE_HEIGHT * 0.8;
-              doc.setFont('helvetica', 'normal');
+              html += `<div class="section-title">PRIMI</div>`;
               firstCoursePrinted = true;
             }
             
             if (!secondCoursePrinted && prevItem && prevItem.isLastFirstCourse) {
-              // Add separator
-              this.drawDashedLine(doc, THERMAL_MARGIN, y, THERMAL_WIDTH - THERMAL_MARGIN, y);
-              y += LINE_HEIGHT * 0.8;
-              
-              doc.setFont('helvetica', 'bold');
-              doc.text('SECONDI', THERMAL_MARGIN, y);
-              y += LINE_HEIGHT * 0.8;
-              doc.setFont('helvetica', 'normal');
+              html += `<div class="divider"></div>
+                       <div class="section-title">SECONDI</div>`;
               secondCoursePrinted = true;
             }
           }
           
           // Calculate item total price
           const itemTotal = item.quantity * item.menuItem.price;
-          totalAmount += itemTotal;
-          
-          // Format price
           const formattedPrice = `€${itemTotal.toFixed(2)}`;
           
-          // Item quantity
-          doc.text(`${item.quantity}x`, THERMAL_MARGIN, y);
-          
-          // Item name
-          const itemName = item.menuItem.name;
-          const priceX = THERMAL_WIDTH - THERMAL_MARGIN - doc.getTextWidth(formattedPrice);
-          
-          // Check if item name is too long
-          if (doc.getTextWidth(itemName) > priceX - THERMAL_MARGIN - 10) {
-            // Split the item name into multiple lines if needed
-            const maxWidth = priceX - THERMAL_MARGIN - 10;
-            const words = itemName.split(' ');
-            let line = '';
-            
-            for (let j = 0; j < words.length; j++) {
-              const testLine = line + (line ? ' ' : '') + words[j];
-              if (doc.getTextWidth(testLine) > maxWidth && j > 0) {
-                doc.text(line, THERMAL_MARGIN + 8, y);
-                y += LINE_HEIGHT * 0.7;
-                line = words[j];
-              } else {
-                line = testLine;
-              }
-            }
-            
-            if (line) {
-              doc.text(line, THERMAL_MARGIN + 8, y);
-            }
-          } else {
-            doc.text(itemName, THERMAL_MARGIN + 8, y);
-          }
-          
-          // Price
-          doc.text(formattedPrice, priceX, y);
+          // Add item
+          html += `
+            <div class="item">
+              <div class="qty">${item.quantity}x</div>
+              <div class="name">${item.menuItem.name}</div>
+              <div class="price">${formattedPrice}</div>
+            </div>
+          `;
           
           // Add notes if present
           if (item.notes) {
-            y += LINE_HEIGHT * 0.7;
-            doc.setFontSize(TEXT_SIZE_SMALL);
-            doc.text(`Note: ${item.notes}`, THERMAL_MARGIN + 8, y);
-            doc.setFontSize(TEXT_SIZE_NORMAL);
+            html += `<div class="notes">Note: ${item.notes}</div>`;
           }
-          
-          y += LINE_HEIGHT * 0.9;
         }
       }
       
       // Add water and bread
       if (order.stillWater > 0 || order.sparklingWater > 0 || order.bread > 0) {
-        // Add separator
-        this.drawDashedLine(doc, THERMAL_MARGIN, y, THERMAL_WIDTH - THERMAL_MARGIN, y);
-        y += LINE_HEIGHT * 0.8;
-        
-        doc.setFont('helvetica', 'bold');
-        doc.text('EXTRA', THERMAL_MARGIN, y);
-        y += LINE_HEIGHT * 0.8;
-        doc.setFont('helvetica', 'normal');
+        html += `
+          <div class="divider"></div>
+          <div class="section-title">EXTRA</div>
+        `;
         
         if (order.stillWater > 0) {
-          doc.text(`${order.stillWater}x`, THERMAL_MARGIN, y);
-          doc.text('Acqua Naturale', THERMAL_MARGIN + 8, y);
-          y += LINE_HEIGHT * 0.8;
+          html += `
+            <div class="item">
+              <div class="qty">${order.stillWater}x</div>
+              <div class="name">Acqua Naturale</div>
+              <div class="price"></div>
+            </div>
+          `;
         }
         
         if (order.sparklingWater > 0) {
-          doc.text(`${order.sparklingWater}x`, THERMAL_MARGIN, y);
-          doc.text('Acqua Frizzante', THERMAL_MARGIN + 8, y);
-          y += LINE_HEIGHT * 0.8;
+          html += `
+            <div class="item">
+              <div class="qty">${order.sparklingWater}x</div>
+              <div class="name">Acqua Frizzante</div>
+              <div class="price"></div>
+            </div>
+          `;
         }
         
         if (order.bread > 0) {
-          doc.text(`${order.bread}x`, THERMAL_MARGIN, y);
-          doc.text('Pane', THERMAL_MARGIN + 8, y);
-          y += LINE_HEIGHT * 0.8;
+          html += `
+            <div class="item">
+              <div class="qty">${order.bread}x</div>
+              <div class="name">Pane</div>
+              <div class="price"></div>
+            </div>
+          `;
         }
       }
       
-      // Add separator for total
-      this.drawDashedLine(doc, THERMAL_MARGIN, y, THERMAL_WIDTH - THERMAL_MARGIN, y);
-      y += LINE_HEIGHT * 1.2;
-      
       // Add total
-      doc.setFont('helvetica', 'bold');
-      doc.text("TOTALE:", THERMAL_MARGIN, y);
+      html += `
+        <div class="divider"></div>
+        <div class="total">
+          <div>TOTALE:</div>
+          <div>€${totalAmount.toFixed(2)}</div>
+        </div>
+        
+        <div class="footer">
+          Grazie per la Sua visita!
+        </div>
+        
+        <div class="cut-line"></div>
+      </div>
+    </body>
+    </html>
+      `;
       
-      const formattedTotal = `€${totalAmount.toFixed(2)}`;
-      const totalX = THERMAL_WIDTH - THERMAL_MARGIN - doc.getTextWidth(formattedTotal);
-      doc.text(formattedTotal, totalX, y);
-      
-      y += LINE_HEIGHT * 1.5;
-      
-      // Add footer
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(TEXT_SIZE_SMALL);
-      const footerText = 'Grazie per la Sua visita!';
-      const footerWidth = doc.getTextWidth(footerText);
-      const footerX = (THERMAL_WIDTH - footerWidth) / 2;
-      doc.text(footerText, footerX, y);
-      
-      // Add cut line at the bottom
-      y += LINE_HEIGHT * 1.5;
-      this.drawCutLine(doc, THERMAL_MARGIN, y, THERMAL_WIDTH - THERMAL_MARGIN, y);
-      
-      // Add some space at the bottom
-      y += LINE_HEIGHT;
+      return html;
     } catch (error) {
-      console.error("Error during PDF generation:", error);
-      // Add error message to PDF
-      doc.setFontSize(12);
-      doc.setTextColor(255, 0, 0);
-      doc.text("Errore nella generazione del PDF", 5, 20);
-    }
-    
-    // Trim the document to the actual content height
-    const pdfHeight = y + THERMAL_MARGIN;
-    doc.internal.pageSize.height = pdfHeight;
-    
-    return doc;
-  }
-  
-  // Helper method to draw dashed line without using setLineDash
-  private static drawDashedLine(doc: jsPDF, x1: number, y1: number, x2: number, y2: number) {
-    const dashLength = 2;
-    const gapLength = 1;
-    
-    const length = x2 - x1;
-    const dashCount = Math.floor(length / (dashLength + gapLength));
-    
-    for (let i = 0; i < dashCount; i++) {
-      const startX = x1 + i * (dashLength + gapLength);
-      const endX = startX + dashLength;
-      doc.line(startX, y1, endX, y1);
-    }
-  }
-  
-  // Helper method to draw a cut line (scissor line)
-  private static drawCutLine(doc: jsPDF, x1: number, y1: number, x2: number, y2: number) {
-    // Draw a scissors symbol
-    doc.setFontSize(6);
-    doc.text('✂', x1 - 2, y1);
-    
-    // Draw the cut line
-    const dashLength = 1;
-    const gapLength = 1;
-    
-    const length = x2 - x1;
-    const dashCount = Math.floor(length / (dashLength + gapLength));
-    
-    for (let i = 0; i < dashCount; i++) {
-      const startX = x1 + i * (dashLength + gapLength);
-      const endX = startX + dashLength;
-      doc.line(startX, y1, endX, y1);
+      console.error("Error generating HTML receipt:", error);
+      return `
+        <html>
+          <body>
+            <div style="color: red; padding: 20px;">
+              Errore nella generazione del documento.
+            </div>
+          </body>
+        </html>
+      `;
     }
   }
 }
