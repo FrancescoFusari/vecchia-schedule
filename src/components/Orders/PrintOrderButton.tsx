@@ -42,7 +42,10 @@ export function PrintOrderButton({ order, table, disabled = false }: PrintOrderB
         return;
       }
       
-      // Add special styling for the print window with improved visibility settings
+      // Debug - log if content is generated
+      console.log("PDF content length:", doc.output('arraybuffer').byteLength);
+      
+      // Add direct PDF rendering with improved visibility settings
       printWindow.document.write(`
         <html>
           <head>
@@ -56,10 +59,9 @@ export function PrintOrderButton({ order, table, disabled = false }: PrintOrderB
                 background-color: #f0f0f0;
               }
               
-              iframe {
+              object, embed {
                 width: 100%;
                 height: 100vh;
-                border: none;
                 background-color: white;
               }
               
@@ -72,32 +74,35 @@ export function PrintOrderButton({ order, table, disabled = false }: PrintOrderB
                   width: 80mm;
                   background-color: white;
                 }
-                iframe {
-                  width: 100%;
-                  height: auto;
-                }
               }
             </style>
           </head>
           <body>
-            <object data="${url}" type="application/pdf" width="100%" height="100%">
-              <embed src="${url}" type="application/pdf" width="100%" height="100%">
-                <p>This browser does not support PDFs. Please download the PDF to view it: 
-                <a href="${url}">Download PDF</a>.</p>
-              </embed>
-            </object>
+            <embed src="${url}" type="application/pdf" width="100%" height="100%">
             <script>
               // Focus window to give better print experience
               window.focus();
+              
+              // Log for debugging
+              console.log("PDF URL loaded:", "${url}");
+              
+              // Attempt auto-print after a short delay
+              setTimeout(() => {
+                try {
+                  window.print();
+                } catch(e) {
+                  console.error("Print failed:", e);
+                }
+              }, 1500);
             </script>
           </body>
         </html>
       `);
       
       // Clean up the blob URL when done
-      setTimeout(() => {
+      printWindow.addEventListener('beforeunload', () => {
         URL.revokeObjectURL(url);
-      }, 5000);
+      });
       
       toast({
         title: "Stampa",

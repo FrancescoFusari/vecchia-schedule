@@ -64,6 +64,7 @@ export class PrintService {
     doc.setFont('helvetica', 'bold');
     doc.text('Qt', THERMAL_MARGIN, y);
     doc.text('Prodotto', THERMAL_MARGIN + 8, y);
+    doc.text('Prezzo', THERMAL_WIDTH - THERMAL_MARGIN - 15, y);
     y += LINE_HEIGHT * 0.8;
     
     // Add separator
@@ -81,6 +82,8 @@ export class PrintService {
     const hasFirstCourse = order.items.some(item => !item.isLastFirstCourse);
     const hasSecondCourse = order.items.some(item => item.isLastFirstCourse) || 
                            order.items.findIndex(item => item.isLastFirstCourse) < order.items.length - 1;
+    
+    let totalAmount = 0;
     
     for (let i = 0; i < order.items.length; i++) {
       const item = order.items[i];
@@ -109,16 +112,24 @@ export class PrintService {
         }
       }
       
+      // Calculate item total price
+      const itemTotal = item.quantity * item.menuItem.price;
+      totalAmount += itemTotal;
+      
+      // Format price
+      const formattedPrice = `€${itemTotal.toFixed(2)}`;
+      
       // Item quantity
       doc.text(`${item.quantity}x`, THERMAL_MARGIN, y);
       
-      // Item name (without price)
+      // Item name
       const itemName = item.menuItem.name;
+      const priceX = THERMAL_WIDTH - THERMAL_MARGIN - doc.getTextWidth(formattedPrice);
       
       // Check if item name is too long
-      if (doc.getTextWidth(itemName) > THERMAL_WIDTH - THERMAL_MARGIN * 2 - 8) {
+      if (doc.getTextWidth(itemName) > priceX - THERMAL_MARGIN - 8) {
         // Split the item name into multiple lines if needed
-        const maxWidth = THERMAL_WIDTH - THERMAL_MARGIN * 2 - 8;
+        const maxWidth = priceX - THERMAL_MARGIN - 8;
         const words = itemName.split(' ');
         let line = '';
         
@@ -139,6 +150,9 @@ export class PrintService {
       } else {
         doc.text(itemName, THERMAL_MARGIN + 8, y);
       }
+      
+      // Price
+      doc.text(formattedPrice, priceX, y);
       
       // Add notes if present
       if (item.notes) {
@@ -181,8 +195,18 @@ export class PrintService {
       }
     }
     
-    // Add separator
+    // Add separator for total
     this.drawDashedLine(doc, THERMAL_MARGIN, y, THERMAL_WIDTH - THERMAL_MARGIN, y);
+    y += LINE_HEIGHT * 1.2;
+    
+    // Add total
+    doc.setFont('helvetica', 'bold');
+    doc.text("TOTALE:", THERMAL_MARGIN, y);
+    
+    const formattedTotal = `€${totalAmount.toFixed(2)}`;
+    const totalX = THERMAL_WIDTH - THERMAL_MARGIN - doc.getTextWidth(formattedTotal);
+    doc.text(formattedTotal, totalX, y);
+    
     y += LINE_HEIGHT * 1.5;
     
     // Add footer
