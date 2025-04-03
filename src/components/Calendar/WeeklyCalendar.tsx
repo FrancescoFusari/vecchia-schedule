@@ -63,6 +63,7 @@ export function WeeklyCalendar({
       }
       setVisibleDays(visibleIndices);
       
+      // Call updateMonthBoundaries with the initial visible days
       updateMonthBoundaries(visibleIndices);
     } else {
       setVisibleDays([0, 1, 2, 3, 4, 5, 6]);
@@ -176,9 +177,11 @@ export function WeeklyCalendar({
         visibleIndices.push(dayIndex);
       }
       setVisibleDays(visibleIndices);
+      updateMonthBoundaries(visibleIndices);
     }
   };
 
+  // Move the updateMonthBoundaries inside the component to have access to state and getFormattedDates
   const updateMonthBoundaries = (days: number[]) => {
     if (!days.length) return;
     
@@ -186,8 +189,13 @@ export function WeeklyCalendar({
     const firstVisibleDay = days[0];
     const lastVisibleDay = days[days.length - 1];
     
-    const firstDate = new Date(formattedDates[firstVisibleDay]?.date);
-    const lastDate = new Date(formattedDates[lastVisibleDay]?.date);
+    if (!formattedDates[firstVisibleDay] || !formattedDates[lastVisibleDay]) {
+      console.error("Invalid formatted dates for boundaries:", formattedDates, days);
+      return;
+    }
+    
+    const firstDate = new Date(formattedDates[firstVisibleDay].date);
+    const lastDate = new Date(formattedDates[lastVisibleDay].date);
     
     setIsAtMonthStart(firstDate.getDate() <= 3);
     
@@ -197,22 +205,34 @@ export function WeeklyCalendar({
 
   const handleLoadMoreDays = (direction: 'prev' | 'next') => {
     if (isMobile) {
+      const formattedDates = getFormattedDates();
+      
       if (direction === 'prev') {
+        // Load previous days
         const firstVisibleDay = visibleDays[0];
         let newVisibleDays = [...visibleDays];
         
         for (let i = 1; i <= 2; i++) {
           const prevDayIndex = (firstVisibleDay - i + 7) % 7;
           if (!newVisibleDays.includes(prevDayIndex)) {
-            const formattedDates = getFormattedDates();
             const prevDate = new Date(formattedDates[prevDayIndex].date);
             const currentMonth = currentDate.getMonth();
             
+            // Only add the day if it's in the current month
             if (prevDate.getMonth() === currentMonth) {
               newVisibleDays = [prevDayIndex, ...newVisibleDays];
+              // Limit the total number of visible days
               if (newVisibleDays.length > 6) {
                 newVisibleDays = newVisibleDays.slice(0, 6);
               }
+            } else if (prevDate.getMonth() !== currentMonth && !isAtMonthStart) {
+              // If we're trying to go to the previous month and not at month start,
+              // adjust the currentDate to the previous month
+              const newDate = new Date(currentDate);
+              newDate.setDate(1); // Go to first day of current month
+              newDate.setDate(0); // Go to last day of previous month
+              setCurrentDate(newDate);
+              return; // Exit early as we're changing months
             }
           }
         }
@@ -220,21 +240,30 @@ export function WeeklyCalendar({
         setVisibleDays(newVisibleDays);
         updateMonthBoundaries(newVisibleDays);
       } else {
+        // Load next days
         const lastVisibleDay = visibleDays[visibleDays.length - 1];
         let newVisibleDays = [...visibleDays];
         
         for (let i = 1; i <= 2; i++) {
           const nextDayIndex = (lastVisibleDay + i) % 7;
           if (!newVisibleDays.includes(nextDayIndex)) {
-            const formattedDates = getFormattedDates();
             const nextDate = new Date(formattedDates[nextDayIndex].date);
             const currentMonth = currentDate.getMonth();
             
+            // Only add the day if it's in the current month
             if (nextDate.getMonth() === currentMonth) {
               newVisibleDays = [...newVisibleDays, nextDayIndex];
+              // Limit the total number of visible days
               if (newVisibleDays.length > 6) {
                 newVisibleDays = newVisibleDays.slice(newVisibleDays.length - 6);
               }
+            } else if (nextDate.getMonth() !== currentMonth && !isAtMonthEnd) {
+              // If we're trying to go to the next month and not at month end,
+              // adjust the currentDate to the next month
+              const newDate = new Date(currentDate);
+              newDate.setMonth(newDate.getMonth() + 1, 1); // Go to first day of next month
+              setCurrentDate(newDate);
+              return; // Exit early as we're changing months
             }
           }
         }
