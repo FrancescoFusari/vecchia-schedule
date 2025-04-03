@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { CalendarHeader } from "./CalendarHeader";
 import { formatDate, getWeekDates } from "@/lib/utils";
@@ -178,6 +179,22 @@ export function WeeklyCalendar({
     }
   };
 
+  const updateMonthBoundaries = (days: number[]) => {
+    if (!days.length) return;
+    
+    const formattedDates = getFormattedDates();
+    const firstVisibleDay = days[0];
+    const lastVisibleDay = days[days.length - 1];
+    
+    const firstDate = new Date(formattedDates[firstVisibleDay]?.date);
+    const lastDate = new Date(formattedDates[lastVisibleDay]?.date);
+    
+    setIsAtMonthStart(firstDate.getDate() <= 3);
+    
+    const lastDayOfMonth = new Date(firstDate.getFullYear(), firstDate.getMonth() + 1, 0).getDate();
+    setIsAtMonthEnd(lastDate.getDate() >= lastDayOfMonth - 2);
+  };
+
   const handleLoadMoreDays = (direction: 'prev' | 'next') => {
     if (isMobile) {
       if (direction === 'prev') {
@@ -187,6 +204,7 @@ export function WeeklyCalendar({
         for (let i = 1; i <= 2; i++) {
           const prevDayIndex = (firstVisibleDay - i + 7) % 7;
           if (!newVisibleDays.includes(prevDayIndex)) {
+            const formattedDates = getFormattedDates();
             const prevDate = new Date(formattedDates[prevDayIndex].date);
             const currentMonth = currentDate.getMonth();
             
@@ -208,6 +226,7 @@ export function WeeklyCalendar({
         for (let i = 1; i <= 2; i++) {
           const nextDayIndex = (lastVisibleDay + i) % 7;
           if (!newVisibleDays.includes(nextDayIndex)) {
+            const formattedDates = getFormattedDates();
             const nextDate = new Date(formattedDates[nextDayIndex].date);
             const currentMonth = currentDate.getMonth();
             
@@ -483,18 +502,3 @@ export function WeeklyCalendar({
     </div>
   );
 }
-
-const updateMonthBoundaries = (days: number[]) => {
-  if (!days.length) return;
-  
-  const firstVisibleDay = days[0];
-  const lastVisibleDay = days[days.length - 1];
-  
-  const firstDate = new Date(formattedDates[firstVisibleDay]?.date);
-  const lastDate = new Date(formattedDates[lastVisibleDay]?.date);
-  
-  setIsAtMonthStart(firstDate.getDate() <= 3);
-  
-  const lastDayOfMonth = new Date(firstDate.getFullYear(), firstDate.getMonth() + 1, 0).getDate();
-  setIsAtMonthEnd(lastDate.getDate() >= lastDayOfMonth - 2);
-};
