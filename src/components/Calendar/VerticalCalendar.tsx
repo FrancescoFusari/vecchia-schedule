@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { Shift, Employee, ShiftTemplate } from "@/lib/types";
-import { formatDate, formatEmployeeName, formatMonthYear } from "@/lib/utils";
+import { formatDate, formatEmployeeName, formatMonthYear, cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, Filter, User, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ShiftItem } from "./ShiftItem";
@@ -51,7 +50,6 @@ export function VerticalCalendar({
   const [filteredDays, setFilteredDays] = useState<DayWithShifts[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  // Get all days in the current month
   useEffect(() => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -64,7 +62,7 @@ export function VerticalCalendar({
     for (let d = 1; d <= lastDay.getDate(); d++) {
       const date = new Date(year, month, d);
       let dayOfWeek = date.getDay();
-      dayOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert to Monday-based
+      dayOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
       
       const dayShifts = shifts.filter(shift => {
         const shiftDate = new Date(shift.date);
@@ -91,11 +89,9 @@ export function VerticalCalendar({
     setDaysWithShifts(days);
   }, [currentDate, shifts]);
 
-  // Apply filters to days
   useEffect(() => {
     let filtered = [...daysWithShifts];
     
-    // Filter by user's shifts
     if (showOnlyUserShifts && user) {
       const userEmployee = employees.find(emp => emp.userId === user.id);
       if (userEmployee) {
@@ -106,7 +102,6 @@ export function VerticalCalendar({
       }
     }
     
-    // Filter by template type
     if (selectedTemplate) {
       const template = templates.find(t => t.id === selectedTemplate);
       if (template) {
