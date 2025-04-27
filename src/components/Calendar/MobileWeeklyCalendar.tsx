@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { MobileCalendarNavigation } from "./MobileCalendarNavigation";
 import { Shift, Employee } from "@/lib/types";
 import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 interface MobileWeeklyCalendarProps {
   visibleDays: number[];
@@ -60,13 +61,22 @@ export function MobileWeeklyCalendar({
           const shifts = shiftsByDay[dayIndex] || [];
           
           return (
-            <div key={dayIndex} className={`py-3 px-4 ${isToday ? 'bg-primary/5' : ''}`}>
+            <div key={dayIndex} className={cn(
+              "py-3 px-4",
+              isToday ? "bg-primary/5" : ""
+            )}>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center">
-                  <span className={`text-sm font-medium ${isToday ? 'text-primary' : ''}`}>
+                  <span className={cn(
+                    "text-sm font-medium", 
+                    isToday ? "text-primary" : ""
+                  )}>
                     {date.toLocaleDateString('it', { weekday: 'long' })}
                   </span>
-                  <span className={`ml-2 text-sm ${isToday ? 'font-bold text-primary' : 'text-muted-foreground'}`}>
+                  <span className={cn(
+                    "ml-2 text-sm", 
+                    isToday ? "font-bold text-primary" : "text-muted-foreground"
+                  )}>
                     {date.getDate()}
                   </span>
                 </div>
