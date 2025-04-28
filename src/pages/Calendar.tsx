@@ -1,3 +1,4 @@
+
 import { MonthlyCalendar } from "@/components/Calendar/MonthlyCalendar";
 import { WeeklyCalendar } from "@/components/Calendar/WeeklyCalendar";
 import { VerticalCalendar } from "@/components/Calendar/VerticalCalendar";
@@ -32,6 +33,7 @@ const Calendar = () => {
   const [isAddingShift, setIsAddingShift] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [currentDayOfWeek, setCurrentDayOfWeek] = useState<number | undefined>(undefined);
+  const [refreshTrigger, setRefreshTrigger] = useState(0); // Add refresh trigger state
 
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -74,6 +76,8 @@ const Calendar = () => {
   
   const handleAssignmentComplete = () => {
     setIsAssignmentModalOpen(false);
+    setRefreshTrigger(prev => prev + 1); // Increment refresh trigger to force refresh
+    
     if (isVerticalView) {
       fetchShiftsForCurrentMonth();
     } else if (isWeekView) {
@@ -133,7 +137,7 @@ const Calendar = () => {
     if (isVerticalView) {
       fetchShiftsForCurrentMonth();
     }
-  }, [isVerticalView, currentDate]);
+  }, [isVerticalView, currentDate, refreshTrigger]); // Add refreshTrigger to dependencies
 
   const handleAddShift = (date: Date, dayOfWeek: number) => {
     setSelectedDate(date);
@@ -170,6 +174,7 @@ const Calendar = () => {
         });
       }
       handleShiftModalClose();
+      setRefreshTrigger(prev => prev + 1); // Increment refresh trigger
       if (isVerticalView) {
         fetchShiftsForCurrentMonth();
       }
@@ -192,6 +197,7 @@ const Calendar = () => {
         description: "Il turno è stato eliminato con successo."
       });
       handleShiftModalClose();
+      setRefreshTrigger(prev => prev + 1); // Increment refresh trigger
       if (isVerticalView) {
         fetchShiftsForCurrentMonth();
       }
@@ -242,9 +248,17 @@ const Calendar = () => {
             onEditShift={handleEditShift}
           />
         ) : isWeekView ? (
-          <WeeklyCalendar onViewChange={handleViewChange} key="weekly" data-component="weekly-calendar" />
+          <WeeklyCalendar 
+            onViewChange={handleViewChange} 
+            key={`weekly-${refreshTrigger}`} 
+            data-component="weekly-calendar" 
+          />
         ) : (
-          <MonthlyCalendar onViewChange={handleViewChange} key="monthly" data-component="monthly-calendar" />
+          <MonthlyCalendar 
+            onViewChange={handleViewChange} 
+            key={`monthly-${refreshTrigger}`} 
+            data-component="monthly-calendar" 
+          />
         )}
       </div>
       
