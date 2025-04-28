@@ -1,35 +1,59 @@
-
-import { useState, useEffect, useCallback } from "react";
+import { MonthlyCalendar } from "@/components/Calendar/MonthlyCalendar";
+import { WeeklyCalendar } from "@/components/Calendar/WeeklyCalendar";
+import { VerticalCalendar } from "@/components/Calendar/VerticalCalendar";
+import { useEffect, useState } from "react";
+import { Employee, ShiftTemplate } from "@/lib/types";
+import { employeeService, templateService, shiftService } from "@/lib/supabase";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
-import { Employee, Shift } from "@/lib/types";
+import { CalendarPlus, Plus } from "lucide-react";
 import { ShiftAssignmentModal } from "@/components/Shifts/ShiftAssignmentModal";
 import { MobileShiftAssignmentModal } from "@/components/Shifts/MobileShiftAssignmentModal";
 import { ShiftModal } from "@/components/Shifts/ShiftModal";
-import { useCalendarState } from "@/hooks/useCalendarState";
-import { CalendarViewToggle } from "@/components/Calendar/CalendarViewToggle";
-import { CalendarContent } from "@/components/Calendar/CalendarContent";
-import { CalendarPageHeader } from "@/components/Calendar/CalendarPageHeader";
-import { shiftService } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { EmployeeBottomSheet } from "@/components/Employees/EmployeeBottomSheet";
 
 const Calendar = () => {
   const isMobile = useIsMobile();
   const { isAdmin } = useAuth();
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [isWeekView, setIsWeekView] = useState(false);
   const [isVerticalView, setIsVerticalView] = useState(isMobile);
+  const [templates, setTemplates] = useState<ShiftTemplate[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [shifts, setShifts] = useState<Shift[]>([]);
-  const [isLoadingShifts, setIsLoadingShifts] = useState(false);
-
-  const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [shifts, setShifts] = useState([]);
+  
+  const [selectedShift, setSelectedShift] = useState(null);
   const [isAddingShift, setIsAddingShift] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [currentDayOfWeek, setCurrentDayOfWeek] = useState<number | undefined>(undefined);
 
-  const { employees, templates, isLoading: isLoadingEmployees } = useCalendarState();
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const employeeData = await employeeService.getEmployees();
+        setEmployees(employeeData);
+      } catch (error) {
+        console.error("Error fetching employees:", error);
+      }
+    };
+    
+    const fetchTemplates = async () => {
+      try {
+        const templateData = await templateService.getTemplates();
+        setTemplates(templateData);
+      } catch (error) {
+        console.error("Error fetching templates:", error);
+      }
+    };
+    
+    fetchEmployees();
+    fetchTemplates();
+  }, []);
 
   useEffect(() => {
     setIsVerticalView(isMobile);
@@ -37,23 +61,64 @@ const Calendar = () => {
       setIsWeekView(false);
     }
   }, [isMobile]);
-
-  const fetchShiftsForCurrentMonth = useCallback(async () => {
-    if (isLoadingShifts) return; // Prevent concurrent fetch operations
-    
+  
+  const handleViewChange = (weekView: boolean) => {
+    setIsWeekView(weekView);
+    setIsVerticalView(false);
+  };
+  
+  const handleEmployeeClick = (employee: Employee) => {
+    if (isAdmin()) {
+      setSelectedEmployee(employee);
+      setIsAssignmentModalOpen(true);
+    }
+  };
+  
+  const handleAssignmentComplete = () => {
+    setIsAssignmentModalOpen(false);
+    if (isVerticalView) {
+      fetchShiftsForCurrentMonth();
+    } else if (isWeekView) {
+      const weeklyCalendarElement = document.querySelector('[data-component="weekly-calendar"]');
+      if (weeklyCalendarElement) {
+        weeklyCalendarElement.classList.add('refresh-trigger');
+        setTimeout(() => {
+          weeklyCalendarElement.classList.remove('refresh-trigger');
+        }, 100);
+      }
+    } else {
+      const monthlyCalendarElement = document.querySelector('[data-component="monthly-calendar"]');
+      if (monthlyCalendarElement) {
+        monthlyCalendarElement.classList.add('refresh-trigger');
+        setTimeout(() => {
+          monthlyCalendarElement.classList.remove('refresh-trigger');
+        }, 100);
+      }
+    }
+  };
+  
+  const fetchShiftsForCurrentMonth = async () => {
     try {
-      setIsLoadingShifts(true);
+      setIsLoading(true);
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth();
       const firstDay = new Date(year, month, 1);
       const lastDay = new Date(year, month + 1, 0);
       
-      const formattedStartDate = firstDay.toISOString().split('T')[0];
-      const formattedEndDate = lastDay.toISOString().split('T')[0];
+      const startDate = new Date(firstDay);
+      startDate.setDate(startDate.getDate() - (startDate.getDay() === 0 ? 6 : startDate.getDay() - 1));
       
-      console.log(`Fetching shifts from ${formattedStartDate} to ${formattedEndDate}`);
-      const shiftData = await shiftService.getShifts(formattedStartDate, formattedEndDate);
-      setShifts(shiftData);
+      const endDate = new Date(lastDay);
+      const daysToAdd = 7 - endDate.getDay();
+      endDate.setDate(endDate.getDate() + (daysToAdd === 7 ? 0 : daysToAdd));
+      
+      const formattedStartDate = startDate.toISOString().split('T')[0];
+      const formattedEndDate = endDate.toISOString().split('T')[0];
+      
+      console.log(`Fetching shifts for vertical calendar: ${formattedStartDate} to ${formattedEndDate}`);
+      
+      const shiftsData = await shiftService.getShifts(formattedStartDate, formattedEndDate);
+      setShifts(shiftsData);
     } catch (error) {
       console.error("Error fetching shifts:", error);
       toast({
@@ -62,30 +127,15 @@ const Calendar = () => {
         variant: "destructive"
       });
     } finally {
-      setIsLoadingShifts(false);
+      setIsLoading(false);
     }
-  }, [currentDate]);
+  };
 
   useEffect(() => {
-    fetchShiftsForCurrentMonth();
-  }, [fetchShiftsForCurrentMonth]);
-
-  const handleViewChange = (weekView: boolean) => {
-    setIsWeekView(weekView);
-    setIsVerticalView(false);
-  };
-
-  const handleEmployeeClick = (employee: Employee) => {
-    if (isAdmin()) {
-      setSelectedEmployee(employee);
-      setIsAssignmentModalOpen(true);
+    if (isVerticalView) {
+      fetchShiftsForCurrentMonth();
     }
-  };
-
-  const handleAssignmentComplete = () => {
-    setIsAssignmentModalOpen(false);
-    fetchShiftsForCurrentMonth(); // Fetch shifts again after assignment
-  };
+  }, [isVerticalView, currentDate]);
 
   const handleAddShift = (date: Date, dayOfWeek: number) => {
     setSelectedDate(date);
@@ -94,12 +144,17 @@ const Calendar = () => {
     setSelectedShift(null);
   };
 
-  const handleEditShift = (shift: Shift) => {
+  const handleEditShift = (shift) => {
     setSelectedShift(shift);
     setIsAddingShift(false);
   };
 
-  const handleSaveShift = async (shift: Shift) => {
+  const handleShiftModalClose = () => {
+    setSelectedShift(null);
+    setIsAddingShift(false);
+  };
+
+  const handleSaveShift = async (shift) => {
     try {
       if (selectedShift) {
         const updatedShift = await shiftService.updateShift(shift);
@@ -116,10 +171,10 @@ const Calendar = () => {
           description: "Il nuovo turno è stato aggiunto con successo."
         });
       }
-      setSelectedShift(null);
-      setIsAddingShift(false);
-      
-      fetchShiftsForCurrentMonth(); // Refresh shifts data after saving
+      handleShiftModalClose();
+      if (isVerticalView) {
+        fetchShiftsForCurrentMonth();
+      }
     } catch (error) {
       console.error("Error saving shift:", error);
       toast({
@@ -130,7 +185,7 @@ const Calendar = () => {
     }
   };
 
-  const handleDeleteShift = async (shiftId: string) => {
+  const handleDeleteShift = async (shiftId) => {
     try {
       await shiftService.deleteShift(shiftId);
       setShifts(prev => prev.filter(s => s.id !== shiftId));
@@ -138,10 +193,10 @@ const Calendar = () => {
         title: "Turno eliminato",
         description: "Il turno è stato eliminato con successo."
       });
-      setSelectedShift(null);
-      setIsAddingShift(false);
-      
-      fetchShiftsForCurrentMonth(); // Refresh shifts data after deletion
+      handleShiftModalClose();
+      if (isVerticalView) {
+        fetchShiftsForCurrentMonth();
+      }
     } catch (error) {
       console.error("Error deleting shift:", error);
       toast({
@@ -152,42 +207,67 @@ const Calendar = () => {
     }
   };
 
-  const isLoading = isLoadingEmployees || isLoadingShifts;
-
-  if (isLoadingEmployees) {
-    return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
+  const handleDateChange = (date: Date) => {
+    setCurrentDate(date);
+  };
+  
   return (
     <div className="flex flex-col gap-6">
-      <CalendarPageHeader 
-        employees={employees}
-        onEmployeeSelect={handleEmployeeClick}
-      />
+      <div>
+        <h1 className="text-2xl font-bold">Calendario Turni</h1>
+        <p className="text-muted-foreground">Visualizza e gestisci i turni dei dipendenti</p>
+      </div>
+
+      {isAdmin() && (
+        <div className="flex items-center justify-between">
+          <EmployeeBottomSheet 
+            employees={employees} 
+            onEmployeeSelect={handleEmployeeClick}
+            isAdmin={isAdmin()}
+          />
+          
+          {isVerticalView && (
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={() => {
+                if (employees.length > 0) {
+                  setSelectedEmployee(null);
+                  setIsAssignmentModalOpen(true);
+                } else {
+                  toast({
+                    title: "Nessun dipendente",
+                    description: "Aggiungi dipendenti per assegnare turni",
+                    variant: "destructive"
+                  });
+                }
+              }}
+              className="rounded-full h-10 w-10 shadow-md"
+            >
+              <Plus className="h-5 w-5" />
+            </Button>
+          )}
+        </div>
+      )}
       
-      <CalendarViewToggle 
-        isWeekView={isWeekView}
-        isVerticalView={isVerticalView}
-        onViewChange={handleViewChange}
-      />
-      
-      <CalendarContent 
-        isWeekView={isWeekView}
-        isVerticalView={isVerticalView}
-        onViewChange={handleViewChange}
-        currentDate={currentDate}
-        employees={employees}
-        templates={templates}
-        onDateChange={setCurrentDate}
-        shifts={shifts}
-        isLoading={isLoading}
-        onAddShift={handleAddShift}
-        onEditShift={handleEditShift}
-      />
+      <div className="flex-grow">
+        {isVerticalView ? (
+          <VerticalCalendar 
+            shifts={shifts}
+            employees={employees}
+            templates={templates}
+            currentDate={currentDate}
+            onDateChange={handleDateChange}
+            isLoading={isLoading}
+            onAddShift={handleAddShift}
+            onEditShift={handleEditShift}
+          />
+        ) : isWeekView ? (
+          <WeeklyCalendar onViewChange={handleViewChange} key="weekly" data-component="weekly-calendar" />
+        ) : (
+          <MonthlyCalendar onViewChange={handleViewChange} key="monthly" data-component="monthly-calendar" />
+        )}
+      </div>
       
       {isAssignmentModalOpen && selectedEmployee && (
         isMobile ? (
@@ -225,10 +305,7 @@ const Calendar = () => {
       {(isAddingShift || selectedShift) && (
         <ShiftModal 
           isOpen={isAddingShift || !!selectedShift} 
-          onClose={() => {
-            setSelectedShift(null);
-            setIsAddingShift(false);
-          }} 
+          onClose={handleShiftModalClose} 
           shift={selectedShift} 
           date={selectedDate} 
           dayOfWeek={currentDayOfWeek} 
