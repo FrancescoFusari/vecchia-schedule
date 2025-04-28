@@ -59,14 +59,17 @@ export function ShiftAssignmentConfirmation({
     }
   }, [weekdays, selectedDays, weekdayMonth, shifts]);
 
+  // Update to ensure the confirmation button calls the onConfirm properly
   const handleConfirmClick = () => {
     onConfirm();
-    // The parent component will handle closing this dialog
+    // Don't close here - this will be handled by the parent after shifts are saved
   };
 
+  // Only allow closing if not submitting
   const handleCancelClick = () => {
-    onClose();
-    // Just notify parent to close this dialog, don't try to close everything
+    if (!isSubmitting) {
+      onClose();
+    }
   };
 
   if (!isOpen) return null;
