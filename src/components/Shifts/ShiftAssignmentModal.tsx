@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -6,15 +5,17 @@ import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { format, getDay, setDay, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths, isEqual, isBefore, isAfter } from "date-fns";
+import { format, getDay, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths } from "date-fns";
 import { it } from "date-fns/locale";
 import { Employee, ShiftTemplate, Shift } from "@/lib/types";
 import { toast } from "@/hooks/use-toast";
 import { shiftService } from "@/lib/supabase";
 import { v4 as uuidv4 } from "uuid";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 
 interface ShiftAssignmentModalProps {
   isOpen: boolean;
@@ -135,30 +136,7 @@ export const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
   
   const dayLabels = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"];
 
-  const filterDaysForDisplayMonth = (days: Date[]) => {
-    return days.filter(day => isSameMonth(day, displayMonth));
-  };
-
-  const handleMonthChange = (direction: 'previous' | 'next') => {
-    const newDate = new Date(displayMonth);
-    if (direction === 'previous') {
-      newDate.setMonth(newDate.getMonth() - 1);
-    } else {
-      newDate.setMonth(newDate.getMonth() + 1);
-    }
-    setDisplayMonth(newDate);
-  };
-  
-  const handleSelectedMonthChange = (direction: 'previous' | 'next') => {
-    const newDate = direction === 'previous' 
-      ? subMonths(selectedMonth, 1) 
-      : addMonths(selectedMonth, 1);
-    setSelectedMonth(newDate);
-  };
-
-  if (!employee) return null;
-
-  const validDaysCount = filterDaysForDisplayMonth(selectedDays).length;
+  const validDaysCount = selectedDays.filter(day => isSameMonth(day, displayMonth)).length;
   const weekdayShiftsCount = weekdays.length > 0 
     ? eachDayOfInterval({ 
         start: startOfMonth(selectedMonth), 
@@ -170,175 +148,167 @@ export const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
   
   const totalShiftsCount = validDaysCount + weekdayShiftsCount;
 
+  if (!employee) return null;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>
             Assegna turni a {employee.firstName} {employee.lastName}
           </DialogTitle>
         </DialogHeader>
-        
-        <Tabs defaultValue="weekday" className="mt-2">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="weekday">Giorni della settimana</TabsTrigger>
-            <TabsTrigger value="specific">Giorni specifici</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="weekday" className="space-y-4 mt-2">
-            <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm my-2">
-              <div className="flex items-center justify-between mb-4">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleSelectedMonthChange('previous')}
-                  className="h-8 w-8"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <h2 className="text-center font-medium capitalize">
-                  {format(selectedMonth, 'MMMM yyyy', { locale: it })}
-                </h2>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleSelectedMonthChange('next')}
-                  className="h-8 w-8"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+
+        <div className="space-y-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-medium">1. Seleziona tipo di turno</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Select 
+                value={selectedTemplate} 
+                onValueChange={setSelectedTemplate}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleziona un template" />
+                </SelectTrigger>
+                <SelectContent>
+                  {templates.map(template => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.name} ({template.startTime}-{template.endTime})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+
+          {selectedTemplate && (
+            <>
+              <Separator />
               
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {dayLabels.map((day, index) => (
-                  <div 
-                    className={cn(
-                      "flex items-center space-x-2 p-2 rounded-md transition-colors",
-                      weekdays.includes(index) ? "bg-primary/10" : ""
-                    )} 
-                    key={index}
-                  >
-                    <Checkbox 
-                      id={`day-${index}`} 
-                      checked={weekdays.includes(index)}
-                      onCheckedChange={() => handleWeekdayToggle(index)}
-                    />
-                    <Label 
-                      htmlFor={`day-${index}`}
-                      className={cn(
-                        weekdays.includes(index) ? "font-medium text-primary" : ""
-                      )}
-                    >
-                      {day}
-                    </Label>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base font-medium">2. Seleziona i giorni</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <h3 className="font-medium text-sm">Giorni della settimana</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {dayLabels.map((day, index) => (
+                        <div 
+                          className={cn(
+                            "flex items-center space-x-2 p-2 rounded-md transition-colors",
+                            weekdays.includes(index) ? "bg-primary/10" : ""
+                          )} 
+                          key={index}
+                        >
+                          <Checkbox 
+                            id={`day-${index}`} 
+                            checked={weekdays.includes(index)}
+                            onCheckedChange={() => {
+                              setWeekdays(prev => 
+                                prev.includes(index) 
+                                  ? prev.filter(d => d !== index) 
+                                  : [...prev, index]
+                              );
+                            }}
+                          />
+                          <Label 
+                            htmlFor={`day-${index}`}
+                            className={cn(
+                              weekdays.includes(index) ? "font-medium text-primary" : ""
+                            )}
+                          >
+                            {day}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ))}
-              </div>
-              
-              {weekdayShiftsCount > 0 && (
-                <div className="mt-4 p-2 bg-muted rounded-md text-sm">
-                  <p className="font-medium">
-                    Turni selezionati: {weekdayShiftsCount} per {format(selectedMonth, 'MMMM yyyy', { locale: it })}
-                  </p>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="specific">
-            <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm my-2">
-              <div className="flex items-center justify-between mb-4">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleMonthChange('previous')}
-                  className="h-8 w-8"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <h2 className="text-center font-medium capitalize">
-                  {format(displayMonth, 'MMMM yyyy', { locale: it })}
-                </h2>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleMonthChange('next')}
-                  className="h-8 w-8"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-              
-              <Calendar
-                mode="multiple"
-                selected={filterDaysForDisplayMonth(selectedDays)}
-                onSelect={(days) => {
-                  if (!days) return;
-                  setSelectedDays(Array.isArray(days) ? days : []);
-                }}
-                className="w-full"
-                locale={it}
-                month={displayMonth}
-                onMonthChange={setDisplayMonth}
-                disabled={undefined}
-                classNames={{
-                  day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-                  day_today: "bg-accent text-accent-foreground font-bold",
-                  day: cn(
-                    "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-primary/10 focus:bg-primary/10 transition-colors"
-                  ),
-                  caption_label: "hidden",
-                  caption: "h-1 overflow-hidden",
-                  nav: "hidden",
-                  head_cell: "text-muted-foreground rounded-md w-9 font-medium text-[0.8rem] uppercase",
-                  cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-primary/5 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-                  month: "space-y-4 rounded-lg"
-                }}
-              />
-            </div>
-            {validDaysCount > 0 && (
-              <div className="mt-2 p-2 bg-muted rounded-md text-sm">
-                <p className="font-medium">Giorni selezionati: {validDaysCount}</p>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-        
-        <div className="space-y-4 mt-2">
-          <div className="space-y-2">
-            <Label htmlFor="template">Template turno</Label>
-            <Select 
-              value={selectedTemplate} 
-              onValueChange={setSelectedTemplate}
-            >
-              <SelectTrigger id="template">
-                <SelectValue placeholder="Seleziona un template" />
-              </SelectTrigger>
-              <SelectContent>
-                {templates.map(template => (
-                  <SelectItem key={template.id} value={template.id}>
-                    {template.name} ({template.startTime}-{template.endTime})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+
+                  <Separator className="my-4" />
+
+                  <div className="space-y-4">
+                    <h3 className="font-medium text-sm">Giorni specifici</h3>
+                    <div className="bg-card rounded-lg border p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            const newDate = subMonths(displayMonth, 1);
+                            setDisplayMonth(newDate);
+                          }}
+                          className="h-8 w-8"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <h2 className="text-center font-medium capitalize">
+                          {format(displayMonth, 'MMMM yyyy', { locale: it })}
+                        </h2>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            const newDate = addMonths(displayMonth, 1);
+                            setDisplayMonth(newDate);
+                          }}
+                          className="h-8 w-8"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      <Calendar
+                        mode="multiple"
+                        selected={selectedDays}
+                        onSelect={(days) => {
+                          if (!days) return;
+                          setSelectedDays(Array.isArray(days) ? days : []);
+                        }}
+                        className="w-full"
+                        locale={it}
+                        month={displayMonth}
+                        onMonthChange={setDisplayMonth}
+                        classNames={{
+                          day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+                          day_today: "bg-accent text-accent-foreground font-bold",
+                          day: cn(
+                            "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-primary/10 focus:bg-primary/10 transition-colors"
+                          ),
+                        }}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </div>
         
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Annulla
-          </Button>
-          <Button 
-            onClick={handleSaveAssignments} 
-            disabled={(validDaysCount === 0 && weekdayShiftsCount === 0) || !selectedTemplate || isSubmitting}
-            className={cn(
-              "transition-all duration-200",
-              totalShiftsCount > 0 && selectedTemplate ? "bg-primary hover:bg-primary/90" : ""
+          <div className="w-full flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
+            {(weekdayShiftsCount > 0 || validDaysCount > 0) && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Totale turni:</span>
+                <Badge variant="secondary" className="h-6">
+                  {totalShiftsCount}
+                </Badge>
+              </div>
             )}
-          >
-            {isSubmitting ? "Assegnazione..." : `Assegna ${totalShiftsCount > 0 ? totalShiftsCount : ""} turni`}
-          </Button>
+            <div className="flex gap-2 sm:ml-auto">
+              <Button variant="outline" onClick={onClose}>
+                Annulla
+              </Button>
+              <Button 
+                onClick={handleSaveAssignments} 
+                disabled={(validDaysCount === 0 && weekdayShiftsCount === 0) || !selectedTemplate || isSubmitting}
+              >
+                {isSubmitting ? "Assegnazione..." : "Assegna turni"}
+              </Button>
+            </div>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

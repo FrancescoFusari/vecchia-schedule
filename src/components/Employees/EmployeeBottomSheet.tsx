@@ -27,7 +27,7 @@ interface EmployeeBottomSheetProps {
 export function EmployeeBottomSheet({
   employees,
   onEmployeeSelect,
-  buttonVariant = "outline",
+  buttonVariant = "default",
   buttonSize = "default",
   isAdmin
 }: EmployeeBottomSheetProps) {
@@ -43,9 +43,13 @@ export function EmployeeBottomSheet({
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
-        <Button variant={buttonVariant} size={buttonSize} className="gap-2">
-          <Users className="h-4 w-4" />
-          <span className="hidden md:inline">Dipendenti</span>
+        <Button 
+          variant="default"
+          size="lg"
+          className="w-full h-12 text-base font-medium shadow-md hover:shadow-lg transition-all gap-2"
+        >
+          <Users className="h-5 w-5" />
+          Assegna turni
         </Button>
       </DrawerTrigger>
       <DrawerContent className="h-[80vh] sm:h-[65vh]">

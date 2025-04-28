@@ -6,7 +6,7 @@ import { Employee, ShiftTemplate } from "@/lib/types";
 import { employeeService, templateService, shiftService } from "@/lib/supabase";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
-import { CalendarPlus, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { ShiftAssignmentModal } from "@/components/Shifts/ShiftAssignmentModal";
 import { MobileShiftAssignmentModal } from "@/components/Shifts/MobileShiftAssignmentModal";
 import { ShiftModal } from "@/components/Shifts/ShiftModal";
@@ -219,34 +219,12 @@ const Calendar = () => {
       </div>
 
       {isAdmin() && (
-        <div className="flex items-center justify-between">
+        <div className="w-full max-w-lg mx-auto px-4 sm:px-0">
           <EmployeeBottomSheet 
             employees={employees} 
             onEmployeeSelect={handleEmployeeClick}
             isAdmin={isAdmin()}
           />
-          
-          {isVerticalView && (
-            <Button 
-              variant="outline" 
-              size="icon" 
-              onClick={() => {
-                if (employees.length > 0) {
-                  setSelectedEmployee(null);
-                  setIsAssignmentModalOpen(true);
-                } else {
-                  toast({
-                    title: "Nessun dipendente",
-                    description: "Aggiungi dipendenti per assegnare turni",
-                    variant: "destructive"
-                  });
-                }
-              }}
-              className="rounded-full h-10 w-10 shadow-md"
-            >
-              <Plus className="h-5 w-5" />
-            </Button>
-          )}
         </div>
       )}
       
