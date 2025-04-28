@@ -1,4 +1,3 @@
-
 import { MonthlyCalendar } from "@/components/Calendar/MonthlyCalendar";
 import { WeeklyCalendar } from "@/components/Calendar/WeeklyCalendar";
 import { VerticalCalendar } from "@/components/Calendar/VerticalCalendar";
@@ -59,7 +58,6 @@ const Calendar = () => {
   useEffect(() => {
     setIsVerticalView(isMobile);
     if (isMobile) {
-      setIsEmployeeListOpen(false);
       setIsWeekView(false);
     }
   }, [isMobile]);
