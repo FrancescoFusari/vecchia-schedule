@@ -1,4 +1,3 @@
-
 import { MonthlyCalendar } from "@/components/Calendar/MonthlyCalendar";
 import { WeeklyCalendar } from "@/components/Calendar/WeeklyCalendar";
 import { VerticalCalendar } from "@/components/Calendar/VerticalCalendar";
@@ -30,7 +29,6 @@ const Calendar = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [shifts, setShifts] = useState([]);
   
-  // State for shift modal
   const [selectedShift, setSelectedShift] = useState(null);
   const [isAddingShift, setIsAddingShift] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -81,7 +79,6 @@ const Calendar = () => {
   
   const handleAssignmentComplete = () => {
     setIsAssignmentModalOpen(false);
-    // Refresh the current view
     if (isVerticalView) {
       fetchShiftsForCurrentMonth();
     } else if (isWeekView) {
@@ -103,7 +100,6 @@ const Calendar = () => {
     }
   };
   
-  // Function to fetch shifts for the vertical calendar
   const fetchShiftsForCurrentMonth = async () => {
     try {
       setIsLoading(true);
@@ -112,10 +108,19 @@ const Calendar = () => {
       const firstDay = new Date(year, month, 1);
       const lastDay = new Date(year, month + 1, 0);
       
-      const startDate = firstDay.toISOString().split('T')[0];
-      const endDate = lastDay.toISOString().split('T')[0];
+      const startDate = new Date(firstDay);
+      startDate.setDate(startDate.getDate() - (startDate.getDay() === 0 ? 6 : startDate.getDay() - 1));
       
-      const shiftsData = await shiftService.getShifts(startDate, endDate);
+      const endDate = new Date(lastDay);
+      const daysToAdd = 7 - endDate.getDay();
+      endDate.setDate(endDate.getDate() + (daysToAdd === 7 ? 0 : daysToAdd));
+      
+      const formattedStartDate = startDate.toISOString().split('T')[0];
+      const formattedEndDate = endDate.toISOString().split('T')[0];
+      
+      console.log(`Fetching shifts for vertical calendar: ${formattedStartDate} to ${formattedEndDate}`);
+      
+      const shiftsData = await shiftService.getShifts(formattedStartDate, formattedEndDate);
       setShifts(shiftsData);
     } catch (error) {
       console.error("Error fetching shifts:", error);
@@ -135,7 +140,6 @@ const Calendar = () => {
     }
   }, [isVerticalView, currentDate]);
 
-  // Handle shift modal for vertical calendar
   const handleAddShift = (date: Date, dayOfWeek: number) => {
     setSelectedDate(date);
     setCurrentDayOfWeek(dayOfWeek);

@@ -33,6 +33,7 @@ interface DayWithShifts {
   dayNumber: string;
   isToday: boolean;
   shifts: Shift[];
+  isCurrentMonth: boolean;
 }
 
 export function VerticalCalendar({
@@ -72,7 +73,10 @@ export function VerticalCalendar({
     const days: DayWithShifts[] = [];
     const today = new Date();
     
-    for (let d = 1; d <= lastDay.getDate(); d++) {
+    const currentMonthStartDate = new Date(year, month, 1);
+    const currentMonthLastDate = new Date(year, month + 1, 0);
+    
+    for (let d = 1; d <= currentMonthLastDate.getDate(); d++) {
       const date = new Date(year, month, d);
       let dayOfWeek = date.getDay();
       dayOfWeek = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
@@ -97,7 +101,8 @@ export function VerticalCalendar({
           date.getDate() === today.getDate() &&
           date.getMonth() === today.getMonth() &&
           date.getFullYear() === today.getFullYear(),
-        shifts: dayShifts
+        shifts: dayShifts,
+        isCurrentMonth: true
       });
     }
     
