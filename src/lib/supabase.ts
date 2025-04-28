@@ -665,6 +665,34 @@ export const shiftService = {
       console.error("Error creating shifts:", error);
       throw error;
     }
+  },
+  
+  getEmployeeShifts: async (employeeId: string, startDate: string, endDate: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('shifts')
+        .select('*')
+        .eq('employee_id', employeeId)
+        .gte('date', startDate)
+        .lte('date', endDate)
+        .order('date', { ascending: true });
+
+      if (error) throw error;
+      return data.map(shift => ({
+        id: shift.id,
+        employeeId: shift.employee_id,
+        date: shift.date,
+        startTime: shift.start_time,
+        endTime: shift.end_time,
+        duration: shift.duration,
+        notes: shift.notes,
+        createdAt: shift.created_at,
+        updatedAt: shift.updated_at
+      }));
+    } catch (error) {
+      console.error("Error fetching employee shifts:", error);
+      throw error;
+    }
   }
 };
 

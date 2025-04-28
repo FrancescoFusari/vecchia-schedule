@@ -19,12 +19,14 @@ interface ShiftAssignmentConfirmationProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  employee: Employee;
-  template: ShiftTemplate;
-  selectedDays: Date[];
-  weekdays: number[];
-  weekdayMonth: Date;
-  isSubmitting: boolean;
+  employee: Employee | null;
+  template?: ShiftTemplate;
+  selectedDays?: Date[];
+  weekdays?: number[];
+  weekdayMonth?: Date;
+  isSubmitting?: boolean;
+  // Support for both methods of passing shifts data
+  shifts?: Array<{ date: Date, template: ShiftTemplate }>;
 }
 
 export function ShiftAssignmentConfirmation({
@@ -33,21 +35,32 @@ export function ShiftAssignmentConfirmation({
   onConfirm,
   employee,
   template,
-  selectedDays,
-  weekdays,
+  selectedDays = [],
+  weekdays = [],
   weekdayMonth,
-  isSubmitting,
+  isSubmitting = false,
+  shifts = [],
 }: ShiftAssignmentConfirmationProps) {
   const [totalShifts, setTotalShifts] = useState(0);
   const dayLabels = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"];
 
+  // Determine which set of data to use
+  const shiftsToShow = shifts.length > 0 ? shifts : [];
+  const hasLegacyData = Boolean(template && (selectedDays.length > 0 || weekdays.length > 0));
+  
   useEffect(() => {
-    const weekdayCount = weekdays.length > 0 
-      ? new Date(weekdayMonth.getFullYear(), weekdayMonth.getMonth() + 1, 0).getDate() 
-      : 0;
-    const specificDaysCount = selectedDays.length;
-    setTotalShifts(weekdayCount + specificDaysCount);
-  }, [weekdays, selectedDays, weekdayMonth]);
+    if (shifts.length > 0) {
+      setTotalShifts(shifts.length);
+    } else {
+      const weekdayCount = weekdays.length > 0 && weekdayMonth
+        ? new Date(weekdayMonth.getFullYear(), weekdayMonth.getMonth() + 1, 0).getDate() 
+        : 0;
+      const specificDaysCount = selectedDays.length;
+      setTotalShifts(weekdayCount + specificDaysCount);
+    }
+  }, [weekdays, selectedDays, weekdayMonth, shifts]);
+
+  if (!isOpen) return null;
 
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
@@ -64,19 +77,44 @@ export function ShiftAssignmentConfirmation({
             <div className="space-y-2">
               <h3 className="font-medium">Dipendente</h3>
               <p className="text-sm text-muted-foreground">
-                {employee.firstName} {employee.lastName}
+                {employee ? `${employee.firstName} ${employee.lastName}` : "Nessun dipendente selezionato"}
               </p>
             </div>
 
-            <div className="space-y-2">
-              <h3 className="font-medium">Tipo di turno</h3>
-              <div className="flex items-center gap-2">
-                <p className="text-sm text-muted-foreground">{template.name}</p>
-                <Badge variant="secondary">{template.startTime} - {template.endTime}</Badge>
+            {(hasLegacyData && template) && (
+              <div className="space-y-2">
+                <h3 className="font-medium">Tipo di turno</h3>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-muted-foreground">{template.name}</p>
+                  <Badge variant="secondary">{template.startTime} - {template.endTime}</Badge>
+                </div>
               </div>
-            </div>
+            )}
 
-            {weekdays.length > 0 && (
+            {shifts.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="font-medium">Turni da assegnare</h3>
+                <div className="flex flex-wrap gap-2">
+                  {shifts.map((shift, index) => (
+                    <div key={index} className="border p-2 rounded-md w-full">
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm font-medium">
+                          {format(shift.date, 'd MMMM', { locale: it })}
+                        </span>
+                        <Badge variant="outline">
+                          {shift.template.startTime.slice(0, 5)} - {shift.template.endTime.slice(0, 5)}
+                        </Badge>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {shift.template.name}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {weekdays.length > 0 && weekdayMonth && (
               <div className="space-y-2">
                 <h3 className="font-medium">Giorni della settimana</h3>
                 <div className="flex flex-wrap gap-2">

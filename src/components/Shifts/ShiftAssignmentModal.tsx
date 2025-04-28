@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { format, eachDayOfInterval, startOfMonth, endOfMonth, isEqual, parseISO } from "date-fns";
 import { it } from "date-fns/locale";
@@ -107,7 +106,7 @@ export const ShiftAssignmentModal = ({
       toast({
         title: "Turno esistente",
         description: "Esiste già un turno assegnato per questa data.",
-        variant: "warning"
+        variant: "destructive"
       });
       return;
     }
@@ -153,10 +152,11 @@ export const ShiftAssignmentModal = ({
       });
     }
     
-    // Filter out dates with existing shifts
     const datesWithoutShifts = dates.filter(date => {
       const dateStr = format(date, "yyyy-MM-dd");
-      return !existingShifts.some(shift => format(new Date(shift.date), "yyyy-MM-dd") === dateStr);
+      return !existingShifts.some(shift => 
+        format(new Date(shift.date), "yyyy-MM-dd") === dateStr
+      );
     });
     
     if (datesWithoutShifts.length === 0) {
@@ -168,7 +168,6 @@ export const ShiftAssignmentModal = ({
       return;
     }
     
-    // Prepare shifts for confirmation
     const shiftsToConfirm = datesWithoutShifts.map(date => ({
       date,
       template: selectedTemplate
@@ -204,8 +203,7 @@ export const ShiftAssignmentModal = ({
         description: `${newShifts.length} turni sono stati assegnati con successo.`,
       });
       
-      // Important: Make sure calendar is updated
-      onShiftsAdded(); // This will update the calendar view
+      onShiftsAdded();
       
       setSelectedDays({});
       setSelectedDaysOfWeek({});
@@ -421,10 +419,10 @@ export const ShiftAssignmentModal = ({
       <ShiftAssignmentConfirmation
         isOpen={isConfirmationOpen}
         onClose={() => setIsConfirmationOpen(false)}
-        shifts={shiftsToAdd}
         employee={selectedEmployee}
+        shifts={shiftsToAdd}
         onConfirm={handleConfirmSave}
-        isLoading={loading}
+        isSubmitting={loading}
       />
     </>
   );

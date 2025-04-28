@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { format, eachDayOfInterval, startOfMonth, endOfMonth, isEqual } from "date-fns";
 import { it } from "date-fns/locale";
@@ -103,7 +102,7 @@ export const MobileShiftAssignmentModal = ({
       toast({
         title: "Turno esistente",
         description: "Esiste già un turno assegnato per questa data.",
-        variant: "warning"
+        variant: "destructive"
       });
       return;
     }
@@ -181,7 +180,9 @@ export const MobileShiftAssignmentModal = ({
     // Filter out dates with existing shifts
     const datesWithoutShifts = dates.filter(date => {
       const dateStr = format(date, "yyyy-MM-dd");
-      return !existingShifts.some(shift => format(new Date(shift.date), "yyyy-MM-dd") === dateStr);
+      return !existingShifts.some(shift => 
+        format(new Date(shift.date), "yyyy-MM-dd") === dateStr
+      );
     });
     
     if (datesWithoutShifts.length === 0) {
@@ -484,10 +485,10 @@ export const MobileShiftAssignmentModal = ({
       <ShiftAssignmentConfirmation
         isOpen={isConfirmationOpen}
         onClose={() => setIsConfirmationOpen(false)}
-        shifts={shiftsToAdd}
         employee={selectedEmployee}
+        shifts={shiftsToAdd}
         onConfirm={handleConfirmSave}
-        isLoading={loading}
+        isSubmitting={loading}
       />
     </>
   );
