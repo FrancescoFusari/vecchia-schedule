@@ -39,6 +39,7 @@ export const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
   const [weekdays, setWeekdays] = useState<number[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [displayMonth, setDisplayMonth] = useState<Date>(currentMonth);
+  const [activeTab, setActiveTab] = useState<string>("weekday");
 
   // Reset state when modal opens
   useState(() => {
@@ -160,8 +161,8 @@ export const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
         <div className="p-6 space-y-6">
           <div className="space-y-4">
             <h3 className="font-medium">Seleziona tipo di turno</h3>
-            <ScrollArea className="w-full" orientation="horizontal">
-              <div className="flex gap-3 pb-4 min-w-full">
+            <ScrollArea className="w-full h-[120px]">
+              <div className="flex space-x-3 pb-4">
                 {templates.map((template) => (
                   <div
                     key={template.id}
@@ -193,7 +194,7 @@ export const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
             </ScrollArea>
           </div>
 
-          <Tabs defaultValue="weekday" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2 h-11">
               <TabsTrigger value="weekday" className="text-base">Giorni settimana</TabsTrigger>
               <TabsTrigger value="specific" className="text-base">Giorni specifici</TabsTrigger>

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { format, getDay, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth } from "date-fns";
 import { it } from "date-fns/locale";
@@ -6,7 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { shiftService } from "@/lib/supabase";
 import { v4 as uuidv4 } from "uuid";
 import { cn } from "@/lib/utils";
-import { Check, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 
 import {
   Drawer,
@@ -45,6 +46,7 @@ export function MobileShiftAssignmentModal({
   const [weekdays, setWeekdays] = useState<number[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [displayMonth, setDisplayMonth] = useState<Date>(currentMonth);
+  const [activeTab, setActiveTab] = useState<string>("weekday");
   
   // Reset state when modal opens
   useState(() => {
@@ -201,7 +203,7 @@ export function MobileShiftAssignmentModal({
               </ScrollArea>
             </div>
 
-            <Tabs defaultValue="weekday" className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2 h-12">
                 <TabsTrigger value="weekday" className="text-base">Giorni settimana</TabsTrigger>
                 <TabsTrigger value="specific" className="text-base">Giorni specifici</TabsTrigger>
