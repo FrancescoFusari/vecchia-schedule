@@ -25,7 +25,6 @@ interface ShiftAssignmentConfirmationProps {
   weekdays?: number[];
   weekdayMonth?: Date;
   isSubmitting?: boolean;
-  // Support for both methods of passing shifts data
   shifts?: Array<{ date: Date, template: ShiftTemplate }>;
 }
 
@@ -64,7 +63,7 @@ export function ShiftAssignmentConfirmation({
 
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
-      <AlertDialogContent className="max-w-md">
+      <AlertDialogContent className="max-w-md sm:max-w-lg">
         <AlertDialogHeader>
           <AlertDialogTitle>Conferma assegnazione turni</AlertDialogTitle>
           <AlertDialogDescription>
@@ -72,7 +71,7 @@ export function ShiftAssignmentConfirmation({
           </AlertDialogDescription>
         </AlertDialogHeader>
         
-        <ScrollArea className="h-[300px] rounded-md border p-4">
+        <ScrollArea className="h-[300px] sm:h-[400px] rounded-md border p-4">
           <div className="space-y-4">
             <div className="space-y-2">
               <h3 className="font-medium">Dipendente</h3>
@@ -152,7 +151,7 @@ export function ShiftAssignmentConfirmation({
           </div>
         </ScrollArea>
 
-        <AlertDialogFooter>
+        <AlertDialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" onClick={onClose}>
             Annulla
           </Button>
