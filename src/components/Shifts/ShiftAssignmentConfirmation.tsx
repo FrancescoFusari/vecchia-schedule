@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import {
   AlertDialog,
@@ -59,7 +60,9 @@ export function ShiftAssignmentConfirmation({
   }, [weekdays, selectedDays, weekdayMonth, shifts]);
 
   const handleConfirmClick = () => {
+    // Make sure onConfirm is called when the button is clicked
     if (onConfirm) {
+      console.log("Confirmation dialog: Calling onConfirm callback");
       onConfirm();
     }
   };

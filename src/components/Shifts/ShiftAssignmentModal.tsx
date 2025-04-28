@@ -176,7 +176,9 @@ export const ShiftAssignmentModal = ({
   };
   
   const handleConfirmSave = async () => {
+    console.log("Starting handleConfirmSave with shiftsToAdd:", shiftsToAdd);
     if (shiftsToAdd.length === 0 || !selectedEmployee || !selectedTemplate) {
+      console.warn("Missing required data for saving shifts");
       setIsConfirmationOpen(false);
       return;
     }
@@ -185,7 +187,9 @@ export const ShiftAssignmentModal = ({
     const newShifts = [];
     
     try {
+      console.log(`Attempting to create ${shiftsToAdd.length} shifts for ${selectedEmployee.firstName}`);
       for (const { date, template } of shiftsToAdd) {
+        console.log(`Creating shift for date: ${format(date, "yyyy-MM-dd")} with template: ${template.name}`);
         const shift = await shiftService.createShift({
           employeeId: selectedEmployee.id,
           date: format(date, "yyyy-MM-dd"),
@@ -193,10 +197,12 @@ export const ShiftAssignmentModal = ({
           endTime: template.endTime,
           duration: template.duration
         });
+        console.log("Shift created:", shift);
         newShifts.push(shift);
       }
       
       if (newShifts.length > 0) {
+        console.log(`Successfully created ${newShifts.length} shifts`);
         toast({
           title: "Turni assegnati",
           description: `${newShifts.length} turni sono stati assegnati con successo.`,
@@ -212,6 +218,7 @@ export const ShiftAssignmentModal = ({
           setSelectedTemplate(null);
           
           if (onShiftsAdded) {
+            console.log("Calling onShiftsAdded callback");
             onShiftsAdded();
           }
           onClose();
