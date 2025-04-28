@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { format, eachDayOfInterval, startOfMonth, endOfMonth } from "date-fns";
 import { it } from "date-fns/locale";
@@ -175,7 +174,6 @@ export const ShiftAssignmentModal = ({
     setIsConfirmationOpen(true);
   };
   
-  // Updated function to ensure shifts are saved before closing
   const handleConfirmSave = async () => {
     if (shiftsToAdd.length === 0 || !selectedEmployee || !selectedTemplate) {
       setIsConfirmationOpen(false);
@@ -186,7 +184,6 @@ export const ShiftAssignmentModal = ({
     const newShifts = [];
     
     try {
-      // Create all shifts
       for (const { date, template } of shiftsToAdd) {
         const shift = await shiftService.createShift({
           employeeId: selectedEmployee.id,
@@ -198,25 +195,23 @@ export const ShiftAssignmentModal = ({
         newShifts.push(shift);
       }
       
-      // Only show success message and close dialogs if shifts were actually created
       if (newShifts.length > 0) {
         toast({
           title: "Turni assegnati",
           description: `${newShifts.length} turni sono stati assegnati con successo.`,
         });
         
-        // Notify parent component that shifts were added
-        onShiftsAdded();
-        
-        // Close the confirmation dialog first
         setIsConfirmationOpen(false);
         
-        // Then reset state and close the main dialog
         setTimeout(() => {
           setSelectedDays({});
           setSelectedDaysOfWeek({});
           setSelectedEmployee(null);
           setSelectedTemplate(null);
+          
+          if (onShiftsAdded) {
+            onShiftsAdded();
+          }
           onClose();
         }, 100);
       } else {
@@ -235,7 +230,6 @@ export const ShiftAssignmentModal = ({
     }
   };
   
-  // New function to reset state and close modal
   const resetAndClose = () => {
     setSelectedDays({});
     setSelectedDaysOfWeek({});
@@ -245,7 +239,6 @@ export const ShiftAssignmentModal = ({
     onClose();
   };
   
-  // Modified to ensure cancellation closes confirmation without saving shifts
   const handleCancel = () => {
     setIsConfirmationOpen(false);
     onClose();
@@ -302,7 +295,7 @@ export const ShiftAssignmentModal = ({
   
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={open => {
+      <Dialog open={isOpen} onOpenChange={(open) => {
         if (!loading && !open) {
           handleCancel();
         }

@@ -99,7 +99,7 @@ export function EmployeeBottomSheet({
         <DialogFooter>
           <Button 
             variant="outline" 
-            onClick={() => setOpen(false)} 
+            onClick={() => setOpen(false)}
             className="w-full"
           >
             Chiudi

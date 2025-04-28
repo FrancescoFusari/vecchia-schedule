@@ -59,13 +59,12 @@ export function ShiftAssignmentConfirmation({
     }
   }, [weekdays, selectedDays, weekdayMonth, shifts]);
 
-  // Update to ensure the confirmation button calls the onConfirm properly
   const handleConfirmClick = () => {
-    onConfirm();
-    // Don't close here - this will be handled by the parent after shifts are saved
+    if (onConfirm) {
+      onConfirm();
+    }
   };
 
-  // Only allow closing if not submitting
   const handleCancelClick = () => {
     if (!isSubmitting) {
       onClose();
