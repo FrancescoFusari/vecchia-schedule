@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { format, getDay, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth } from "date-fns";
 import { it } from "date-fns/locale";
@@ -10,7 +11,13 @@ import { Check, ChevronLeft, ChevronRight, ChevronDown, User } from "lucide-reac
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Drawer } from "@/components/ui/drawer";
+import { 
+  Drawer, 
+  DrawerContent, 
+  DrawerHeader, 
+  DrawerTitle, 
+  DrawerFooter 
+} from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
