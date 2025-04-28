@@ -1,4 +1,6 @@
-
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { useState, useEffect } from "react";
 import { format, eachDayOfInterval, startOfMonth, endOfMonth } from "date-fns";
 import { it } from "date-fns/locale";
@@ -35,6 +37,8 @@ export const ShiftAssignmentModal = ({
   currentMonth,
   onShiftsAdded
 }: ShiftAssignmentModalProps) => {
+  const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<ShiftTemplate | null>(null);
   const [currentDate, setCurrentDate] = useState(currentMonth);
@@ -177,6 +181,18 @@ export const ShiftAssignmentModal = ({
   
   const handleConfirmSave = async () => {
     console.log("Starting handleConfirmSave with shiftsToAdd:", shiftsToAdd);
+    
+    if (!isAdmin()) {
+      console.log("User is not admin, redirecting to login");
+      toast({
+        title: "Accesso negato",
+        description: "È necessario effettuare l'accesso come amministratore per assegnare i turni.",
+        variant: "destructive"
+      });
+      navigate("/login");
+      return;
+    }
+
     if (shiftsToAdd.length === 0 || !selectedEmployee || !selectedTemplate) {
       console.warn("Missing required data for saving shifts");
       setIsConfirmationOpen(false);
@@ -228,12 +244,22 @@ export const ShiftAssignmentModal = ({
       }
     } catch (error) {
       console.error("Error saving shifts:", error);
-      toast({
-        title: "Errore",
-        description: "Si è verificato un errore durante il salvataggio dei turni.",
-        variant: "destructive"
-      });
-      setIsConfirmationOpen(false);
+      
+      // Handle authentication errors specifically
+      if (error.message.includes("Admin privileges required")) {
+        toast({
+          title: "Accesso negato",
+          description: "È necessario effettuare l'accesso come amministratore per assegnare i turni.",
+          variant: "destructive"
+        });
+        navigate("/login");
+      } else {
+        toast({
+          title: "Errore",
+          description: "Si è verificato un errore durante il salvataggio dei turni.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setLoading(false);
     }

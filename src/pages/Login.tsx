@@ -39,9 +39,16 @@ const Login = () => {
     setIsLoading(true);
     try {
       await signIn(username, password);
-      // Navigate is handled by useAuth after successful login
+      console.log("Login successful, redirecting to home");
+      navigate("/");
     } catch (error) {
       console.error("Login error:", error);
+      toast({
+        title: "Errore di login",
+        description: "Credenziali non valide. Riprova.",
+        variant: "destructive"
+      });
+    } finally {
       setIsLoading(false);
     }
   };

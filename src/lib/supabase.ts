@@ -75,9 +75,8 @@ export const authService = {
       if (username === 'admin' && password === 'juventus96') {
         console.log("Admin login detected, using hardcoded admin credentials");
         
-        // For admin, we create a hardcoded user object with consistent ID
         const adminUser: User = {
-          id: 'admin-id', // IMPORTANT: This ID must match what's in the is_admin() function
+          id: 'admin-id',
           username: 'admin',
           email: 'admin@workshift.local',
           role: 'admin',
@@ -85,8 +84,8 @@ export const authService = {
           lastName: 'User'
         };
         
-        // Store admin session in local storage for persistence
         localStorage.setItem('workshift_admin_session', JSON.stringify(adminUser));
+        console.log("Admin session stored in localStorage");
         
         return { userData: adminUser };
       }
@@ -428,6 +427,7 @@ export const shiftService = {
       
       // Check for admin session
       const adminSession = localStorage.getItem('workshift_admin_session');
+      console.log("Admin session found:", Boolean(adminSession));
       
       if (!adminSession) {
         throw new Error("Admin privileges required to create shifts");
