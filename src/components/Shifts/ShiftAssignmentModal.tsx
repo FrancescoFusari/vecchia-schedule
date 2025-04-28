@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -42,6 +41,7 @@ export const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [displayMonth, setDisplayMonth] = useState<Date>(currentMonth);
   const [activeTab, setActiveTab] = useState<string>("weekday");
+  const [weekdayMonth, setWeekdayMonth] = useState<Date>(displayMonth);
 
   const handleSaveAssignments = async () => {
     if (!selectedEmployee || !selectedTemplate) {
@@ -130,8 +130,8 @@ export const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
   const validDaysCount = selectedDays.filter(day => isSameMonth(day, displayMonth)).length;
   const weekdayShiftsCount = weekdays.length > 0 
     ? eachDayOfInterval({ 
-        start: startOfMonth(displayMonth), 
-        end: endOfMonth(displayMonth) 
+        start: startOfMonth(weekdayMonth), 
+        end: endOfMonth(weekdayMonth) 
       }).filter(date => 
         weekdays.includes(getDay(date) === 0 ? 6 : getDay(date) - 1)
       ).length 
@@ -280,6 +280,33 @@ export const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
                 </TabsList>
                 
                 <TabsContent value="weekday" className="mt-4">
+                  <div className="mb-4 flex items-center justify-between">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setWeekdayMonth(prevMonth => {
+                        const newDate = new Date(prevMonth);
+                        newDate.setMonth(newDate.getMonth() - 1);
+                        return newDate;
+                      })}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <h2 className="text-lg font-medium capitalize">
+                      {format(weekdayMonth, 'MMMM yyyy', { locale: it })}
+                    </h2>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setWeekdayMonth(prevMonth => {
+                        const newDate = new Date(prevMonth);
+                        newDate.setMonth(newDate.getMonth() + 1);
+                        return newDate;
+                      })}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {dayLabels.map((day, index) => (
                       <div 

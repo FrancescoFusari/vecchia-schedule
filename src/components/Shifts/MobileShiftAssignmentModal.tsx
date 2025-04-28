@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { format, getDay, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth } from "date-fns";
 import { it } from "date-fns/locale";
@@ -49,6 +48,7 @@ export function MobileShiftAssignmentModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [displayMonth, setDisplayMonth] = useState<Date>(currentMonth);
   const [activeTab, setActiveTab] = useState<string>("weekday");
+  const [weekdayMonth, setWeekdayMonth] = useState<Date>(displayMonth);
 
   const handleSaveAssignments = async () => {
     if (!selectedEmployee || !selectedTemplate) {
@@ -137,8 +137,8 @@ export function MobileShiftAssignmentModal({
   const validDaysCount = selectedDays.filter(day => isSameMonth(day, displayMonth)).length;
   const weekdayShiftsCount = weekdays.length > 0 
     ? eachDayOfInterval({ 
-        start: startOfMonth(displayMonth), 
-        end: endOfMonth(displayMonth) 
+        start: startOfMonth(weekdayMonth), 
+        end: endOfMonth(weekdayMonth) 
       }).filter(date => 
         weekdays.includes(getDay(date) === 0 ? 6 : getDay(date) - 1)
       ).length 
@@ -291,6 +291,41 @@ export function MobileShiftAssignmentModal({
                   </TabsList>
                   
                   <TabsContent value="weekday" className="mt-4">
+                    <div className="mb-4 flex items-center justify-between">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          if (navigator.vibrate) navigator.vibrate(50);
+                          setWeekdayMonth(prevMonth => {
+                            const newDate = new Date(prevMonth);
+                            newDate.setMonth(newDate.getMonth() - 1);
+                            return newDate;
+                          });
+                        }}
+                        className="h-10 w-10"
+                      >
+                        <ChevronLeft className="h-5 w-5" />
+                      </Button>
+                      <h2 className="text-lg font-medium capitalize">
+                        {format(weekdayMonth, 'MMMM yyyy', { locale: it })}
+                      </h2>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          if (navigator.vibrate) navigator.vibrate(50);
+                          setWeekdayMonth(prevMonth => {
+                            const newDate = new Date(prevMonth);
+                            newDate.setMonth(newDate.getMonth() + 1);
+                            return newDate;
+                          });
+                        }}
+                        className="h-10 w-10"
+                      >
+                        <ChevronRight className="h-5 w-5" />
+                      </Button>
+                    </div>
                     <div className="grid grid-cols-1 gap-3">
                       {dayLabels.map((day, index) => (
                         <div 
