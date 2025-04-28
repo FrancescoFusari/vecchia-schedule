@@ -9,7 +9,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
 import { Plus } from "lucide-react";
 import { ShiftAssignmentModal } from "@/components/Shifts/ShiftAssignmentModal";
-import { MobileShiftAssignmentModal } from "@/components/Shifts/MobileShiftAssignmentModal";
 import { ShiftModal } from "@/components/Shifts/ShiftModal";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -262,37 +261,15 @@ const Calendar = () => {
         )}
       </div>
       
-      {isAssignmentModalOpen && isMobile ? (
-        <MobileShiftAssignmentModal
-          isOpen={isAssignmentModalOpen}
-          onClose={() => setIsAssignmentModalOpen(false)}
-          employees={employees}
-          templates={templates}
-          currentMonth={currentDate}
-          onShiftsAdded={handleAssignmentComplete}
-        />
-      ) : (
-        <ShiftAssignmentModal
-          isOpen={isAssignmentModalOpen}
-          onClose={() => setIsAssignmentModalOpen(false)}
-          employees={employees}
-          templates={templates}
-          currentMonth={currentDate}
-          onShiftsAdded={handleAssignmentComplete}
-        />
-      )}
+      <ShiftAssignmentModal
+        isOpen={isAssignmentModalOpen}
+        onClose={() => setIsAssignmentModalOpen(false)}
+        employees={employees}
+        templates={templates}
+        currentMonth={currentDate}
+        onShiftsAdded={handleAssignmentComplete}
+      />
       
-      {isAssignmentModalOpen && !selectedEmployee && isMobile && (
-        <MobileShiftAssignmentModal
-          isOpen={isAssignmentModalOpen}
-          onClose={() => setIsAssignmentModalOpen(false)}
-          employees={employees}
-          templates={templates}
-          currentMonth={currentDate}
-          onShiftsAdded={handleAssignmentComplete}
-        />
-      )}
-
       {(isAddingShift || selectedShift) && (
         <ShiftModal 
           isOpen={isAddingShift || !!selectedShift} 
