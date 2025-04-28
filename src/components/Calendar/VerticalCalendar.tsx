@@ -46,9 +46,9 @@ export function VerticalCalendar({
   onEditShift
 }: VerticalCalendarProps) {
   const { user, isAdmin } = useAuth();
-  const [daysWithShifts, setDaysWithShifts] = useState<DayWithShifts[]>([]);
   const [showOnlyUserShifts, setShowOnlyUserShifts] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
+  const [daysWithShifts, setDaysWithShifts] = useState<DayWithShifts[]>([]);
   const [filteredDays, setFilteredDays] = useState<DayWithShifts[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const isMobile = useIsMobile();
@@ -59,6 +59,15 @@ export function VerticalCalendar({
     const month = currentDate.getMonth();
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
+    
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - (startDate.getDay() === 0 ? 6 : startDate.getDay() - 1));
+    
+    const endDate = new Date(lastDay);
+    const daysToAdd = 7 - endDate.getDay();
+    endDate.setDate(endDate.getDate() + (daysToAdd === 7 ? 0 : daysToAdd));
+
+    console.log(`Date range for shifts: ${formatDate(startDate)} to ${formatDate(endDate)}`);
     
     const days: DayWithShifts[] = [];
     const today = new Date();
@@ -76,6 +85,8 @@ export function VerticalCalendar({
           shiftDate.getFullYear() === date.getFullYear()
         );
       });
+      
+      console.log(`Day ${formatDate(date)} has ${dayShifts.length} shifts`);
       
       days.push({
         date,
