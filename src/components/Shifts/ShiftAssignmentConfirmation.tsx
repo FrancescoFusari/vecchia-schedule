@@ -59,10 +59,24 @@ export function ShiftAssignmentConfirmation({
     }
   }, [weekdays, selectedDays, weekdayMonth, shifts]);
 
+  const handleConfirmClick = () => {
+    onConfirm();
+    // The parent component will handle closing this dialog
+  };
+
+  const handleCancelClick = () => {
+    onClose();
+    // Just notify parent to close this dialog, don't try to close everything
+  };
+
   if (!isOpen) return null;
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={onClose}>
+    <AlertDialog open={isOpen} onOpenChange={(open) => {
+      if (!open && !isSubmitting) {
+        handleCancelClick();
+      }
+    }}>
       <AlertDialogContent className="max-w-md sm:max-w-lg">
         <AlertDialogHeader>
           <AlertDialogTitle>Conferma assegnazione turni</AlertDialogTitle>
@@ -152,11 +166,11 @@ export function ShiftAssignmentConfirmation({
         </ScrollArea>
 
         <AlertDialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={handleCancelClick} disabled={isSubmitting}>
             Annulla
           </Button>
           <Button 
-            onClick={onConfirm}
+            onClick={handleConfirmClick}
             disabled={isSubmitting}
           >
             {isSubmitting ? "Assegnazione..." : "Conferma"}

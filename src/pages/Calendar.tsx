@@ -1,4 +1,3 @@
-
 import { MonthlyCalendar } from "@/components/Calendar/MonthlyCalendar";
 import { WeeklyCalendar } from "@/components/Calendar/WeeklyCalendar";
 import { VerticalCalendar } from "@/components/Calendar/VerticalCalendar";
@@ -75,26 +74,12 @@ const Calendar = () => {
   
   const handleAssignmentComplete = () => {
     setIsAssignmentModalOpen(false);
-    setRefreshTrigger(prev => prev + 1); // Increment refresh trigger to force calendar update
+    setRefreshTrigger(prev => prev + 1);
+    setSelectedShift(null);
+    setIsAddingShift(false);
     
     if (isVerticalView) {
       fetchShiftsForCurrentMonth();
-    } else if (isWeekView) {
-      const weeklyCalendarElement = document.querySelector('[data-component="weekly-calendar"]');
-      if (weeklyCalendarElement) {
-        weeklyCalendarElement.classList.add('refresh-trigger');
-        setTimeout(() => {
-          weeklyCalendarElement.classList.remove('refresh-trigger');
-        }, 100);
-      }
-    } else {
-      const monthlyCalendarElement = document.querySelector('[data-component="monthly-calendar"]');
-      if (monthlyCalendarElement) {
-        monthlyCalendarElement.classList.add('refresh-trigger');
-        setTimeout(() => {
-          monthlyCalendarElement.classList.remove('refresh-trigger');
-        }, 100);
-      }
     }
   };
   
@@ -136,7 +121,7 @@ const Calendar = () => {
     if (isVerticalView) {
       fetchShiftsForCurrentMonth();
     }
-  }, [isVerticalView, currentDate, refreshTrigger]); // Use refreshTrigger in dependencies to refetch when it changes
+  }, [isVerticalView, currentDate, refreshTrigger]);
 
   const handleAddShift = (date: Date, dayOfWeek: number) => {
     setSelectedDate(date);
@@ -173,7 +158,7 @@ const Calendar = () => {
         });
       }
       handleShiftModalClose();
-      setRefreshTrigger(prev => prev + 1); // Increment refresh trigger to force calendar update
+      setRefreshTrigger(prev => prev + 1);
       if (isVerticalView) {
         fetchShiftsForCurrentMonth();
       }
@@ -196,7 +181,7 @@ const Calendar = () => {
         description: "Il turno è stato eliminato con successo."
       });
       handleShiftModalClose();
-      setRefreshTrigger(prev => prev + 1); // Increment refresh trigger to force calendar update
+      setRefreshTrigger(prev => prev + 1);
       if (isVerticalView) {
         fetchShiftsForCurrentMonth();
       }

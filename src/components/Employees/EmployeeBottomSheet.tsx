@@ -35,7 +35,7 @@ export function EmployeeBottomSheet({
   
   const handleEmployeeClick = (employee: Employee) => {
     onEmployeeSelect(employee);
-    setOpen(false);
+    setOpen(false); // Ensure dialog closes when an employee is selected
   };
   
   if (!isAdmin || employees.length === 0) return null;
@@ -99,7 +99,7 @@ export function EmployeeBottomSheet({
         <DialogFooter>
           <Button 
             variant="outline" 
-            onClick={() => setOpen(false)}
+            onClick={() => setOpen(false)} // Explicit close on button click
             className="w-full"
           >
             Chiudi

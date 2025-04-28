@@ -1,12 +1,12 @@
+
 import { useState, useEffect } from "react";
-import { format, eachDayOfInterval, startOfMonth, endOfMonth, isEqual, parseISO } from "date-fns";
+import { format, eachDayOfInterval, startOfMonth, endOfMonth } from "date-fns";
 import { it } from "date-fns/locale";
 import { Calendar, ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Employee, ShiftTemplate, Shift } from "@/lib/types";
 import { templateService, shiftService } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
@@ -15,10 +15,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { ShiftAssignmentConfirmation } from "./ShiftAssignmentConfirmation";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ShiftAssignmentConfirmation } from "./ShiftAssignmentConfirmation";
 
 interface ShiftAssignmentModalProps {
   isOpen: boolean;
@@ -203,12 +201,10 @@ export const ShiftAssignmentModal = ({
         description: `${newShifts.length} turni sono stati assegnati con successo.`,
       });
       
-      onShiftsAdded();
-      
-      setSelectedDays({});
-      setSelectedDaysOfWeek({});
+      // Close all dialogs and reset state
       setIsConfirmationOpen(false);
-      onClose();
+      resetAndClose();
+      
     } catch (error) {
       console.error("Error saving shifts:", error);
       toast({
@@ -216,9 +212,26 @@ export const ShiftAssignmentModal = ({
         description: "Si è verificato un errore durante il salvataggio dei turni.",
         variant: "destructive"
       });
+      setIsConfirmationOpen(false);
     } finally {
       setLoading(false);
     }
+  };
+  
+  // New function to reset state and close modal
+  const resetAndClose = () => {
+    setSelectedDays({});
+    setSelectedDaysOfWeek({});
+    setSelectedEmployee(null);
+    setSelectedTemplate(null);
+    onShiftsAdded();
+    onClose();
+  };
+  
+  // Modified to ensure cancellation also closes confirmation
+  const handleCancel = () => {
+    setIsConfirmationOpen(false);
+    onClose();
   };
   
   const renderCalendar = () => {
@@ -272,7 +285,11 @@ export const ShiftAssignmentModal = ({
   
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={open => !loading && !open && onClose()}>
+      <Dialog open={isOpen} onOpenChange={open => {
+        if (!loading && !open) {
+          handleCancel();
+        }
+      }}>
         <DialogContent className="sm:max-w-md md:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -406,7 +423,7 @@ export const ShiftAssignmentModal = ({
           </ScrollArea>
           
           <DialogFooter className="flex flex-col sm:flex-row sm:justify-between space-y-2 sm:space-y-0 pt-2">
-            <Button variant="outline" onClick={onClose} disabled={loading}>
+            <Button variant="outline" onClick={handleCancel} disabled={loading}>
               Annulla
             </Button>
             <Button onClick={handleSave} disabled={loading || !selectedEmployee || !selectedTemplate}>
@@ -418,7 +435,10 @@ export const ShiftAssignmentModal = ({
       
       <ShiftAssignmentConfirmation
         isOpen={isConfirmationOpen}
-        onClose={() => setIsConfirmationOpen(false)}
+        onClose={() => {
+          setIsConfirmationOpen(false);
+          // Don't close the main dialog here, only the confirmation
+        }}
         employee={selectedEmployee}
         shifts={shiftsToAdd}
         onConfirm={handleConfirmSave}
