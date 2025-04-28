@@ -423,7 +423,7 @@ const Dashboard = () => {
           <ShiftAssignmentModal
             isOpen={isShiftAssignmentModalOpen}
             onClose={() => setIsShiftAssignmentModalOpen(false)}
-            employee={employeeForShiftAssignment}
+            employees={employees}
             templates={templates}
             currentMonth={currentMonth}
             onShiftsAdded={handleShiftsAdded}
