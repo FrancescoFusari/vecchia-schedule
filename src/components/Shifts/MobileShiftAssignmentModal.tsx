@@ -9,12 +9,12 @@ import { cn } from "@/lib/utils";
 import { Check, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerFooter
-} from "@/components/ui/drawer";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -157,16 +157,16 @@ export function MobileShiftAssignmentModal({
   const selectedTemplateName = templates.find(t => t.id === selectedTemplate)?.name || "Seleziona tipo di turno";
 
   return (
-    <Drawer open={isOpen} onOpenChange={onClose}>
-      <DrawerContent className="h-[90vh]">
-        <div className="mx-auto w-full max-w-lg">
-          <DrawerHeader>
-            <DrawerTitle className="text-xl">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="fixed inset-x-0 bottom-0 top-[10%] h-[90vh] rounded-t-[10px] p-0 sm:h-auto sm:max-w-lg sm:rounded-lg">
+        <div className="mx-auto w-full max-w-lg overflow-y-auto">
+          <DialogHeader className="p-4 sm:p-6">
+            <DialogTitle className="text-xl">
               Assegna turni: {employee.firstName} {employee.lastName}
-            </DrawerTitle>
-          </DrawerHeader>
+            </DialogTitle>
+          </DialogHeader>
 
-          <div className="px-4 space-y-6">
+          <div className="px-4 space-y-6 pb-4">
             <Collapsible className="w-full">
               <CollapsibleTrigger asChild>
                 <Button
@@ -348,11 +348,11 @@ export function MobileShiftAssignmentModal({
             </Tabs>
           </div>
           
-          <DrawerFooter className="px-4 pb-8">
-            <div className="flex flex-col gap-3">
+          <DialogFooter className="sticky bottom-0 border-t bg-background px-4 py-4">
+            <div className="flex flex-col gap-3 w-full">
               <Button 
                 size="lg"
-                className="h-12"
+                className="h-12 w-full"
                 onClick={handleSaveAssignments}
                 disabled={!selectedTemplate || totalShiftsCount === 0 || isSubmitting}
               >
@@ -362,14 +362,14 @@ export function MobileShiftAssignmentModal({
                 variant="outline" 
                 size="lg"
                 onClick={onClose}
-                className="h-12"
+                className="h-12 w-full"
               >
                 Annulla
               </Button>
             </div>
-          </DrawerFooter>
+          </DialogFooter>
         </div>
-      </DrawerContent>
-    </Drawer>
+      </DialogContent>
+    </Dialog>
   );
 }
