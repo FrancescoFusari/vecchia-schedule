@@ -125,8 +125,7 @@ const Dashboard = () => {
     setIsEmployeeModalOpen(true);
   };
   
-  const handleEmployeeClick = (employee: Employee) => {
-    setEmployeeForShiftAssignment(employee);
+  const handleEmployeeClick = () => {
     setIsShiftAssignmentModalOpen(true);
   };
   
@@ -423,7 +422,7 @@ const Dashboard = () => {
           <ShiftAssignmentModal
             isOpen={isShiftAssignmentModalOpen}
             onClose={() => setIsShiftAssignmentModalOpen(false)}
-            employee={employeeForShiftAssignment}
+            employees={employees}
             templates={templates}
             currentMonth={currentMonth}
             onShiftsAdded={handleShiftsAdded}
