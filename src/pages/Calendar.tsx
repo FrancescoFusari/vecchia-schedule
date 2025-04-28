@@ -13,6 +13,7 @@ import { ShiftModal } from "@/components/Shifts/ShiftModal";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { EmployeeBottomSheet } from "@/components/Employees/EmployeeBottomSheet";
+import { Users } from "lucide-react";
 
 const Calendar = () => {
   const isMobile = useIsMobile();
@@ -67,11 +68,8 @@ const Calendar = () => {
     setIsVerticalView(false);
   };
   
-  const handleEmployeeClick = (employee: Employee) => {
-    if (isAdmin()) {
-      setSelectedEmployee(employee);
-      setIsAssignmentModalOpen(true);
-    }
+  const handleEmployeeClick = () => {
+    setIsAssignmentModalOpen(true);
   };
   
   const handleAssignmentComplete = () => {
@@ -220,11 +218,14 @@ const Calendar = () => {
 
       {isAdmin() && (
         <div className="w-full max-w-lg mx-auto px-4 sm:px-0">
-          <EmployeeBottomSheet 
-            employees={employees} 
-            onEmployeeSelect={handleEmployeeClick}
-            isAdmin={isAdmin()}
-          />
+          <Button
+            size="lg"
+            className="w-full h-12 text-base font-medium shadow-md hover:shadow-lg transition-all gap-2"
+            onClick={handleEmployeeClick}
+          >
+            <Users className="h-5 w-5" />
+            Assegna turni
+          </Button>
         </div>
       )}
       
@@ -247,28 +248,26 @@ const Calendar = () => {
         )}
       </div>
       
-      {isAssignmentModalOpen && selectedEmployee && (
-        isMobile ? (
-          <MobileShiftAssignmentModal
-            isOpen={isAssignmentModalOpen}
-            onClose={() => setIsAssignmentModalOpen(false)}
-            employee={selectedEmployee}
-            templates={templates}
-            currentMonth={currentDate}
-            onShiftsAdded={handleAssignmentComplete}
-          />
-        ) : (
-          <ShiftAssignmentModal
-            isOpen={isAssignmentModalOpen}
-            onClose={() => setIsAssignmentModalOpen(false)}
-            employee={selectedEmployee}
-            templates={templates}
-            currentMonth={currentDate}
-            onShiftsAdded={handleAssignmentComplete}
-          />
-        )
+      {isAssignmentModalOpen && isMobile ? (
+        <MobileShiftAssignmentModal
+          isOpen={isAssignmentModalOpen}
+          onClose={() => setIsAssignmentModalOpen(false)}
+          employees={employees}
+          templates={templates}
+          currentMonth={currentDate}
+          onShiftsAdded={handleAssignmentComplete}
+        />
+      ) : (
+        <ShiftAssignmentModal
+          isOpen={isAssignmentModalOpen}
+          onClose={() => setIsAssignmentModalOpen(false)}
+          employees={employees}
+          templates={templates}
+          currentMonth={currentDate}
+          onShiftsAdded={handleAssignmentComplete}
+        />
       )}
-
+      
       {isAssignmentModalOpen && !selectedEmployee && isMobile && (
         <MobileShiftAssignmentModal
           isOpen={isAssignmentModalOpen}

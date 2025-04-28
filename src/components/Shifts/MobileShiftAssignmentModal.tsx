@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { format, getDay, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth } from "date-fns";
 import { it } from "date-fns/locale";
@@ -6,7 +7,9 @@ import { toast } from "@/hooks/use-toast";
 import { shiftService } from "@/lib/supabase";
 import { v4 as uuidv4 } from "uuid";
 import { cn } from "@/lib/utils";
-import { Check, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, ChevronDown, User } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Avatar } from "@/components/ui/avatar";
 
 import {
   Drawer,
@@ -20,13 +23,12 @@ import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface MobileShiftAssignmentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  employee: Employee | null;
+  employees: Employee[];
   templates: ShiftTemplate[];
   currentMonth: Date;
   onShiftsAdded: () => void;
@@ -35,32 +37,24 @@ interface MobileShiftAssignmentModalProps {
 export function MobileShiftAssignmentModal({
   isOpen,
   onClose,
-  employee,
+  employees,
   templates,
   currentMonth,
   onShiftsAdded,
 }: MobileShiftAssignmentModalProps) {
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
   const [selectedDays, setSelectedDays] = useState<Date[]>([]);
   const [weekdays, setWeekdays] = useState<number[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [displayMonth, setDisplayMonth] = useState<Date>(currentMonth);
   const [activeTab, setActiveTab] = useState<string>("weekday");
-  
-  useState(() => {
-    if (isOpen) {
-      setSelectedTemplate("");
-      setSelectedDays([]);
-      setWeekdays([]);
-      setDisplayMonth(currentMonth);
-    }
-  });
 
   const handleSaveAssignments = async () => {
-    if (!employee || !selectedTemplate) {
+    if (!selectedEmployee || !selectedTemplate) {
       toast({
         title: "Errore",
-        description: "Seleziona un tipo di turno",
+        description: "Seleziona un dipendente e un tipo di turno",
         variant: "destructive"
       });
       return;
@@ -108,7 +102,7 @@ export function MobileShiftAssignmentModal({
       
       const newShifts: Shift[] = daysToAssign.map(day => ({
         id: uuidv4(),
-        employeeId: employee.id,
+        employeeId: selectedEmployee.id,
         date: format(day, 'yyyy-MM-dd'),
         startTime: template.startTime,
         endTime: template.endTime,
@@ -121,7 +115,7 @@ export function MobileShiftAssignmentModal({
       
       toast({
         title: "Turni assegnati",
-        description: `${newShifts.length} turni assegnati a ${employee.firstName} ${employee.lastName}`,
+        description: `${newShifts.length} turni assegnati a ${selectedEmployee.firstName} ${selectedEmployee.lastName}`,
       });
       
       onShiftsAdded();
@@ -151,8 +145,6 @@ export function MobileShiftAssignmentModal({
     : 0;
   
   const totalShiftsCount = validDaysCount + weekdayShiftsCount;
-  
-  if (!employee) return null;
 
   const selectedTemplateName = templates.find(t => t.id === selectedTemplate)?.name || "Seleziona tipo di turno";
 
@@ -162,190 +154,275 @@ export function MobileShiftAssignmentModal({
         <div className="mx-auto w-full max-w-lg">
           <DrawerHeader>
             <DrawerTitle className="text-xl">
-              Assegna turni: {employee.firstName} {employee.lastName}
+              {selectedEmployee ? (
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-8 w-8" style={{ backgroundColor: selectedEmployee.color }}>
+                    <span className="text-sm font-medium text-white">
+                      {selectedEmployee.firstName.charAt(0)}{selectedEmployee.lastName.charAt(0)}
+                    </span>
+                  </Avatar>
+                  <div>
+                    <span className="text-base">Assegna turni a </span>
+                    <span className="font-semibold">{selectedEmployee.firstName} {selectedEmployee.lastName}</span>
+                  </div>
+                </div>
+              ) : (
+                "Assegnazione Turni"
+              )}
             </DrawerTitle>
           </DrawerHeader>
 
           <div className="px-4 space-y-6">
-            <Collapsible className="w-full">
+            {/* Employee Selection */}
+            <Collapsible 
+              className="w-full border rounded-lg" 
+              open={!selectedEmployee}
+            >
               <CollapsibleTrigger asChild>
                 <Button
-                  variant="outline"
-                  className="w-full flex items-center justify-between"
+                  variant="ghost"
+                  className="w-full flex items-center justify-between p-4 h-auto"
                 >
-                  <span>{selectedTemplateName}</span>
+                  <div className="flex items-center gap-3">
+                    {selectedEmployee ? (
+                      <>
+                        <Avatar 
+                          className="h-8 w-8" 
+                          style={{ backgroundColor: selectedEmployee.color }}
+                        >
+                          <span className="text-sm font-medium text-white">
+                            {selectedEmployee.firstName.charAt(0)}{selectedEmployee.lastName.charAt(0)}
+                          </span>
+                        </Avatar>
+                        <span className="font-medium">
+                          {selectedEmployee.firstName} {selectedEmployee.lastName}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <User className="h-5 w-5 text-muted-foreground" />
+                        <span className="text-muted-foreground">Seleziona dipendente</span>
+                      </>
+                    )}
+                  </div>
                   <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
                 </Button>
               </CollapsibleTrigger>
-              <CollapsibleContent className="mt-4 space-y-2">
-                {templates.map((template) => (
+              <CollapsibleContent className="p-4 pt-0 grid grid-cols-2 gap-3">
+                {employees.map((employee) => (
                   <div
-                    key={template.id}
+                    key={employee.id}
                     className={cn(
-                      "flex items-start justify-between p-4 border rounded-lg cursor-pointer transition-colors",
-                      selectedTemplate === template.id 
-                        ? "bg-primary/10 border-primary" 
-                        : "hover:bg-muted/50"
+                      "flex flex-col items-center justify-center p-4 rounded-lg border transition-colors cursor-pointer hover:bg-accent/50",
+                      selectedEmployee?.id === employee.id && "bg-primary/10 border-primary"
                     )}
-                    onClick={() => {
-                      setSelectedTemplate(template.id);
-                      if (navigator.vibrate) navigator.vibrate(50);
-                    }}
+                    onClick={() => setSelectedEmployee(employee)}
                   >
-                    <div className="space-y-1">
-                      <h4 className="font-medium">{template.name}</h4>
+                    <Avatar 
+                      className="h-12 w-12 mb-3" 
+                      style={{ backgroundColor: employee.color }}
+                    >
+                      <span className="text-base font-medium text-white">
+                        {employee.firstName.charAt(0)}{employee.lastName.charAt(0)}
+                      </span>
+                    </Avatar>
+                    <div className="text-center">
+                      <h3 className="font-medium leading-none mb-1">
+                        {employee.firstName}
+                      </h3>
                       <p className="text-sm text-muted-foreground">
-                        {template.startTime} - {template.endTime}
+                        {employee.lastName}
                       </p>
-                      <Badge variant="secondary" className="mt-2">
-                        {template.duration}h
-                      </Badge>
                     </div>
-                    {selectedTemplate === template.id && (
-                      <Check className="h-5 w-5 text-primary flex-shrink-0" />
-                    )}
                   </div>
                 ))}
               </CollapsibleContent>
             </Collapsible>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 h-12">
-                <TabsTrigger value="weekday" className="text-base">Giorni settimana</TabsTrigger>
-                <TabsTrigger value="specific" className="text-base">Giorni specifici</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="weekday" className="mt-4">
-                <div className="grid grid-cols-1 gap-3">
-                  {dayLabels.map((day, index) => (
-                    <div 
-                      key={index}
-                      className={cn(
-                        "flex items-center space-x-3 p-4 rounded-md transition-colors cursor-pointer",
-                        weekdays.includes(index) ? "bg-primary/10" : "hover:bg-muted/50"
-                      )}
-                      onClick={() => {
-                        if (navigator.vibrate) navigator.vibrate(50);
-                        setWeekdays(prev => 
-                          prev.includes(index) 
-                            ? prev.filter(d => d !== index) 
-                            : [...prev, index]
-                        );
-                      }}
+            {/* Template Selection */}
+            {selectedEmployee && (
+              <>
+                <Collapsible className="w-full">
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full flex items-center justify-between"
                     >
-                      <Checkbox 
-                        id={`day-${index}`}
-                        checked={weekdays.includes(index)}
-                        onCheckedChange={() => {
-                          if (navigator.vibrate) navigator.vibrate(50);
-                          setWeekdays(prev => 
-                            prev.includes(index) 
-                              ? prev.filter(d => d !== index) 
-                              : [...prev, index]
-                          );
-                        }}
-                        className="h-5 w-5"
-                      />
-                      <Label 
-                        htmlFor={`day-${index}`}
+                      <span>{selectedTemplateName}</span>
+                      <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-4 space-y-2">
+                    {templates.map((template) => (
+                      <div
+                        key={template.id}
                         className={cn(
-                          "text-base cursor-pointer",
-                          weekdays.includes(index) ? "font-medium text-primary" : ""
+                          "flex items-start justify-between p-4 border rounded-lg cursor-pointer transition-colors",
+                          selectedTemplate === template.id 
+                            ? "bg-primary/10 border-primary" 
+                            : "hover:bg-muted/50"
                         )}
+                        onClick={() => {
+                          if (navigator.vibrate) navigator.vibrate(50);
+                          setSelectedTemplate(template.id);
+                        }}
                       >
-                        {day}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-                
-                {weekdayShiftsCount > 0 && (
-                  <div className="mt-4 p-4 bg-muted rounded-md flex items-center justify-between">
-                    <p className="font-medium">
-                      Turni selezionati:
-                    </p>
-                    <Badge className="text-sm px-3 py-1">
-                      {weekdayShiftsCount} turni
-                    </Badge>
-                  </div>
-                )}
-              </TabsContent>
-              
-              <TabsContent value="specific" className="mt-4">
-                <div className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => {
-                        if (navigator.vibrate) navigator.vibrate(50);
-                        setDisplayMonth(prevMonth => {
-                          const newDate = new Date(prevMonth);
-                          newDate.setMonth(newDate.getMonth() - 1);
-                          return newDate;
-                        });
-                      }}
-                      className="h-10 w-10"
-                    >
-                      <ChevronLeft className="h-5 w-5" />
-                    </Button>
-                    <h2 className="text-lg font-medium capitalize">
-                      {format(displayMonth, 'MMMM yyyy', { locale: it })}
-                    </h2>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => {
-                        if (navigator.vibrate) navigator.vibrate(50);
-                        setDisplayMonth(prevMonth => {
-                          const newDate = new Date(prevMonth);
-                          newDate.setMonth(newDate.getMonth() + 1);
-                          return newDate;
-                        });
-                      }}
-                      className="h-10 w-10"
-                    >
-                      <ChevronRight className="h-5 w-5" />
-                    </Button>
-                  </div>
+                        <div className="space-y-1">
+                          <h4 className="font-medium">{template.name}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {template.startTime} - {template.endTime}
+                          </p>
+                          <Badge variant="secondary" className="mt-2">
+                            {template.duration}h
+                          </Badge>
+                        </div>
+                        {selectedTemplate === template.id && (
+                          <Check className="h-5 w-5 text-primary flex-shrink-0" />
+                        )}
+                      </div>
+                    ))}
+                  </CollapsibleContent>
+                </Collapsible>
+
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 h-12">
+                    <TabsTrigger value="weekday" className="text-base">Giorni settimana</TabsTrigger>
+                    <TabsTrigger value="specific" className="text-base">Giorni specifici</TabsTrigger>
+                  </TabsList>
                   
-                  <Calendar
-                    mode="multiple"
-                    selected={selectedDays}
-                    onSelect={(days) => {
-                      if (!days) return;
-                      setSelectedDays(Array.isArray(days) ? days : []);
-                      if (navigator.vibrate) navigator.vibrate(50);
-                    }}
-                    className="w-full"
-                    locale={it}
-                    month={displayMonth}
-                    onMonthChange={setDisplayMonth}
-                    classNames={{
-                      day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-                      day_today: "bg-accent text-accent-foreground",
-                      day: cn(
-                        "h-10 w-10 p-0 font-normal aria-selected:opacity-100 hover:bg-primary/10 focus:bg-primary/10 transition-colors"
-                      ),
-                      head_cell: "text-muted-foreground rounded-md w-10 font-medium text-[0.8rem] uppercase",
-                      cell: "h-10 w-10 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-primary/5 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-                      month: "space-y-4"
-                    }}
-                  />
-                  
-                  {validDaysCount > 0 && (
-                    <div className="mt-4 p-4 bg-muted rounded-md flex items-center justify-between">
-                      <p className="font-medium">
-                        Giorni selezionati:
-                      </p>
-                      <Badge className="text-sm px-3 py-1">
-                        {validDaysCount} giorni
-                      </Badge>
+                  <TabsContent value="weekday" className="mt-4">
+                    <div className="grid grid-cols-1 gap-3">
+                      {dayLabels.map((day, index) => (
+                        <div 
+                          key={index}
+                          className={cn(
+                            "flex items-center space-x-3 p-4 rounded-md transition-colors cursor-pointer",
+                            weekdays.includes(index) ? "bg-primary/10" : "hover:bg-muted/50"
+                          )}
+                          onClick={() => {
+                            if (navigator.vibrate) navigator.vibrate(50);
+                            setWeekdays(prev => 
+                              prev.includes(index) 
+                                ? prev.filter(d => d !== index) 
+                                : [...prev, index]
+                            );
+                          }}
+                        >
+                          <Checkbox 
+                            id={`day-${index}`}
+                            checked={weekdays.includes(index)}
+                            onCheckedChange={() => {
+                              if (navigator.vibrate) navigator.vibrate(50);
+                              setWeekdays(prev => 
+                                prev.includes(index) 
+                                  ? prev.filter(d => d !== index) 
+                                  : [...prev, index]
+                              );
+                            }}
+                            className="h-5 w-5"
+                          />
+                          <Label 
+                            htmlFor={`day-${index}`}
+                            className={cn(
+                              "text-base cursor-pointer",
+                              weekdays.includes(index) ? "font-medium text-primary"  : ""
+                            )}
+                          >
+                            {day}
+                          </Label>
+                        </div>
+                      ))}
                     </div>
-                  )}
-                </div>
-              </TabsContent>
-            </Tabs>
+                    
+                    {weekdayShiftsCount > 0 && (
+                      <div className="mt-4 p-4 bg-muted rounded-md flex items-center justify-between">
+                        <p className="font-medium">
+                          Turni selezionati:
+                        </p>
+                        <Badge className="text-sm px-3 py-1">
+                          {weekdayShiftsCount} turni
+                        </Badge>
+                      </div>
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="specific" className="mt-4">
+                    <div className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            if (navigator.vibrate) navigator.vibrate(50);
+                            setDisplayMonth(prevMonth => {
+                              const newDate = new Date(prevMonth);
+                              newDate.setMonth(newDate.getMonth() - 1);
+                              return newDate;
+                            });
+                          }}
+                          className="h-10 w-10"
+                        >
+                          <ChevronLeft className="h-5 w-5" />
+                        </Button>
+                        <h2 className="text-lg font-medium capitalize">
+                          {format(displayMonth, 'MMMM yyyy', { locale: it })}
+                        </h2>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            if (navigator.vibrate) navigator.vibrate(50);
+                            setDisplayMonth(prevMonth => {
+                              const newDate = new Date(prevMonth);
+                              newDate.setMonth(newDate.getMonth() + 1);
+                              return newDate;
+                            });
+                          }}
+                          className="h-10 w-10"
+                        >
+                          <ChevronRight className="h-5 w-5" />
+                        </Button>
+                      </div>
+                      
+                      <Calendar
+                        mode="multiple"
+                        selected={selectedDays}
+                        onSelect={(days) => {
+                          if (!days) return;
+                          setSelectedDays(Array.isArray(days) ? days : []);
+                          if (navigator.vibrate) navigator.vibrate(50);
+                        }}
+                        className="w-full"
+                        locale={it}
+                        month={displayMonth}
+                        onMonthChange={setDisplayMonth}
+                        classNames={{
+                          day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+                          day_today: "bg-accent text-accent-foreground",
+                          day: cn(
+                            "h-10 w-10 p-0 font-normal aria-selected:opacity-100 hover:bg-primary/10 focus:bg-primary/10 transition-colors"
+                          ),
+                          head_cell: "text-muted-foreground rounded-md w-10 font-medium text-[0.8rem] uppercase",
+                          cell: "h-10 w-10 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-primary/5 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                          month: "space-y-4"
+                        }}
+                      />
+                      
+                      {validDaysCount > 0 && (
+                        <div className="mt-4 p-4 bg-muted rounded-md flex items-center justify-between">
+                          <p className="font-medium">
+                            Giorni selezionati:
+                          </p>
+                          <Badge className="text-sm px-3 py-1">
+                            {validDaysCount} giorni
+                          </Badge>
+                        </div>
+                      )}
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </>
+            )}
           </div>
           
           <DrawerFooter className="px-4 pb-8">
@@ -354,7 +431,7 @@ export function MobileShiftAssignmentModal({
                 size="lg"
                 className="h-12"
                 onClick={handleSaveAssignments}
-                disabled={!selectedTemplate || totalShiftsCount === 0 || isSubmitting}
+                disabled={!selectedEmployee || !selectedTemplate || totalShiftsCount === 0 || isSubmitting}
               >
                 {isSubmitting ? "Assegnazione..." : `Assegna ${totalShiftsCount} turni`}
               </Button>
