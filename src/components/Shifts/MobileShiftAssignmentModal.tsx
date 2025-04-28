@@ -1,30 +1,22 @@
 
-import { useState } from "react";
-import { format, getDay, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth } from "date-fns";
+import { useState, useEffect } from "react";
+import { format, eachDayOfInterval, startOfMonth, endOfMonth, isEqual } from "date-fns";
 import { it } from "date-fns/locale";
-import { Employee, ShiftTemplate, Shift } from "@/lib/types";
-import { toast } from "@/hooks/use-toast";
-import { shiftService } from "@/lib/supabase";
-import { v4 as uuidv4 } from "uuid";
-import { cn } from "@/lib/utils";
-import { Check, ChevronLeft, ChevronRight, ChevronDown, User } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Avatar } from "@/components/ui/avatar";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  Drawer, 
-  DrawerContent, 
-  DrawerHeader, 
-  DrawerTitle, 
-  DrawerFooter 
-} from "@/components/ui/drawer";
+import { Calendar, ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from "@/components/ui/drawer";
+import { Employee, ShiftTemplate, Shift } from "@/lib/types";
+import { templateService, shiftService } from "@/lib/supabase";
+import { toast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { ShiftAssignmentConfirmation } from "./ShiftAssignmentConfirmation";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface MobileShiftAssignmentModalProps {
   isOpen: boolean;
@@ -35,495 +27,468 @@ interface MobileShiftAssignmentModalProps {
   onShiftsAdded: () => void;
 }
 
-export function MobileShiftAssignmentModal({
+export const MobileShiftAssignmentModal = ({
   isOpen,
   onClose,
   employees,
   templates,
   currentMonth,
-  onShiftsAdded,
-}: MobileShiftAssignmentModalProps) {
+  onShiftsAdded
+}: MobileShiftAssignmentModalProps) => {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
-  const [selectedDays, setSelectedDays] = useState<Date[]>([]);
-  const [weekdays, setWeekdays] = useState<number[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [displayMonth, setDisplayMonth] = useState<Date>(currentMonth);
-  const [activeTab, setActiveTab] = useState<string>("weekday");
-  const [weekdayMonth, setWeekdayMonth] = useState<Date>(displayMonth);
-  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<ShiftTemplate | null>(null);
+  const [currentDate, setCurrentDate] = useState(currentMonth);
+  const [selectedDays, setSelectedDays] = useState<Record<string, boolean>>({});
+  const [selectedDaysOfWeek, setSelectedDaysOfWeek] = useState<Record<string, boolean>>({});
+  const [tab, setTab] = useState("weekdays");
+  const [loading, setLoading] = useState(false);
+  const [existingShifts, setExistingShifts] = useState<Shift[]>([]);
+  const [step, setStep] = useState<"employee" | "template" | "days">("employee");
+  const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
+  const [shiftsToAdd, setShiftsToAdd] = useState<Array<{ date: Date, template: ShiftTemplate }>>([]);
+  const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
+  
+  const daysOfWeek = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"];
+  
+  useEffect(() => {
+    if (isOpen && currentDate) {
+      fetchExistingShifts();
+    }
+  }, [isOpen, currentDate]);
 
-  const handleSaveAssignments = () => {
+  useEffect(() => {
+    if (selectedEmployee) {
+      fetchExistingShifts();
+    }
+  }, [selectedEmployee]);
+  
+  const fetchExistingShifts = async () => {
+    if (!selectedEmployee) return;
+    
+    const startDate = startOfMonth(currentDate);
+    const endDate = endOfMonth(currentDate);
+    
+    try {
+      const shifts = await shiftService.getEmployeeShifts(
+        selectedEmployee.id,
+        startDate.toISOString().split('T')[0],
+        endDate.toISOString().split('T')[0]
+      );
+      setExistingShifts(shifts);
+    } catch (error) {
+      console.error("Error fetching existing shifts:", error);
+    }
+  };
+  
+  const handlePrevMonth = () => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev);
+      newDate.setMonth(newDate.getMonth() - 1);
+      return newDate;
+    });
+    setSelectedDays({});
+  };
+  
+  const handleNextMonth = () => {
+    setCurrentDate(prev => {
+      const newDate = new Date(prev);
+      newDate.setMonth(newDate.getMonth() + 1);
+      return newDate;
+    });
+    setSelectedDays({});
+  };
+  
+  const toggleDaySelection = (dateStr: string, hasExistingShift: boolean) => {
+    if (hasExistingShift) {
+      toast({
+        title: "Turno esistente",
+        description: "Esiste già un turno assegnato per questa data.",
+        variant: "warning"
+      });
+      return;
+    }
+    
+    setSelectedDays(prev => ({
+      ...prev,
+      [dateStr]: !prev[dateStr]
+    }));
+  };
+  
+  const toggleDayOfWeekSelection = (day: string) => {
+    setSelectedDaysOfWeek(prev => ({
+      ...prev,
+      [day]: !prev[day]
+    }));
+  };
+  
+  const handlePrevStep = () => {
+    if (step === "template") setStep("employee");
+    else if (step === "days") setStep("template");
+  };
+  
+  const handleNextStep = () => {
+    if (step === "employee") {
+      if (!selectedEmployee) {
+        toast({
+          title: "Dipendente non selezionato",
+          description: "Seleziona un dipendente prima di procedere.",
+          variant: "destructive"
+        });
+        return;
+      }
+      setStep("template");
+    } else if (step === "template") {
+      if (!selectedTemplate) {
+        toast({
+          title: "Template non selezionato",
+          description: "Seleziona un template prima di procedere.",
+          variant: "destructive"
+        });
+        return;
+      }
+      setStep("days");
+    }
+  };
+  
+  const handleSave = async () => {
     if (!selectedEmployee || !selectedTemplate) {
       toast({
-        title: "Errore",
-        description: "Seleziona un dipendente e un tipo di turno",
+        title: "Selezione incompleta",
+        description: "Seleziona un dipendente e un template prima di procedere.",
         variant: "destructive"
       });
       return;
     }
     
-    const template = templates.find(t => t.id === selectedTemplate);
-    if (!template) {
-      toast({ 
-        title: "Errore", 
-        description: "Seleziona un template valido", 
-        variant: "destructive" 
-      });
-      return;
-    }
-
-    let daysToAssign: Date[] = [];
+    let dates: Date[] = [];
     
-    if (weekdays.length > 0) {
-      const monthStart = startOfMonth(weekdayMonth);
-      const monthEnd = endOfMonth(weekdayMonth);
-      const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+    if (tab === "specific-days") {
+      dates = Object.entries(selectedDays)
+        .filter(([_, selected]) => selected)
+        .map(([dateStr]) => new Date(dateStr));
+    } else {
+      const startDate = startOfMonth(currentDate);
+      const endDate = endOfMonth(currentDate);
+      const daysInMonth = eachDayOfInterval({ start: startDate, end: endDate });
       
-      daysToAssign = daysInMonth.filter(date => 
-        weekdays.includes(getDay(date) === 0 ? 6 : getDay(date) - 1)
-      );
+      dates = daysInMonth.filter(date => {
+        const dayName = format(date, "EEEE", { locale: it });
+        const italianDayIndex = daysOfWeek.findIndex(d => d.toLowerCase() === dayName.toLowerCase());
+        return selectedDaysOfWeek[daysOfWeek[italianDayIndex] || ""];
+      });
     }
     
-    selectedDays.forEach(day => {
-      if (!daysToAssign.some(d => isSameDay(d, day))) {
-        daysToAssign.push(day);
-      }
+    // Filter out dates with existing shifts
+    const datesWithoutShifts = dates.filter(date => {
+      const dateStr = format(date, "yyyy-MM-dd");
+      return !existingShifts.some(shift => format(new Date(shift.date), "yyyy-MM-dd") === dateStr);
     });
     
-    if (daysToAssign.length === 0) {
-      toast({ 
-        title: "Attenzione", 
-        description: "Nessun giorno selezionato", 
-        variant: "destructive" 
+    if (datesWithoutShifts.length === 0) {
+      toast({
+        title: "Nessuna data selezionata",
+        description: "Seleziona almeno una data per assegnare i turni.",
+        variant: "destructive"
       });
       return;
     }
-
-    setShowConfirmation(true);
+    
+    // Prepare shifts for confirmation
+    const shiftsToConfirm = datesWithoutShifts.map(date => ({
+      date,
+      template: selectedTemplate
+    }));
+    
+    setShiftsToAdd(shiftsToConfirm);
+    setIsConfirmationOpen(true);
   };
 
-  const handleConfirmAssignment = async () => {
+  const handleConfirmSave = async () => {
+    if (shiftsToAdd.length === 0 || !selectedEmployee || !selectedTemplate) {
+      setIsConfirmationOpen(false);
+      return;
+    }
+    
+    setLoading(true);
+    const newShifts = [];
+    
     try {
-      setIsSubmitting(true);
-      
-      const template = templates.find(t => t.id === selectedTemplate);
-      if (!template || !selectedEmployee) return;
-      
-      let daysToAssign: Date[] = [];
-      
-      if (weekdays.length > 0) {
-        const monthStart = startOfMonth(weekdayMonth);
-        const monthEnd = endOfMonth(weekdayMonth);
-        const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
-        
-        daysToAssign = daysInMonth.filter(date => 
-          weekdays.includes(getDay(date) === 0 ? 6 : getDay(date) - 1)
-        );
+      for (const { date, template } of shiftsToAdd) {
+        const shift = await shiftService.createShift({
+          employeeId: selectedEmployee.id,
+          date: format(date, "yyyy-MM-dd"),
+          startTime: template.startTime,
+          endTime: template.endTime,
+          duration: template.duration
+        });
+        newShifts.push(shift);
       }
-      
-      selectedDays.forEach(day => {
-        if (!daysToAssign.some(d => isSameDay(d, day))) {
-          daysToAssign.push(day);
-        }
-      });
-      
-      const newShifts: Shift[] = daysToAssign.map(day => ({
-        id: uuidv4(),
-        employeeId: selectedEmployee.id,
-        date: format(day, 'yyyy-MM-dd'),
-        startTime: template.startTime,
-        endTime: template.endTime,
-        duration: template.duration,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }));
-      
-      await shiftService.createShifts(newShifts);
       
       toast({
         title: "Turni assegnati",
-        description: `${newShifts.length} turni assegnati a ${selectedEmployee.firstName} ${selectedEmployee.lastName}`,
+        description: `${newShifts.length} turni sono stati assegnati con successo.`,
       });
       
-      onShiftsAdded();
+      // Critical: Make sure to update the calendar view
+      onShiftsAdded(); // This will trigger the main calendar refresh
+      
+      setSelectedDays({});
+      setSelectedDaysOfWeek({});
+      setIsConfirmationOpen(false);
       onClose();
     } catch (error) {
-      console.error("Error assigning shifts:", error);
+      console.error("Error saving shifts:", error);
       toast({
         title: "Errore",
-        description: "Si è verificato un errore durante l'assegnazione dei turni",
-        variant: "destructive",
+        description: "Si è verificato un errore durante il salvataggio dei turni.",
+        variant: "destructive"
       });
     } finally {
-      setIsSubmitting(false);
-      setShowConfirmation(false);
+      setLoading(false);
     }
   };
-
-  const dayLabels = ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"];
-
-  const validDaysCount = selectedDays.filter(day => isSameMonth(day, displayMonth)).length;
-  const weekdayShiftsCount = weekdays.length > 0 
-    ? eachDayOfInterval({ 
-        start: startOfMonth(weekdayMonth), 
-        end: endOfMonth(weekdayMonth) 
-      }).filter(date => 
-        weekdays.includes(getDay(date) === 0 ? 6 : getDay(date) - 1)
-      ).length 
-    : 0;
   
-  const totalShiftsCount = validDaysCount + weekdayShiftsCount;
-
-  const selectedTemplateName = templates.find(t => t.id === selectedTemplate)?.name || "Seleziona tipo di turno";
-
+  const renderCalendar = () => {
+    const startDate = startOfMonth(currentDate);
+    const endDate = endOfMonth(currentDate);
+    
+    const daysInMonth = eachDayOfInterval({ start: startDate, end: endDate });
+    
+    return (
+      <div className="grid grid-cols-7 gap-1">
+        {daysOfWeek.map((day, index) => (
+          <div key={`header-${index}`} className="text-center font-medium text-xs py-1">
+            {day.substring(0, 3)}
+          </div>
+        ))}
+        
+        {Array.from({ length: startDate.getDay() === 0 ? 6 : startDate.getDay() - 1 }).map((_, index) => (
+          <div key={`empty-start-${index}`} className="h-8 w-8 rounded-md"></div>
+        ))}
+        
+        {daysInMonth.map((date, index) => {
+          const dateStr = format(date, "yyyy-MM-dd");
+          const hasExistingShift = existingShifts.some(shift => 
+            format(new Date(shift.date), "yyyy-MM-dd") === dateStr
+          );
+          
+          return (
+            <div
+              key={`day-${index}`}
+              className={`
+                flex flex-col items-center justify-center h-8 w-8 rounded-md cursor-pointer
+                ${hasExistingShift ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}
+                ${selectedDays[dateStr] ? 'bg-primary text-primary-foreground hover:bg-primary/90' : ''}
+              `}
+              onClick={() => toggleDaySelection(dateStr, hasExistingShift)}
+            >
+              <span className="text-xs">{format(date, "d")}</span>
+              {hasExistingShift && (
+                <div className="absolute -bottom-2 left-0 right-0 flex justify-center">
+                  <div className="h-1 w-1 bg-emerald-500 dark:bg-emerald-400 rounded-full"></div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+  
   return (
     <>
-      <Drawer open={isOpen} onOpenChange={onClose}>
-        <DrawerContent className="h-[90vh]">
-          <ScrollArea className="h-full">
-            <div className="mx-auto w-full max-w-lg">
-              <DrawerHeader>
-                <DrawerTitle className="text-xl">
-                  {selectedEmployee ? (
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8" style={{ backgroundColor: selectedEmployee.color }}>
-                        <span className="text-sm font-medium text-white">
-                          {selectedEmployee.firstName.charAt(0)}{selectedEmployee.lastName.charAt(0)}
-                        </span>
-                      </Avatar>
-                      <div>
-                        <span className="text-base">Assegna turni a </span>
-                        <span className="font-semibold">{selectedEmployee.firstName} {selectedEmployee.lastName}</span>
+      <Drawer open={isOpen} onOpenChange={open => !loading && !open && onClose()}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              {step === "employee" && "Seleziona Dipendente"}
+              {step === "template" && "Seleziona Template"}
+              {step === "days" && "Seleziona Giorni"}
+            </DrawerTitle>
+          </DrawerHeader>
+          
+          <div className="px-4">
+            {step === "employee" && (
+              <div className="grid grid-cols-2 gap-2 pb-20">
+                {employees.map((employee) => (
+                  <Card
+                    key={employee.id}
+                    className={`p-3 cursor-pointer transition-all border ${
+                      selectedEmployee?.id === employee.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'
+                    }`}
+                    style={{
+                      borderLeft: employee.color ? `4px solid ${employee.color}` : undefined
+                    }}
+                    onClick={() => setSelectedEmployee(employee)}
+                  >
+                    <div className="font-medium">
+                      {employee.firstName} {employee.lastName}
+                    </div>
+                    {employee.position && (
+                      <div className="text-xs text-muted-foreground">
+                        {employee.position}
+                      </div>
+                    )}
+                  </Card>
+                ))}
+              </div>
+            )}
+            
+            {step === "template" && (
+              <div className="pb-20">
+                <div className="flex items-center mb-4">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="gap-1" 
+                    onClick={handlePrevStep}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    <span>Indietro</span>
+                  </Button>
+                  <div className="flex-grow text-center">
+                    <DrawerTitle>
+                      {selectedEmployee?.firstName} {selectedEmployee?.lastName}
+                    </DrawerTitle>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-2">
+                  {templates.map((template) => (
+                    <Card
+                      key={template.id}
+                      className={`p-3 cursor-pointer transition-all border ${
+                        selectedTemplate?.id === template.id ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'
+                      }`}
+                      onClick={() => setSelectedTemplate(template)}
+                    >
+                      <div className="font-medium">{template.name}</div>
+                      <div className="text-xs text-muted-foreground flex justify-between">
+                        <span>{template.startTime.slice(0, 5)} - {template.endTime.slice(0, 5)}</span>
+                        <Badge variant="outline">{template.duration}h</Badge>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {step === "days" && (
+              <div className="pb-20">
+                <div className="flex items-center mb-4">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="gap-1" 
+                    onClick={handlePrevStep}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    <span>Indietro</span>
+                  </Button>
+                  <div className="flex-grow text-center">
+                    <div className="text-sm">
+                      <span className="font-medium">{selectedEmployee?.firstName} {selectedEmployee?.lastName}</span> -
+                      <span className="text-muted-foreground"> {selectedTemplate?.name}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <Tabs defaultValue="weekdays" onValueChange={value => {
+                  setTab(value);
+                  setSelectedDays({});
+                  setSelectedDaysOfWeek({});
+                }}>
+                  <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsTrigger value="weekdays">Giorni settimana</TabsTrigger>
+                    <TabsTrigger value="specific-days">Giorni specifici</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="weekdays" className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <div className="font-medium">
+                        {format(currentDate, "MMMM yyyy", { locale: it })}
+                      </div>
+                      <div className="flex space-x-1">
+                        <Button size="icon" variant="outline" onClick={handlePrevMonth} className="h-8 w-8 p-0">
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="outline" onClick={handleNextMonth} className="h-8 w-8 p-0">
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                  ) : (
-                    "Assegnazione Turni"
-                  )}
-                </DrawerTitle>
-              </DrawerHeader>
-
-              <div className="px-4 space-y-6">
-                <Collapsible 
-                  className="w-full border rounded-lg" 
-                  open={!selectedEmployee}
-                >
-                  <CollapsibleTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="w-full flex items-center justify-between p-4 h-auto"
-                    >
-                      <div className="flex items-center gap-3">
-                        {selectedEmployee ? (
-                          <>
-                            <Avatar 
-                              className="h-8 w-8" 
-                              style={{ backgroundColor: selectedEmployee.color }}
-                            >
-                              <span className="text-sm font-medium text-white">
-                                {selectedEmployee.firstName.charAt(0)}{selectedEmployee.lastName.charAt(0)}
-                              </span>
-                            </Avatar>
-                            <span className="font-medium">
-                              {selectedEmployee.firstName} {selectedEmployee.lastName}
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <User className="h-5 w-5 text-muted-foreground" />
-                            <span className="text-muted-foreground">Seleziona dipendente</span>
-                          </>
-                        )}
-                      </div>
-                      <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="p-4 pt-0 grid grid-cols-2 gap-3">
-                    {employees.map((employee) => (
-                      <div
-                        key={employee.id}
-                        className={cn(
-                          "flex items-center gap-3 p-3 rounded-lg border transition-colors cursor-pointer hover:bg-accent/50",
-                          selectedEmployee?.id === employee.id && "bg-primary/10 border-primary"
-                        )}
-                        onClick={() => {
-                          if (navigator.vibrate) navigator.vibrate(50);
-                          setSelectedEmployee(employee);
-                        }}
-                      >
-                        <Avatar 
-                          className="h-8 w-8" 
-                          style={{ backgroundColor: employee.color }}
-                        >
-                          <span className="text-sm font-medium text-white">
-                            {employee.firstName.charAt(0)}{employee.lastName.charAt(0)}
-                          </span>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">
-                            {employee.firstName}
-                          </p>
-                          <p className="text-sm text-muted-foreground truncate">
-                            {employee.lastName}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </CollapsibleContent>
-                </Collapsible>
-
-                {selectedEmployee && (
-                  <>
-                    <Collapsible className="w-full">
-                      <CollapsibleTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="w-full flex items-center justify-between"
-                        >
-                          <span>{selectedTemplate ? templates.find(t => t.id === selectedTemplate)?.name : "Seleziona tipo di turno"}</span>
-                          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
-                        </Button>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent className="mt-4">
-                        <div className="grid grid-cols-1 gap-2">
-                          {templates.map((template) => (
-                            <div
-                              key={template.id}
-                              className={cn(
-                                "flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors",
-                                selectedTemplate === template.id 
-                                  ? "bg-primary/10 border-primary" 
-                                  : "hover:bg-muted/50"
-                              )}
-                              onClick={() => {
-                                if (navigator.vibrate) navigator.vibrate(50);
-                                setSelectedTemplate(template.id);
-                              }}
-                            >
-                              <div className="space-y-1">
-                                <p className="font-medium">{template.name}</p>
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="secondary" className="text-xs">
-                                    {template.startTime} - {template.endTime}
-                                  </Badge>
-                                  <Badge variant="outline" className="text-xs">
-                                    {template.duration}h
-                                  </Badge>
-                                </div>
-                              </div>
-                              {selectedTemplate === template.id && (
-                                <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </CollapsibleContent>
-                    </Collapsible>
-
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                      <TabsList className="grid w-full grid-cols-2 h-12">
-                        <TabsTrigger value="weekday" className="text-base">Giorni settimana</TabsTrigger>
-                        <TabsTrigger value="specific" className="text-base">Giorni specifici</TabsTrigger>
-                      </TabsList>
-                      
-                      <TabsContent value="weekday" className="mt-4">
-                        <div className="mb-4 flex items-center justify-between">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => {
-                              if (navigator.vibrate) navigator.vibrate(50);
-                              setWeekdayMonth(prevMonth => {
-                                const newDate = new Date(prevMonth);
-                                newDate.setMonth(newDate.getMonth() - 1);
-                                return newDate;
-                              });
-                            }}
-                            className="h-10 w-10"
-                          >
-                            <ChevronLeft className="h-5 w-5" />
-                          </Button>
-                          <h2 className="text-lg font-medium capitalize">
-                            {format(weekdayMonth, 'MMMM yyyy', { locale: it })}
-                          </h2>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => {
-                              if (navigator.vibrate) navigator.vibrate(50);
-                              setWeekdayMonth(prevMonth => {
-                                const newDate = new Date(prevMonth);
-                                newDate.setMonth(newDate.getMonth() + 1);
-                                return newDate;
-                              });
-                            }}
-                            className="h-10 w-10"
-                          >
-                            <ChevronRight className="h-5 w-5" />
-                          </Button>
-                        </div>
-                        <div className="grid grid-cols-1 gap-3">
-                          {dayLabels.map((day, index) => (
-                            <div 
-                              key={index}
-                              className={cn(
-                                "flex items-center space-x-3 p-4 rounded-md transition-colors cursor-pointer",
-                                weekdays.includes(index) ? "bg-primary/10" : "hover:bg-muted/50"
-                              )}
-                              onClick={() => {
-                                if (navigator.vibrate) navigator.vibrate(50);
-                                setWeekdays(prev => 
-                                  prev.includes(index) 
-                                    ? prev.filter(d => d !== index) 
-                                    : [...prev, index]
-                                );
-                              }}
-                            >
-                              <Checkbox 
-                                id={`day-${index}`}
-                                checked={weekdays.includes(index)}
-                                onCheckedChange={() => {
-                                  if (navigator.vibrate) navigator.vibrate(50);
-                                  setWeekdays(prev => 
-                                    prev.includes(index) 
-                                      ? prev.filter(d => d !== index) 
-                                      : [...prev, index]
-                                  );
-                                }}
-                                className="h-5 w-5"
-                              />
-                              <Label 
-                                htmlFor={`day-${index}`}
-                                className={cn(
-                                  "text-base cursor-pointer",
-                                  weekdays.includes(index) ? "font-medium text-primary"  : ""
-                                )}
-                              >
-                                {day}
-                              </Label>
-                            </div>
-                          ))}
-                        </div>
-                        
-                        {weekdayShiftsCount > 0 && (
-                          <div className="mt-4 p-4 bg-muted rounded-md flex items-center justify-between">
-                            <p className="font-medium">
-                              Turni selezionati:
-                            </p>
-                            <Badge className="text-sm px-3 py-1">
-                              {weekdayShiftsCount} turni
-                            </Badge>
-                          </div>
-                        )}
-                      </TabsContent>
-                      
-                      <TabsContent value="specific" className="mt-4">
-                        <div className="border rounded-lg p-4">
-                          <div className="flex items-center justify-between mb-4">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => {
-                                if (navigator.vibrate) navigator.vibrate(50);
-                                setDisplayMonth(prevMonth => {
-                                  const newDate = new Date(prevMonth);
-                                  newDate.setMonth(newDate.getMonth() - 1);
-                                  return newDate;
-                                });
-                              }}
-                              className="h-10 w-10"
-                            >
-                              <ChevronLeft className="h-5 w-5" />
-                            </Button>
-                            <h2 className="text-lg font-medium capitalize">
-                              {format(displayMonth, 'MMMM yyyy', { locale: it })}
-                            </h2>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => {
-                                if (navigator.vibrate) navigator.vibrate(50);
-                                setDisplayMonth(prevMonth => {
-                                  const newDate = new Date(prevMonth);
-                                  newDate.setMonth(newDate.getMonth() + 1);
-                                  return newDate;
-                                });
-                              }}
-                              className="h-10 w-10"
-                            >
-                              <ChevronRight className="h-5 w-5" />
-                            </Button>
-                          </div>
-                          
-                          <Calendar
-                            mode="multiple"
-                            selected={selectedDays}
-                            onSelect={(days) => {
-                              if (!days) return;
-                              setSelectedDays(Array.isArray(days) ? days : []);
-                              if (navigator.vibrate) navigator.vibrate(50);
-                            }}
-                            className="w-full"
-                            locale={it}
-                            month={displayMonth}
-                            onMonthChange={setDisplayMonth}
-                            classNames={{
-                              day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-                              day_today: "bg-accent text-accent-foreground",
-                              day: cn(
-                                "h-10 w-10 p-0 font-normal aria-selected:opacity-100 hover:bg-primary/10 focus:bg-primary/10 transition-colors"
-                              ),
-                              head_cell: "text-muted-foreground rounded-md w-10 font-medium text-[0.8rem] uppercase",
-                              cell: "h-10 w-10 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-primary/5 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-                              month: "space-y-4"
-                            }}
+                    
+                    <div className="space-y-2">
+                      {daysOfWeek.map((day) => (
+                        <div key={day} className="flex items-center space-x-2 p-2">
+                          <Checkbox 
+                            id={`mobile-${day}`} 
+                            checked={selectedDaysOfWeek[day]} 
+                            onCheckedChange={() => toggleDayOfWeekSelection(day)}
                           />
-                          
-                          {validDaysCount > 0 && (
-                            <div className="mt-4 p-4 bg-muted rounded-md flex items-center justify-between">
-                              <p className="font-medium">
-                                Giorni selezionati:
-                              </p>
-                              <Badge className="text-sm px-3 py-1">
-                                {validDaysCount} giorni
-                              </Badge>
-                            </div>
-                          )}
+                          <Label htmlFor={`mobile-${day}`} className="flex-grow">{day}</Label>
                         </div>
-                      </TabsContent>
-                    </Tabs>
-                  </>
-                )}
+                      ))}
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="specific-days" className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <div className="font-medium">
+                        {format(currentDate, "MMMM yyyy", { locale: it })}
+                      </div>
+                      <div className="flex space-x-1">
+                        <Button size="icon" variant="outline" onClick={handlePrevMonth} className="h-8 w-8 p-0">
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="outline" onClick={handleNextMonth} className="h-8 w-8 p-0">
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-center">
+                      {renderCalendar()}
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </div>
-              
-              <DrawerFooter className="px-4 pb-8">
-                <Button 
-                  size="lg"
-                  className="h-12"
-                  onClick={handleSaveAssignments}
-                  disabled={!selectedEmployee || !selectedTemplate || (selectedDays.length === 0 && weekdays.length === 0) || isSubmitting}
-                >
-                  {isSubmitting ? "Assegnazione..." : "Assegna turni"}
-                </Button>
-              </DrawerFooter>
-            </div>
-          </ScrollArea>
+            )}
+          </div>
+          
+          <DrawerFooter>
+            {step !== "days" ? (
+              <Button 
+                onClick={handleNextStep} 
+                disabled={loading || (step === "employee" && !selectedEmployee) || (step === "template" && !selectedTemplate)}
+                className="w-full"
+              >
+                Continua
+              </Button>
+            ) : (
+              <Button 
+                onClick={handleSave} 
+                disabled={loading || !selectedEmployee || !selectedTemplate || 
+                  (tab === "weekdays" && Object.values(selectedDaysOfWeek).filter(Boolean).length === 0) || 
+                  (tab === "specific-days" && Object.values(selectedDays).filter(Boolean).length === 0)}
+                className="w-full"
+              >
+                {loading ? "Salvataggio..." : "Anteprima Turni"}
+              </Button>
+            )}
+          </DrawerFooter>
         </DrawerContent>
       </Drawer>
-
-      {showConfirmation && selectedEmployee && selectedTemplate && (
-        <ShiftAssignmentConfirmation
-          isOpen={showConfirmation}
-          onClose={() => setShowConfirmation(false)}
-          onConfirm={handleConfirmAssignment}
-          employee={selectedEmployee}
-          template={templates.find(t => t.id === selectedTemplate)!}
-          selectedDays={selectedDays}
-          weekdays={weekdays}
-          weekdayMonth={weekdayMonth}
-          isSubmitting={isSubmitting}
-        />
-      )}
+      
+      <ShiftAssignmentConfirmation
+        isOpen={isConfirmationOpen}
+        onClose={() => setIsConfirmationOpen(false)}
+        shifts={shiftsToAdd}
+        employee={selectedEmployee}
+        onConfirm={handleConfirmSave}
+        isLoading={loading}
+      />
     </>
   );
-}
+};

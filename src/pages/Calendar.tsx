@@ -33,7 +33,7 @@ const Calendar = () => {
   const [isAddingShift, setIsAddingShift] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [currentDayOfWeek, setCurrentDayOfWeek] = useState<number | undefined>(undefined);
-  const [refreshTrigger, setRefreshTrigger] = useState(0); // Add refresh trigger state
+  const [refreshTrigger, setRefreshTrigger] = useState(0); // Refresh trigger state to force calendar updates
 
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -76,7 +76,7 @@ const Calendar = () => {
   
   const handleAssignmentComplete = () => {
     setIsAssignmentModalOpen(false);
-    setRefreshTrigger(prev => prev + 1); // Increment refresh trigger to force refresh
+    setRefreshTrigger(prev => prev + 1); // Increment refresh trigger to force calendar update
     
     if (isVerticalView) {
       fetchShiftsForCurrentMonth();
@@ -137,7 +137,7 @@ const Calendar = () => {
     if (isVerticalView) {
       fetchShiftsForCurrentMonth();
     }
-  }, [isVerticalView, currentDate, refreshTrigger]); // Add refreshTrigger to dependencies
+  }, [isVerticalView, currentDate, refreshTrigger]); // Use refreshTrigger in dependencies to refetch when it changes
 
   const handleAddShift = (date: Date, dayOfWeek: number) => {
     setSelectedDate(date);
@@ -174,7 +174,7 @@ const Calendar = () => {
         });
       }
       handleShiftModalClose();
-      setRefreshTrigger(prev => prev + 1); // Increment refresh trigger
+      setRefreshTrigger(prev => prev + 1); // Increment refresh trigger to force calendar update
       if (isVerticalView) {
         fetchShiftsForCurrentMonth();
       }
@@ -197,7 +197,7 @@ const Calendar = () => {
         description: "Il turno è stato eliminato con successo."
       });
       handleShiftModalClose();
-      setRefreshTrigger(prev => prev + 1); // Increment refresh trigger
+      setRefreshTrigger(prev => prev + 1); // Increment refresh trigger to force calendar update
       if (isVerticalView) {
         fetchShiftsForCurrentMonth();
       }
