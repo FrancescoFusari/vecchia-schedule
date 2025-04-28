@@ -2,7 +2,7 @@
 import { WeeklyCalendar } from "./WeeklyCalendar";
 import { MonthlyCalendar } from "./MonthlyCalendar";
 import { VerticalCalendar } from "./VerticalCalendar";
-import { Employee, ShiftTemplate } from "@/lib/types";
+import { Employee, Shift, ShiftTemplate } from "@/lib/types";
 
 interface CalendarContentProps {
   isWeekView: boolean;
@@ -12,6 +12,10 @@ interface CalendarContentProps {
   employees: Employee[];
   templates: ShiftTemplate[];
   onDateChange: (date: Date) => void;
+  shifts: Shift[];
+  isLoading: boolean;
+  onAddShift: (date: Date, dayOfWeek: number) => void;
+  onEditShift: (shift: Shift) => void;
 }
 
 export const CalendarContent = ({
@@ -21,7 +25,11 @@ export const CalendarContent = ({
   currentDate,
   employees,
   templates,
-  onDateChange
+  onDateChange,
+  shifts,
+  isLoading,
+  onAddShift,
+  onEditShift
 }: CalendarContentProps) => {
   if (isVerticalView) {
     return (
@@ -30,6 +38,10 @@ export const CalendarContent = ({
         templates={templates}
         currentDate={currentDate}
         onDateChange={onDateChange}
+        shifts={shifts}
+        isLoading={isLoading}
+        onAddShift={onAddShift}
+        onEditShift={onEditShift}
       />
     );
   }

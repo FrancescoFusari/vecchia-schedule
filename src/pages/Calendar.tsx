@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
@@ -37,6 +36,10 @@ const Calendar = () => {
     }
   }, [isMobile]);
 
+  useEffect(() => {
+    fetchShiftsForCurrentMonth();
+  }, [currentDate]);
+
   const fetchShiftsForCurrentMonth = async () => {
     try {
       const year = currentDate.getFullYear();
@@ -44,7 +47,6 @@ const Calendar = () => {
       const firstDay = new Date(year, month, 1);
       const lastDay = new Date(year, month + 1, 0);
       
-      // Format dates for API call
       const formattedStartDate = firstDay.toISOString().split('T')[0];
       const formattedEndDate = lastDay.toISOString().split('T')[0];
       
@@ -127,7 +129,6 @@ const Calendar = () => {
       setSelectedShift(null);
       setIsAddingShift(false);
       
-      // Refresh data
       if (isVerticalView) {
         fetchShiftsForCurrentMonth();
       }
@@ -152,7 +153,6 @@ const Calendar = () => {
       setSelectedShift(null);
       setIsAddingShift(false);
       
-      // Refresh data
       if (isVerticalView) {
         fetchShiftsForCurrentMonth();
       }
