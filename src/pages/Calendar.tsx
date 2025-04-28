@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
 import { Employee, Shift } from "@/lib/types";
@@ -21,13 +22,14 @@ const Calendar = () => {
   const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [shifts, setShifts] = useState<Shift[]>([]);
+  const [isLoadingShifts, setIsLoadingShifts] = useState(false);
 
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [isAddingShift, setIsAddingShift] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [currentDayOfWeek, setCurrentDayOfWeek] = useState<number | undefined>(undefined);
 
-  const { employees, templates, isLoading } = useCalendarState();
+  const { employees, templates, isLoading: isLoadingEmployees } = useCalendarState();
 
   useEffect(() => {
     setIsVerticalView(isMobile);
@@ -36,12 +38,11 @@ const Calendar = () => {
     }
   }, [isMobile]);
 
-  useEffect(() => {
-    fetchShiftsForCurrentMonth();
-  }, [currentDate]);
-
-  const fetchShiftsForCurrentMonth = async () => {
+  const fetchShiftsForCurrentMonth = useCallback(async () => {
+    if (isLoadingShifts) return; // Prevent concurrent fetch operations
+    
     try {
+      setIsLoadingShifts(true);
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth();
       const firstDay = new Date(year, month, 1);
@@ -59,8 +60,14 @@ const Calendar = () => {
         description: "Si è verificato un errore durante il caricamento dei turni.",
         variant: "destructive"
       });
+    } finally {
+      setIsLoadingShifts(false);
     }
-  };
+  }, [currentDate]);
+
+  useEffect(() => {
+    fetchShiftsForCurrentMonth();
+  }, [fetchShiftsForCurrentMonth]);
 
   const handleViewChange = (weekView: boolean) => {
     setIsWeekView(weekView);
@@ -166,7 +173,9 @@ const Calendar = () => {
     }
   };
 
-  if (isLoading) {
+  const isLoading = isLoadingEmployees || isLoadingShifts;
+
+  if (isLoadingEmployees) {
     return (
       <div className="flex justify-center py-12">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
