@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import {
   AlertDialog,
@@ -174,6 +173,7 @@ export function ShiftAssignmentConfirmation({
           <Button 
             onClick={handleConfirmClick}
             disabled={isSubmitting}
+            autoFocus
           >
             {isSubmitting ? "Assegnazione..." : "Conferma"}
           </Button>

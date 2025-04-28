@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { format, eachDayOfInterval, startOfMonth, endOfMonth } from "date-fns";
 import { it } from "date-fns/locale";
@@ -203,6 +204,7 @@ export const ShiftAssignmentModal = ({
         
         setIsConfirmationOpen(false);
         
+        // This timeout ensures focus is handled properly before closing the dialog
         setTimeout(() => {
           setSelectedDays({});
           setSelectedDaysOfWeek({});
@@ -301,6 +303,7 @@ export const ShiftAssignmentModal = ({
         }
       }}>
         <DialogContent className="sm:max-w-md md:max-w-lg">
+          {/* Don't use tabIndex=-1 here to avoid accessibility issues */}
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />

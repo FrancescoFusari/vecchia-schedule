@@ -67,6 +67,13 @@ export function EmployeeBottomSheet({
                 key={employee.id}
                 className="flex flex-col items-center justify-center p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer"
                 onClick={() => handleEmployeeClick(employee)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    handleEmployeeClick(employee);
+                  }
+                }}
               >
                 <Avatar 
                   className="h-16 w-16 mb-3" 
