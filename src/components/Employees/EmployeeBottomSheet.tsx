@@ -1,0 +1,109 @@
+
+import { useState } from "react";
+import { Employee } from "@/lib/types";
+import { Avatar } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Drawer, 
+  DrawerContent, 
+  DrawerHeader, 
+  DrawerTitle, 
+  DrawerTrigger,
+  DrawerFooter,
+  DrawerDescription
+} from "@/components/ui/drawer";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { CalendarPlus, Users } from "lucide-react";
+
+interface EmployeeBottomSheetProps {
+  employees: Employee[];
+  onEmployeeSelect: (employee: Employee) => void;
+  buttonVariant?: "default" | "outline" | "ghost";
+  buttonSize?: "default" | "sm" | "lg" | "icon";
+  isAdmin: boolean;
+}
+
+export function EmployeeBottomSheet({
+  employees,
+  onEmployeeSelect,
+  buttonVariant = "outline",
+  buttonSize = "default",
+  isAdmin
+}: EmployeeBottomSheetProps) {
+  const [open, setOpen] = useState(false);
+  
+  const handleEmployeeClick = (employee: Employee) => {
+    onEmployeeSelect(employee);
+    setOpen(false);
+  };
+  
+  if (!isAdmin || employees.length === 0) return null;
+  
+  return (
+    <Drawer open={open} onOpenChange={setOpen}>
+      <DrawerTrigger asChild>
+        <Button variant={buttonVariant} size={buttonSize} className="gap-2">
+          <Users className="h-4 w-4" />
+          <span className="hidden md:inline">Dipendenti</span>
+        </Button>
+      </DrawerTrigger>
+      <DrawerContent className="h-[80vh] sm:h-[65vh]">
+        <div className="mx-auto w-full max-w-sm">
+          <DrawerHeader>
+            <DrawerTitle>Seleziona dipendente</DrawerTitle>
+            <DrawerDescription>
+              Seleziona un dipendente per assegnare turni
+            </DrawerDescription>
+          </DrawerHeader>
+          
+          <ScrollArea className="h-[60vh] sm:h-[45vh] px-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pb-6">
+              {employees.map((employee) => (
+                <div
+                  key={employee.id}
+                  className="flex flex-col items-center justify-center p-4 rounded-lg border border-border hover:bg-accent/50 transition-colors cursor-pointer"
+                  onClick={() => handleEmployeeClick(employee)}
+                >
+                  <Avatar 
+                    className="h-16 w-16 mb-3" 
+                    style={{ backgroundColor: employee.color }}
+                  >
+                    <span className="text-xl font-medium text-white">
+                      {employee.firstName.charAt(0)}{employee.lastName.charAt(0)}
+                    </span>
+                  </Avatar>
+                  <div className="text-center">
+                    <h3 className="font-medium leading-none mb-1">
+                      {employee.firstName}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {employee.lastName}
+                    </p>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className="mt-3 gap-1 bg-primary/5 hover:bg-primary/10 text-primary"
+                  >
+                    <CalendarPlus className="h-3 w-3" />
+                    <span className="text-xs">Assegna</span>
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+          
+          <DrawerFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setOpen(false)}
+              className="w-full"
+            >
+              Chiudi
+            </Button>
+          </DrawerFooter>
+        </div>
+      </DrawerContent>
+    </Drawer>
+  );
+}
