@@ -1,9 +1,7 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,8 +12,9 @@ import { toast } from "@/hooks/use-toast";
 import { shiftService } from "@/lib/supabase";
 import { v4 as uuidv4 } from "uuid";
 import { cn } from "@/lib/utils";
-import { Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface ShiftAssignmentModalProps {
   isOpen: boolean;
@@ -41,7 +40,6 @@ export const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
   const [displayMonth, setDisplayMonth] = useState<Date>(currentMonth);
   const [activeTab, setActiveTab] = useState<string>("weekday");
 
-  // Reset state when modal opens
   useState(() => {
     if (isOpen) {
       setSelectedTemplate("");
@@ -149,50 +147,56 @@ export const ShiftAssignmentModal: React.FC<ShiftAssignmentModalProps> = ({
   
   if (!employee) return null;
 
+  const selectedTemplateName = templates.find(t => t.id === selectedTemplate)?.name || "Seleziona tipo di turno";
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[800px] p-0">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle>
-            Assegna turni a {employee.firstName} {employee.lastName}
+            Assegna turni a {employee?.firstName} {employee?.lastName}
           </DialogTitle>
         </DialogHeader>
 
         <div className="p-6 space-y-6">
-          <div className="space-y-4">
-            <h3 className="font-medium">Seleziona tipo di turno</h3>
-            <ScrollArea className="w-full h-[120px]">
-              <div className="flex space-x-3 pb-4">
-                {templates.map((template) => (
-                  <div
-                    key={template.id}
-                    className={cn(
-                      "flex flex-col p-4 border rounded-lg cursor-pointer transition-colors min-w-[200px]",
-                      selectedTemplate === template.id 
-                        ? "bg-primary/10 border-primary" 
-                        : "hover:bg-muted/50"
-                    )}
-                    onClick={() => setSelectedTemplate(template.id)}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <h4 className="font-medium">{template.name}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {template.startTime} - {template.endTime}
-                        </p>
-                      </div>
-                      {selectedTemplate === template.id && (
-                        <Check className="h-5 w-5 text-primary flex-shrink-0" />
-                      )}
-                    </div>
-                    <Badge variant="secondary" className="mt-2 w-fit">
+          <Collapsible className="w-full">
+            <CollapsibleTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full flex items-center justify-between"
+              >
+                <span>{selectedTemplateName}</span>
+                <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-4 space-y-2">
+              {templates.map((template) => (
+                <div
+                  key={template.id}
+                  className={cn(
+                    "flex items-start justify-between p-4 border rounded-lg cursor-pointer transition-colors",
+                    selectedTemplate === template.id 
+                      ? "bg-primary/10 border-primary" 
+                      : "hover:bg-muted/50"
+                  )}
+                  onClick={() => setSelectedTemplate(template.id)}
+                >
+                  <div className="space-y-1">
+                    <h4 className="font-medium">{template.name}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {template.startTime} - {template.endTime}
+                    </p>
+                    <Badge variant="secondary" className="mt-2">
                       {template.duration}h
                     </Badge>
                   </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </div>
+                  {selectedTemplate === template.id && (
+                    <Check className="h-5 w-5 text-primary flex-shrink-0" />
+                  )}
+                </div>
+              ))}
+            </CollapsibleContent>
+          </Collapsible>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2 h-11">

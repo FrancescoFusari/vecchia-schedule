@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { format, getDay, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth } from "date-fns";
 import { it } from "date-fns/locale";
@@ -7,7 +6,7 @@ import { toast } from "@/hooks/use-toast";
 import { shiftService } from "@/lib/supabase";
 import { v4 as uuidv4 } from "uuid";
 import { cn } from "@/lib/utils";
-import { Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 
 import {
   Drawer,
@@ -22,7 +21,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface MobileShiftAssignmentModalProps {
   isOpen: boolean;
@@ -48,7 +47,6 @@ export function MobileShiftAssignmentModal({
   const [displayMonth, setDisplayMonth] = useState<Date>(currentMonth);
   const [activeTab, setActiveTab] = useState<string>("weekday");
   
-  // Reset state when modal opens
   useState(() => {
     if (isOpen) {
       setSelectedTemplate("");
@@ -156,6 +154,8 @@ export function MobileShiftAssignmentModal({
   
   if (!employee) return null;
 
+  const selectedTemplateName = templates.find(t => t.id === selectedTemplate)?.name || "Seleziona tipo di turno";
+
   return (
     <Drawer open={isOpen} onOpenChange={onClose}>
       <DrawerContent className="h-[90vh]">
@@ -167,41 +167,47 @@ export function MobileShiftAssignmentModal({
           </DrawerHeader>
 
           <div className="px-4 space-y-6">
-            <div className="space-y-4">
-              <h3 className="font-medium text-base">Seleziona tipo di turno</h3>
-              <ScrollArea className="h-[120px]">
-                <div className="grid grid-cols-1 gap-3 pr-4">
-                  {templates.map((template) => (
-                    <div
-                      key={template.id}
-                      className={cn(
-                        "flex items-start justify-between p-4 border rounded-lg cursor-pointer transition-colors",
-                        selectedTemplate === template.id 
-                          ? "bg-primary/10 border-primary" 
-                          : "hover:bg-muted/50"
-                      )}
-                      onClick={() => {
-                        setSelectedTemplate(template.id);
-                        if (navigator.vibrate) navigator.vibrate(50);
-                      }}
-                    >
-                      <div>
-                        <h4 className="font-medium">{template.name}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {template.startTime} - {template.endTime}
-                        </p>
-                        <Badge variant="secondary" className="mt-2">
-                          {template.duration}h
-                        </Badge>
-                      </div>
-                      {selectedTemplate === template.id && (
-                        <Check className="h-5 w-5 text-primary flex-shrink-0" />
-                      )}
+            <Collapsible className="w-full">
+              <CollapsibleTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full flex items-center justify-between"
+                >
+                  <span>{selectedTemplateName}</span>
+                  <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200" />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-4 space-y-2">
+                {templates.map((template) => (
+                  <div
+                    key={template.id}
+                    className={cn(
+                      "flex items-start justify-between p-4 border rounded-lg cursor-pointer transition-colors",
+                      selectedTemplate === template.id 
+                        ? "bg-primary/10 border-primary" 
+                        : "hover:bg-muted/50"
+                    )}
+                    onClick={() => {
+                      setSelectedTemplate(template.id);
+                      if (navigator.vibrate) navigator.vibrate(50);
+                    }}
+                  >
+                    <div className="space-y-1">
+                      <h4 className="font-medium">{template.name}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {template.startTime} - {template.endTime}
+                      </p>
+                      <Badge variant="secondary" className="mt-2">
+                        {template.duration}h
+                      </Badge>
                     </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            </div>
+                    {selectedTemplate === template.id && (
+                      <Check className="h-5 w-5 text-primary flex-shrink-0" />
+                    )}
+                  </div>
+                ))}
+              </CollapsibleContent>
+            </Collapsible>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2 h-12">
