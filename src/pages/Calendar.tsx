@@ -252,7 +252,7 @@ const Calendar = () => {
           <MobileShiftAssignmentModal
             isOpen={isAssignmentModalOpen}
             onClose={() => setIsAssignmentModalOpen(false)}
-            employees={employees}
+            employee={selectedEmployee}
             templates={templates}
             currentMonth={currentDate}
             onShiftsAdded={handleAssignmentComplete}
@@ -261,7 +261,7 @@ const Calendar = () => {
           <ShiftAssignmentModal
             isOpen={isAssignmentModalOpen}
             onClose={() => setIsAssignmentModalOpen(false)}
-            employees={employees}
+            employee={selectedEmployee}
             templates={templates}
             currentMonth={currentDate}
             onShiftsAdded={handleAssignmentComplete}
@@ -273,7 +273,7 @@ const Calendar = () => {
         <MobileShiftAssignmentModal
           isOpen={isAssignmentModalOpen}
           onClose={() => setIsAssignmentModalOpen(false)}
-          employees={employees.length > 0 ? employees : []}
+          employee={employees.length > 0 ? employees[0] : null}
           templates={templates}
           currentMonth={currentDate}
           onShiftsAdded={handleAssignmentComplete}
