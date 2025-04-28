@@ -51,6 +51,7 @@ const Calendar = () => {
       const formattedStartDate = firstDay.toISOString().split('T')[0];
       const formattedEndDate = lastDay.toISOString().split('T')[0];
       
+      console.log(`Fetching shifts from ${formattedStartDate} to ${formattedEndDate}`);
       const shiftData = await shiftService.getShifts(formattedStartDate, formattedEndDate);
       setShifts(shiftData);
     } catch (error) {
@@ -83,25 +84,7 @@ const Calendar = () => {
 
   const handleAssignmentComplete = () => {
     setIsAssignmentModalOpen(false);
-    if (isVerticalView) {
-      fetchShiftsForCurrentMonth();
-    } else if (isWeekView) {
-      const weeklyCalendarElement = document.querySelector('[data-component="weekly-calendar"]');
-      if (weeklyCalendarElement) {
-        weeklyCalendarElement.classList.add('refresh-trigger');
-        setTimeout(() => {
-          weeklyCalendarElement.classList.remove('refresh-trigger');
-        }, 100);
-      }
-    } else {
-      const monthlyCalendarElement = document.querySelector('[data-component="monthly-calendar"]');
-      if (monthlyCalendarElement) {
-        monthlyCalendarElement.classList.add('refresh-trigger');
-        setTimeout(() => {
-          monthlyCalendarElement.classList.remove('refresh-trigger');
-        }, 100);
-      }
-    }
+    fetchShiftsForCurrentMonth(); // Fetch shifts again after assignment
   };
 
   const handleAddShift = (date: Date, dayOfWeek: number) => {
@@ -136,9 +119,7 @@ const Calendar = () => {
       setSelectedShift(null);
       setIsAddingShift(false);
       
-      if (isVerticalView) {
-        fetchShiftsForCurrentMonth();
-      }
+      fetchShiftsForCurrentMonth(); // Refresh shifts data after saving
     } catch (error) {
       console.error("Error saving shift:", error);
       toast({
@@ -160,9 +141,7 @@ const Calendar = () => {
       setSelectedShift(null);
       setIsAddingShift(false);
       
-      if (isVerticalView) {
-        fetchShiftsForCurrentMonth();
-      }
+      fetchShiftsForCurrentMonth(); // Refresh shifts data after deletion
     } catch (error) {
       console.error("Error deleting shift:", error);
       toast({
