@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Employee, Shift } from "@/lib/types";
-import { shiftService } from "@/lib/supabase";
+import { shiftService, employeeService } from "@/lib/supabase";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { HoursSummary as HoursSummaryComponent } from "@/components/Reports/HoursSummary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,13 +28,14 @@ const HoursSummaryPage = () => {
         setLoading(true);
         
         // Find the employee profile for the current user
-        const employeeData = await shiftService.getEmployeeById(user.id);
+        const employees = await employeeService.getEmployees();
+        const foundEmployee = employees.find(emp => emp.userId === user.id);
         
-        if (employeeData) {
-          setEmployee(employeeData);
+        if (foundEmployee) {
+          setEmployee(foundEmployee);
           
           // Fetch shifts for this employee
-          await fetchShifts(employeeData.id);
+          await fetchShifts(foundEmployee.id);
         } else {
           toast({
             title: "Profilo non trovato",
