@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,8 +6,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Moon, Sun, User } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { LogOut, Moon, Sun, User, MessageSquare, Utensils, FlaskConical } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { employeeService } from "@/lib/supabase";
 import { Employee } from "@/lib/types";
 import { useTheme } from "next-themes";
@@ -110,6 +109,38 @@ const Profile = () => {
                 <Input value={user.lastName || ''} readOnly className="bg-muted" />
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Experimental Features Card - NEW SECTION */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <div>
+              <CardTitle className="text-xl">Funzionalità Sperimentali</CardTitle>
+              <CardDescription>Scopri le nuove funzionalità in fase di sviluppo</CardDescription>
+            </div>
+            <div className="h-12 w-12 rounded-full bg-purple-500/10 flex items-center justify-center">
+              <FlaskConical className="h-6 w-6 text-purple-500" />
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Link to="/communications" className="w-full">
+                <Button variant="outline" className="w-full justify-start">
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  <span>Comunicazioni</span>
+                </Button>
+              </Link>
+              <Link to="/orders" className="w-full">
+                <Button variant="outline" className="w-full justify-start">
+                  <Utensils className="mr-2 h-4 w-4" />
+                  <span>Comande</span>
+                </Button>
+              </Link>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Queste funzionalità sono in fase sperimentale e potrebbero subire modifiche.
+            </p>
           </CardContent>
         </Card>
 

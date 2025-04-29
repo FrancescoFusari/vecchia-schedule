@@ -1,3 +1,4 @@
+
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CalendarDays, Users, User, LogOut, Moon, Sun } from "lucide-react";
@@ -5,8 +6,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useTheme } from "next-themes";
-import { ExperimentalNavMenu } from "@/components/Navbar/ExperimentalNavMenu";
 import { HoursSummaryNavButton } from "@/components/Navbar/HoursSummaryNavButton";
+
 export function Navbar() {
   const {
     user,
@@ -32,6 +33,7 @@ export function Navbar() {
   const handleLogout = () => {
     signOut();
   };
+  
   return <nav className={`bg-card shadow-sm ${isMobile ? 'fixed bottom-0 left-0 right-0 z-50 border-t' : 'border-b'} border-border transition-colors duration-300`}>
       <div className={`container mx-auto ${isMobile ? 'px-1 py-2' : 'px-4 py-3'}`}>
         <div className="flex justify-between items-center">
@@ -53,9 +55,6 @@ export function Navbar() {
 
             {/* Hours Summary link for all users */}
             <HoursSummaryNavButton isMobile={isMobile} />
-
-            {/* Experimental dropdown menu */}
-            <ExperimentalNavMenu isMobile={isMobile} />
             
             {/* Only render dashboard link for admin users */}
             {showDashboard && <Link to="/dashboard">
