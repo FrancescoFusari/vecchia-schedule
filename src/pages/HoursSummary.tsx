@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const HoursSummaryPage = () => {
   const { user } = useAuth();
@@ -18,6 +19,7 @@ const HoursSummaryPage = () => {
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   // Fetch employee data and shifts
   useEffect(() => {
@@ -108,20 +110,20 @@ const HoursSummaryPage = () => {
   };
   
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6 animate-fade-in">
+      <div className={`${isMobile ? 'flex flex-col space-y-4' : 'flex justify-between'} items-center`}>
         <h1 className="text-2xl font-bold">Riepilogo Ore</h1>
         
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={handlePrevMonth}>
+          <Button variant="outline" size={isMobile ? "default" : "sm"} onClick={handlePrevMonth} className="h-9">
             <ChevronLeft className="h-4 w-4 mr-1" />
-            Mese Prec.
+            {!isMobile && "Mese Prec."}
           </Button>
-          <div className="font-medium px-2">
+          <div className="font-medium px-2 min-w-24 text-center">
             {format(currentDate, "MMMM yyyy")}
           </div>
-          <Button variant="outline" size="sm" onClick={handleNextMonth}>
-            Mese Succ.
+          <Button variant="outline" size={isMobile ? "default" : "sm"} onClick={handleNextMonth} className="h-9">
+            {!isMobile && "Mese Succ."}
             <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         </div>

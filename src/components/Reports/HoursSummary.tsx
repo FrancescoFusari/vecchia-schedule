@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { calculateTotalHours, getWeekDates, formatDate } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface HoursSummaryProps {
   shifts: Shift[];
@@ -21,6 +22,7 @@ interface HoursSummaryProps {
 
 export function HoursSummary({ shifts, employees, currentDate }: HoursSummaryProps) {
   const [activeTab, setActiveTab] = useState<"week" | "month">("week");
+  const isMobile = useIsMobile();
   
   // Calculate week summary
   const weekSummary = useMemo(() => {
@@ -84,14 +86,14 @@ export function HoursSummary({ shifts, employees, currentDate }: HoursSummaryPro
   const totalMonthHours = monthSummary.reduce((sum, item) => sum + item.totalHours, 0);
   
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="bg-white border-b pb-3">
+    <Card className="overflow-hidden transition-colors duration-300">
+      <CardHeader className="bg-card border-b pb-3">
         <CardTitle>Riepilogo Ore</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "week" | "month")}>
           <div className="border-b px-4 py-2">
-            <TabsList className="grid w-[200px] grid-cols-2">
+            <TabsList className={`grid ${isMobile ? 'w-full' : 'w-[200px]'} grid-cols-2`}>
               <TabsTrigger value="week">Settimana</TabsTrigger>
               <TabsTrigger value="month">Mese</TabsTrigger>
             </TabsList>

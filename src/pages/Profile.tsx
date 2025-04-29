@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,19 +7,21 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
-import { User, LogOut } from "lucide-react";
+import { LogOut, Moon, Sun, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { employeeService } from "@/lib/supabase";
 import { Employee } from "@/lib/types";
+import { useTheme } from "next-themes";
+import { Separator } from "@/components/ui/separator";
+
 const Profile = () => {
-  const {
-    user,
-    signOut
-  } = useAuth();
+  const { user, signOut } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [linkedEmployee, setLinkedEmployee] = useState<Employee | null>(null);
   const [isLoadingEmployee, setIsLoadingEmployee] = useState(true);
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
+
   useEffect(() => {
     const fetchLinkedEmployee = async () => {
       if (!user) return;
@@ -35,6 +38,7 @@ const Profile = () => {
     };
     fetchLinkedEmployee();
   }, [user]);
+
   const handleLogout = async () => {
     setIsLoading(true);
     try {
@@ -51,17 +55,25 @@ const Profile = () => {
       setIsLoading(false);
     }
   };
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
+
   if (!user) {
     return <div className="flex justify-center items-center h-[50vh]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>;
   }
-  return <div className="animate-fade-in">
+
+  return (
+    <div className="animate-fade-in">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Profilo Utente</h1>
       </div>
 
       <div className="space-y-6">
+        {/* User Personal Info Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <div>
@@ -98,16 +110,48 @@ const Profile = () => {
                 <Input value={user.lastName || ''} readOnly className="bg-muted" />
               </div>
             </div>
-
-            
           </CardContent>
         </Card>
 
-        {isLoadingEmployee ? <Card>
+        {/* App Settings Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Impostazioni</CardTitle>
+            <CardDescription>Personalizza l'esperienza dell'app</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-medium">Tema</h3>
+                <p className="text-sm text-muted-foreground">Cambia tra tema chiaro e scuro</p>
+              </div>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={toggleTheme}
+                className="transition-all"
+              >
+                {theme === 'dark' ? (
+                  <Sun className="h-5 w-5" />
+                ) : (
+                  <Moon className="h-5 w-5" />
+                )}
+                <span className="sr-only">Toggle theme</span>
+              </Button>
+            </div>
+            <Separator />
+          </CardContent>
+        </Card>
+
+        {/* Employee Details Card */}
+        {isLoadingEmployee ? (
+          <Card>
             <CardContent className="py-6 flex justify-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </CardContent>
-          </Card> : linkedEmployee ? <Card>
+          </Card>
+        ) : linkedEmployee ? (
+          <Card>
             <CardHeader>
               <CardTitle className="text-xl">Dettagli Dipendente</CardTitle>
               <CardDescription>Il tuo profilo dipendente collegato</CardDescription>
@@ -137,12 +181,14 @@ const Profile = () => {
               
               <div className="flex items-center space-x-2">
                 <div className="w-6 h-6 rounded-full" style={{
-              backgroundColor: linkedEmployee.color
-            }}></div>
+                  backgroundColor: linkedEmployee.color
+                }}></div>
                 <span>Colore assegnato</span>
               </div>
             </CardContent>
-          </Card> : <Card>
+          </Card>
+        ) : (
+          <Card>
             <CardHeader>
               <CardTitle className="text-xl">Dettagli Dipendente</CardTitle>
               <CardDescription>Nessun profilo dipendente collegato</CardDescription>
@@ -153,8 +199,10 @@ const Profile = () => {
                 Contatta l'amministratore per collegare il tuo account.
               </p>
             </CardContent>
-          </Card>}
+          </Card>
+        )}
 
+        {/* Account Actions Card */}
         <Card>
           <CardHeader>
             <CardTitle className="text-xl">Azioni Account</CardTitle>
@@ -167,6 +215,8 @@ const Profile = () => {
           </CardFooter>
         </Card>
       </div>
-    </div>;
+    </div>
+  );
 };
+
 export default Profile;
