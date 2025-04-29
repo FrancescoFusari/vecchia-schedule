@@ -7,13 +7,16 @@ import { Employee, ShiftTemplate } from "@/lib/types";
 import { employeeService, templateService, shiftService } from "@/lib/supabase";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
-import { Plus } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, CalendarDays, Clock } from "lucide-react";
 import { ShiftAssignmentModal } from "@/components/Shifts/ShiftAssignmentModal";
 import { ShiftModal } from "@/components/Shifts/ShiftModal";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { EmployeeBottomSheet } from "@/components/Employees/EmployeeBottomSheet";
 import { Users } from "lucide-react";
+import { formatMonthYear } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 const Calendar = () => {
   const isMobile = useIsMobile();
@@ -199,6 +202,22 @@ const Calendar = () => {
   const handleDateChange = (date: Date) => {
     setCurrentDate(date);
   };
+
+  const handlePrevMonth = () => {
+    const newDate = new Date(currentDate);
+    newDate.setMonth(newDate.getMonth() - 1);
+    setCurrentDate(newDate);
+  };
+  
+  const handleNextMonth = () => {
+    const newDate = new Date(currentDate);
+    newDate.setMonth(newDate.getMonth() + 1);
+    setCurrentDate(newDate);
+  };
+  
+  const handleToday = () => {
+    setCurrentDate(new Date());
+  };
   
   return (
     <div className="flex flex-col gap-6">
@@ -207,6 +226,42 @@ const Calendar = () => {
         <div className={`${isMobile ? 'glassmorphic rounded-lg p-4' : ''}`}>
           <h1 className="text-2xl font-bold">Calendario Turni</h1>
           <p className="text-muted-foreground">Visualizza e gestisci i turni dei dipendenti</p>
+          
+          {/* Month switching controls */}
+          <div className="flex flex-wrap items-center justify-between mt-4 gap-2">
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" onClick={handlePrevMonth}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              
+              <span className="text-lg font-medium min-w-[140px] text-center">
+                {formatMonthYear(currentDate)}
+              </span>
+              
+              <Button variant="outline" size="icon" onClick={handleNextMonth}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              
+              <Button variant="outline" size="sm" onClick={handleToday} className="ml-1">
+                Oggi
+              </Button>
+            </div>
+            
+            {!isVerticalView && (
+              <div className="flex items-center space-x-2">
+                <CalendarDays className={`h-4 w-4 ${!isWeekView ? "text-primary" : "text-muted-foreground"}`} />
+                <Switch
+                  id="view-mode"
+                  checked={isWeekView}
+                  onCheckedChange={handleViewChange}
+                />
+                <Label htmlFor="view-mode" className="flex items-center gap-1">
+                  <Clock className={`h-4 w-4 ${isWeekView ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className="text-sm">Vista settimanale</span>
+                </Label>
+              </div>
+            )}
+          </div>
         
           {isAdmin() && (
             <div className="w-full max-w-lg mx-auto px-4 sm:px-0 mt-4">
