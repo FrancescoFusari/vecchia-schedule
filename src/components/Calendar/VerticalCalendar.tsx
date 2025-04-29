@@ -1,7 +1,8 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Shift, Employee, ShiftTemplate } from "@/lib/types";
 import { formatDate, formatEmployeeName, formatMonthYear, cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, Filter, User, Calendar as CalendarIcon } from "lucide-react";
+import { Filter, User, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ShiftItem } from "./ShiftItem";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,6 +25,7 @@ interface VerticalCalendarProps {
   isLoading: boolean;
   onAddShift: (date: Date, dayOfWeek: number) => void;
   onEditShift: (shift: Shift) => void;
+  showOnlyUserShifts?: boolean;
 }
 
 interface DayWithShifts {
@@ -44,10 +46,10 @@ export function VerticalCalendar({
   onDateChange,
   isLoading,
   onAddShift,
-  onEditShift
+  onEditShift,
+  showOnlyUserShifts = false
 }: VerticalCalendarProps) {
   const { user, isAdmin } = useAuth();
-  const [showOnlyUserShifts, setShowOnlyUserShifts] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
   const [daysWithShifts, setDaysWithShifts] = useState<DayWithShifts[]>([]);
   const [filteredDays, setFilteredDays] = useState<DayWithShifts[]>([]);
@@ -147,22 +149,6 @@ export function VerticalCalendar({
     }
   }, [filteredDays, isMobile]);
 
-  const handlePrevMonth = () => {
-    const newDate = new Date(currentDate);
-    newDate.setMonth(newDate.getMonth() - 1);
-    onDateChange(newDate);
-  };
-
-  const handleNextMonth = () => {
-    const newDate = new Date(currentDate);
-    newDate.setMonth(newDate.getMonth() + 1);
-    onDateChange(newDate);
-  };
-
-  const handleToday = () => {
-    onDateChange(new Date());
-  };
-
   const getEmployeeById = (id: string): Employee | undefined => {
     return employees.find(emp => emp.id === id);
   };
@@ -175,106 +161,62 @@ export function VerticalCalendar({
   };
 
   const clearFilters = () => {
-    setShowOnlyUserShifts(false);
     setSelectedTemplate("");
   };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="icon" onClick={handlePrevMonth}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <h3 className="text-lg font-medium capitalize">{formatMonthYear(currentDate)}</h3>
-          <Button variant="outline" size="icon" onClick={handleNextMonth}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleToday}>
-            Oggi
-          </Button>
-          
-          {!isAdmin() && (
-            <Toggle
-              pressed={showOnlyUserShifts}
-              onPressedChange={setShowOnlyUserShifts}
-              className="relative"
-              aria-label="Mostra solo i miei turni"
-            >
-              <User className="h-4 w-4" />
-              {showOnlyUserShifts && (
-                <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary" />
-              )}
-            </Toggle>
-          )}
-          
-          {isAdmin() && (
-            <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="icon" className="relative">
-                  <Filter className="h-4 w-4" />
-                  {(showOnlyUserShifts || selectedTemplate) && (
-                    <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary" />
-                  )}
-                </Button>
-              </SheetTrigger>
-              <SheetContent>
-                <SheetHeader>
-                  <SheetTitle>Filtri Turni</SheetTitle>
-                  <SheetDescription>
-                    Filtra i turni per visualizzare solo quelli di interesse
-                  </SheetDescription>
-                </SheetHeader>
-                <div className="py-6 space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col space-y-1">
-                      <Label htmlFor="show-user-shifts">Solo miei turni</Label>
-                      <span className="text-sm text-muted-foreground">
-                        Mostra solo i tuoi turni programmati
-                      </span>
-                    </div>
-                    <Switch 
-                      id="show-user-shifts" 
-                      checked={showOnlyUserShifts}
-                      onCheckedChange={setShowOnlyUserShifts}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="template-filter">Tipo di turno</Label>
-                    <Select 
-                      value={selectedTemplate} 
-                      onValueChange={setSelectedTemplate}
-                    >
-                      <SelectTrigger id="template-filter">
-                        <SelectValue placeholder="Tutti i tipi di turno" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">Tutti i tipi</SelectItem>
-                        {templates.map(template => (
-                          <SelectItem key={template.id} value={template.id}>
-                            {template.name} ({template.startTime}-{template.endTime})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <Button 
-                    variant="outline" 
-                    onClick={clearFilters} 
-                    className="w-full"
-                    disabled={!showOnlyUserShifts && !selectedTemplate}
+        {isAdmin() && (
+          <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="relative">
+                <Filter className="h-4 w-4" />
+                {selectedTemplate && (
+                  <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-primary" />
+                )}
+              </Button>
+            </SheetTrigger>
+            <SheetContent>
+              <SheetHeader>
+                <SheetTitle>Filtri Turni</SheetTitle>
+                <SheetDescription>
+                  Filtra i turni per tipo di turno
+                </SheetDescription>
+              </SheetHeader>
+              <div className="py-6 space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="template-filter">Tipo di turno</Label>
+                  <Select 
+                    value={selectedTemplate} 
+                    onValueChange={setSelectedTemplate}
                   >
-                    Cancella filtri
-                  </Button>
+                    <SelectTrigger id="template-filter">
+                      <SelectValue placeholder="Tutti i tipi di turno" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Tutti i tipi</SelectItem>
+                      {templates.map(template => (
+                        <SelectItem key={template.id} value={template.id}>
+                          {template.name} ({template.startTime}-{template.endTime})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              </SheetContent>
-            </Sheet>
-          )}
-        </div>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={clearFilters} 
+                  className="w-full"
+                  disabled={!selectedTemplate}
+                >
+                  Cancella filtri
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
+        )}
       </div>
       
       {isLoading ? (
@@ -288,7 +230,7 @@ export function VerticalCalendar({
               "Nessun turno corrisponde ai filtri selezionati" : 
               "Nessun turno programmato per questo mese"}
           </p>
-          {(showOnlyUserShifts || selectedTemplate) && (
+          {selectedTemplate && (
             <Button 
               variant="link" 
               onClick={clearFilters} 

@@ -7,7 +7,7 @@ import { Employee, ShiftTemplate } from "@/lib/types";
 import { employeeService, templateService, shiftService } from "@/lib/supabase";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
-import { Plus, ChevronLeft, ChevronRight, CalendarDays, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, Clock, User, Eye, EyeOff } from "lucide-react";
 import { ShiftAssignmentModal } from "@/components/Shifts/ShiftAssignmentModal";
 import { ShiftModal } from "@/components/Shifts/ShiftModal";
 import { toast } from "@/hooks/use-toast";
@@ -17,10 +17,11 @@ import { Users } from "lucide-react";
 import { formatMonthYear } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Toggle } from "@/components/ui/toggle";
 
 const Calendar = () => {
   const isMobile = useIsMobile();
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isWeekView, setIsWeekView] = useState(false);
   const [isVerticalView, setIsVerticalView] = useState(isMobile);
@@ -30,18 +31,26 @@ const Calendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isLoading, setIsLoading] = useState(true);
   const [shifts, setShifts] = useState([]);
+  const [showOnlyUserShifts, setShowOnlyUserShifts] = useState(false);
   
   const [selectedShift, setSelectedShift] = useState(null);
   const [isAddingShift, setIsAddingShift] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [currentDayOfWeek, setCurrentDayOfWeek] = useState<number | undefined>(undefined);
   const [refreshTrigger, setRefreshTrigger] = useState(0); // Refresh trigger state to force calendar updates
+  const [currentUserEmployee, setCurrentUserEmployee] = useState<Employee | null>(null);
 
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
         const employeeData = await employeeService.getEmployees();
         setEmployees(employeeData);
+        
+        // Find current user's employee record
+        if (user) {
+          const userEmployee = employeeData.find(emp => emp.userId === user.id);
+          setCurrentUserEmployee(userEmployee || null);
+        }
       } catch (error) {
         console.error("Error fetching employees:", error);
       }
@@ -58,7 +67,7 @@ const Calendar = () => {
     
     fetchEmployees();
     fetchTemplates();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     setIsVerticalView(isMobile);
@@ -85,6 +94,10 @@ const Calendar = () => {
     if (isVerticalView) {
       fetchShiftsForCurrentMonth();
     }
+  };
+
+  const handleToggleUserShifts = () => {
+    setShowOnlyUserShifts(prev => !prev);
   };
   
   const fetchShiftsForCurrentMonth = async () => {
@@ -247,20 +260,37 @@ const Calendar = () => {
               </Button>
             </div>
             
-            {!isVerticalView && (
-              <div className="flex items-center space-x-2">
-                <CalendarDays className={`h-4 w-4 ${!isWeekView ? "text-primary" : "text-muted-foreground"}`} />
-                <Switch
-                  id="view-mode"
-                  checked={isWeekView}
-                  onCheckedChange={handleViewChange}
-                />
-                <Label htmlFor="view-mode" className="flex items-center gap-1">
-                  <Clock className={`h-4 w-4 ${isWeekView ? "text-primary" : "text-muted-foreground"}`} />
-                  <span className="text-sm">Vista settimanale</span>
-                </Label>
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              {/* Filter by user shifts button */}
+              {currentUserEmployee && (
+                <Toggle 
+                  pressed={showOnlyUserShifts} 
+                  onPressedChange={handleToggleUserShifts}
+                  className="relative gap-1 bg-primary/5 border-primary/20 hover:bg-primary/10"
+                  aria-label="Mostra solo i miei turni"
+                >
+                  <User className="h-4 w-4" />
+                  {showOnlyUserShifts ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  <span className="hidden sm:inline ml-1">I miei turni</span>
+                </Toggle>
+              )}
+              
+              {/* View toggle */}
+              {!isVerticalView && (
+                <div className="flex items-center space-x-2">
+                  <CalendarDays className={`h-4 w-4 ${!isWeekView ? "text-primary" : "text-muted-foreground"}`} />
+                  <Switch
+                    id="view-mode"
+                    checked={isWeekView}
+                    onCheckedChange={handleViewChange}
+                  />
+                  <Label htmlFor="view-mode" className="flex items-center gap-1">
+                    <Clock className={`h-4 w-4 ${isWeekView ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className="text-sm">Vista settimanale</span>
+                  </Label>
+                </div>
+              )}
+            </div>
           </div>
         
           {isAdmin() && (
@@ -289,18 +319,23 @@ const Calendar = () => {
             isLoading={isLoading}
             onAddShift={handleAddShift}
             onEditShift={handleEditShift}
+            showOnlyUserShifts={showOnlyUserShifts}
           />
         ) : isWeekView ? (
           <WeeklyCalendar 
             onViewChange={handleViewChange} 
             key={`weekly-${refreshTrigger}`} 
-            data-component="weekly-calendar" 
+            data-component="weekly-calendar"
+            showOnlyUserShifts={showOnlyUserShifts}
+            onToggleUserShifts={handleToggleUserShifts}
           />
         ) : (
           <MonthlyCalendar 
             onViewChange={handleViewChange} 
             key={`monthly-${refreshTrigger}`} 
-            data-component="monthly-calendar" 
+            data-component="monthly-calendar"
+            showOnlyUserShifts={showOnlyUserShifts}
+            onToggleUserShifts={handleToggleUserShifts}
           />
         )}
       </div>
