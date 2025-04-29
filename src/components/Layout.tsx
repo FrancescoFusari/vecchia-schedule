@@ -22,7 +22,7 @@ export function Layout() {
     <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
       <OfflineIndicator />
       <Navbar />
-      <main className={`flex-1 container mx-auto px-4 py-6 sm:px-6 md:px-8 ${isMobile ? 'pb-24' : ''}`}>
+      <main className={`flex-1 container mx-auto px-4 ${isMobile ? 'pt-20 pb-24' : 'pt-24 pb-6'} sm:px-6 md:px-8`}>
         <Outlet />
       </main>
       <footer className={`border-t border-border bg-card py-4 ${isMobile ? 'pb-20' : ''} transition-colors duration-300`}>

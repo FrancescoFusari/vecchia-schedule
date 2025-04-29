@@ -77,6 +77,12 @@
   }
 }
 
+@layer components {
+  .glassmorphic {
+    @apply bg-background/60 backdrop-blur-lg border border-white/10 dark:bg-black/40 dark:border-white/5;
+  }
+}
+
 @layer utilities {
   .animate-fade-in {
     animation: fadeIn 0.5s ease-in-out;

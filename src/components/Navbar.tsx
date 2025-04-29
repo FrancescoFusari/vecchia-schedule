@@ -1,7 +1,7 @@
 
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, Users, User, LogOut, Moon, Sun } from "lucide-react";
+import { CalendarDays, Users, User, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -34,8 +34,9 @@ export function Navbar() {
     signOut();
   };
   
-  return <nav className={`bg-card shadow-sm ${isMobile ? 'fixed bottom-0 left-0 right-0 z-50 border-t' : 'border-b'} border-border transition-colors duration-300`}>
-      <div className={`container mx-auto ${isMobile ? 'px-1 py-2' : 'px-4 py-3'}`}>
+  return (
+    <div className="z-50 fixed top-0 left-0 right-0 px-4 py-2">
+      <nav className={`glassmorphic rounded-lg mx-auto max-w-screen-xl ${isMobile ? 'py-2 px-3' : 'py-3 px-4'} transition-all duration-300 shadow-lg`}>
         <div className="flex justify-between items-center">
           {!isMobile && <div className="flex space-x-1">
               <Link to="/" className="flex items-center text-lg font-semibold text-foreground">
@@ -44,46 +45,78 @@ export function Navbar() {
               </Link>
             </div>}
 
-          <div className={`flex items-center ${isMobile ? 'w-full justify-around' : 'space-x-2'}`}>
+          <div className={`flex items-center ${isMobile ? 'w-full justify-around' : 'space-x-4'}`}>
             {/* Main navigation links */}
             <Link to="/">
-              <Button variant={isActive("/") ? "default" : "ghost"} size={isMobile ? "mobileNav" : "sm"} className={`flex ${isMobile ? 'flex-col h-auto w-full' : 'items-center'}`}>
-                <CalendarDays className={isMobile ? "h-4 w-4 mb-1" : "mr-2 h-4 w-4"} />
-                <span className={isMobile ? "text-[10px] leading-tight" : ""}>Calendario</span>
+              <Button 
+                variant={isActive("/") ? "default" : "ghost"} 
+                size="icon" 
+                aria-label="Calendario"
+                className={`${isActive("/") ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'hover:bg-background/20'} rounded-full transition-all`}
+              >
+                <CalendarDays className="h-5 w-5" />
               </Button>
             </Link>
 
             {/* Hours Summary link for all users */}
-            <HoursSummaryNavButton isMobile={isMobile} />
+            <Link to="/hours-summary">
+              <Button 
+                variant={isActive("/hours-summary") ? "default" : "ghost"} 
+                size="icon"
+                aria-label="Riepilogo Ore" 
+                className={`${isActive("/hours-summary") ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'hover:bg-background/20'} rounded-full transition-all`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+              </Button>
+            </Link>
             
             {/* Only render dashboard link for admin users */}
-            {showDashboard && <Link to="/dashboard">
-                <Button variant={isActive("/dashboard") ? "default" : "ghost"} size={isMobile ? "mobileNav" : "sm"} className={`flex ${isMobile ? 'flex-col h-auto w-full' : 'items-center'}`}>
-                  <Users className={isMobile ? "h-4 w-4 mb-1" : "mr-2 h-4 w-4"} />
-                  <span className={isMobile ? "text-[10px] leading-tight" : ""}>Dashboard</span>
+            {showDashboard && (
+              <Link to="/dashboard">
+                <Button 
+                  variant={isActive("/dashboard") ? "default" : "ghost"} 
+                  size="icon"
+                  aria-label="Dashboard" 
+                  className={`${isActive("/dashboard") ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'hover:bg-background/20'} rounded-full transition-all`}
+                >
+                  <Users className="h-5 w-5" />
                 </Button>
-              </Link>}
+              </Link>
+            )}
             
             {/* Show profile link for regular users */}
-            {showProfile && <Link to="/profile">
-                <Button variant={isActive("/profile") ? "default" : "ghost"} size={isMobile ? "mobileNav" : "sm"} className={`flex ${isMobile ? 'flex-col h-auto w-full' : 'items-center'}`}>
-                  <User className={isMobile ? "h-4 w-4 mb-1" : "mr-2 h-4 w-4"} />
-                  <span className={isMobile ? "text-[10px] leading-tight" : ""}>Profilo</span>
-                </Button>
-              </Link>}
+            <Link to="/profile">
+              <Button 
+                variant={isActive("/profile") ? "default" : "ghost"} 
+                size="icon"
+                aria-label="Profilo" 
+                className={`${isActive("/profile") ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'hover:bg-background/20'} rounded-full transition-all`}
+              >
+                <User className="h-5 w-5" />
+              </Button>
+            </Link>
             
-            {/* Add theme toggle button for mobile */}
-            {isMobile ? <Link to="/profile">
-                
-              </Link> : <ThemeToggle className="ml-2" />}
+            {/* Theme toggle */}
+            <ThemeToggle className="rounded-full" />
             
             {/* Add logout button if not on mobile */}
-            {!isMobile && <Button variant="ghost" size="sm" onClick={handleLogout} className="flex items-center text-destructive hover:bg-destructive/10 hover:text-destructive ml-2">
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Logout</span>
-              </Button>}
+            {!isMobile && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handleLogout} 
+                aria-label="Logout"
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive rounded-full"
+              >
+                <LogOut className="h-5 w-5" />
+              </Button>
+            )}
           </div>
         </div>
-      </div>
-    </nav>;
+      </nav>
+    </div>
+  );
 }
