@@ -1,11 +1,10 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Employee, Shift } from "@/lib/types";
 import { shiftService, employeeService } from "@/lib/supabase";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { HoursSummary as HoursSummaryComponent } from "@/components/Reports/HoursSummary";
-import { CheckInCard } from "@/components/TimeTracking/CheckInCard";
+import { TimeRegistrationCard } from "@/components/TimeTracking/TimeRegistrationCard";
 import { HoursComparison } from "@/components/TimeTracking/HoursComparison";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -148,7 +147,7 @@ const HoursSummaryPage = () => {
         >
           <TabsList className="grid grid-cols-2 w-full">
             <TabsTrigger value="summary">Riepilogo</TabsTrigger>
-            <TabsTrigger value="checkin">Check-in/out</TabsTrigger>
+            <TabsTrigger value="checkin">Registra Ore</TabsTrigger>
           </TabsList>
         </Tabs>
       )}
@@ -170,9 +169,9 @@ const HoursSummaryPage = () => {
         </Card>
       ) : employee ? (
         <>
-          {/* Check-in card for desktop or mobile when selected */}
+          {/* Time Registration card for desktop or mobile when selected */}
           {(!isMobile || (isMobile && activeTab === "checkin")) && (
-            <CheckInCard 
+            <TimeRegistrationCard
               employeeId={employee.id}
               onStatusChange={handleRefresh}
             />

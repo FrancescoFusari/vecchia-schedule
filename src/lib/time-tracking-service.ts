@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 
@@ -12,6 +11,13 @@ export interface TimeTrackingEntry {
   notes: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface TimeRegistrationData {
+  date: Date;
+  checkInTime: string; // HH:MM format
+  checkOutTime: string; // HH:MM format
+  notes?: string;
 }
 
 export const timeTrackingService = {
@@ -226,6 +232,107 @@ export const timeTrackingService = {
       }
     } catch (error) {
       console.error("Error in checkOutWithTime:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Register a complete time entry (both check-in and check-out) in a single call
+   */
+  registerTimeEntry: async (employeeId: string, data: TimeRegistrationData): Promise<TimeTrackingEntry> => {
+    try {
+      const { date, checkInTime, checkOutTime, notes } = data;
+      
+      const dateOnly = format(date, "yyyy-MM-dd");
+      
+      // Parse check-in time
+      const checkInDateTime = new Date(
+        date.getFullYear(), 
+        date.getMonth(), 
+        date.getDate(),
+        parseInt(checkInTime.split(':')[0]), 
+        parseInt(checkInTime.split(':')[1])
+      );
+      
+      // Parse check-out time
+      const checkOutDateTime = new Date(
+        date.getFullYear(), 
+        date.getMonth(), 
+        date.getDate(),
+        parseInt(checkOutTime.split(':')[0]), 
+        parseInt(checkOutTime.split(':')[1])
+      );
+      
+      // Validate check-out is after check-in
+      if (checkOutDateTime <= checkInDateTime) {
+        throw new Error("Check-out time must be after check-in time");
+      }
+      
+      // Calculate total hours
+      const diffMs = checkOutDateTime.getTime() - checkInDateTime.getTime();
+      const totalHours = parseFloat((diffMs / (1000 * 60 * 60)).toFixed(2)); // Convert ms to hours with 2 decimal places
+      
+      // Check if there's already an entry for this date
+      const existingEntry = await timeTrackingService.getTimeTrackingEntry(employeeId, dateOnly);
+      
+      if (existingEntry) {
+        // Update existing entry
+        const { data, error } = await supabase
+          .from('time_tracking')
+          .update({
+            check_in: checkInDateTime.toISOString(),
+            check_out: checkOutDateTime.toISOString(),
+            total_hours: totalHours,
+            notes: notes || null
+          })
+          .eq('id', existingEntry.id)
+          .select()
+          .single();
+          
+        if (error) throw error;
+        
+        return {
+          id: data.id,
+          employeeId: data.employee_id,
+          date: data.date,
+          checkIn: data.check_in,
+          checkOut: data.check_out,
+          totalHours: data.total_hours,
+          notes: data.notes,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at
+        };
+      } else {
+        // Create a new entry
+        const { data, error } = await supabase
+          .from('time_tracking')
+          .insert({
+            employee_id: employeeId,
+            date: dateOnly,
+            check_in: checkInDateTime.toISOString(),
+            check_out: checkOutDateTime.toISOString(),
+            total_hours: totalHours,
+            notes: notes || null
+          })
+          .select()
+          .single();
+          
+        if (error) throw error;
+        
+        return {
+          id: data.id,
+          employeeId: data.employee_id,
+          date: data.date,
+          checkIn: data.check_in,
+          checkOut: data.check_out,
+          totalHours: data.total_hours,
+          notes: data.notes,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at
+        };
+      }
+    } catch (error) {
+      console.error("Error in registerTimeEntry:", error);
       throw error;
     }
   },
