@@ -1,12 +1,13 @@
 
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, Users, User, MessageSquare, LogOut } from "lucide-react";
+import { CalendarDays, Users, User, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useTheme } from "next-themes";
-import { OrdersNavButton } from "@/components/Orders/OrdersNavButton";
+import { ExperimentalNavMenu } from "@/components/Navbar/ExperimentalNavMenu";
+import { HoursSummaryNavButton } from "@/components/Navbar/HoursSummaryNavButton";
 
 export function Navbar() {
   const { user, isAdmin, signOut } = useAuth();
@@ -26,9 +27,6 @@ export function Navbar() {
   
   // Show profile for regular users
   const showProfile = !showDashboard;
-  
-  // Show orders button for all users (removing the restriction)
-  const showOrders = true;
 
   const handleLogout = () => {
     signOut();
@@ -64,23 +62,12 @@ export function Navbar() {
               </Button>
             </Link>
 
-            {/* Communications link for all users */}
-            <Link to="/communications">
-              <Button
-                variant={isActive("/communications") ? "default" : "ghost"}
-                size={isMobile ? "mobileNav" : "sm"}
-                className={`flex ${isMobile ? 'flex-col h-auto w-full' : 'items-center'}`}
-              >
-                <MessageSquare className={isMobile ? "h-4 w-4 mb-1" : "mr-2 h-4 w-4"} />
-                <span className={isMobile ? "text-[10px] leading-tight" : ""}>Comunicazioni</span>
-              </Button>
-            </Link>
-            
-            {/* Orders link for all users now */}
-            {showOrders && (
-              <OrdersNavButton isMobile={isMobile} />
-            )}
+            {/* Hours Summary link for all users */}
+            <HoursSummaryNavButton isMobile={isMobile} />
 
+            {/* Experimental dropdown menu */}
+            <ExperimentalNavMenu isMobile={isMobile} />
+            
             {/* Only render dashboard link for admin users */}
             {showDashboard && (
               <Link to="/dashboard">

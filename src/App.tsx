@@ -20,6 +20,7 @@ import { registerServiceWorker } from "@/utils/pwaUtils";
 import Communications from "./pages/Communications";
 import Orders from "./pages/Orders";
 import TableOrders from "./pages/TableOrders";
+import HoursSummary from "./pages/HoursSummary";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +54,7 @@ function App() {
                 <Route path="/communications" element={<Communications />} />
                 <Route path="/orders" element={<Orders />} />
                 <Route path="/orders/tables/:tableId" element={<TableOrders />} />
+                <Route path="/hours-summary" element={<HoursSummary />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
               <Route path="/login" element={<Login />} />
