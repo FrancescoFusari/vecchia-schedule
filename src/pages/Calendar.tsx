@@ -237,71 +237,61 @@ const Calendar = () => {
           <h1 className="text-2xl font-bold">Calendario Turni</h1>
           <p className="text-muted-foreground">Visualizza e gestisci i turni dei dipendenti</p>
           
-          {/* Month switching controls and buttons in the same line */}
-          <div className="flex flex-wrap items-center justify-between mt-4 gap-2">
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" onClick={handlePrevMonth}>
+          <div className="flex flex-wrap items-center justify-between mt-4">
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" size="icon" onClick={handlePrevMonth} aria-label="Mese precedente">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               
-              <span className="text-lg font-medium min-w-[140px] text-center">
+              <div className="text-lg font-medium min-w-[140px] text-center">
                 {formatMonthYear(currentDate)}
-              </span>
+              </div>
               
-              <Button variant="outline" size="icon" onClick={handleNextMonth}>
+              <Button variant="outline" size="icon" onClick={handleNextMonth} aria-label="Mese successivo">
                 <ChevronRight className="h-4 w-4" />
               </Button>
               
-              <Button variant="outline" size="sm" onClick={handleToday} className="ml-1">
+              <Button variant="outline" size="sm" onClick={handleToday}>
                 Oggi
               </Button>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              {/* Filter by user shifts button */}
+              
               {currentUserEmployee && (
                 <Toggle 
                   pressed={showOnlyUserShifts} 
                   onPressedChange={handleToggleUserShifts}
-                  className="relative gap-1 bg-primary/5 border-primary/20 hover:bg-primary/10"
+                  className="relative gap-1 bg-primary/5 border-primary/20 hover:bg-primary/10 ml-2"
                   aria-label="Mostra solo i miei turni"
                 >
                   <User className="h-4 w-4" />
                   {showOnlyUserShifts ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  <span className="hidden sm:inline ml-1">I miei turni</span>
                 </Toggle>
               )}
               
-              {/* View toggle */}
               {!isVerticalView && (
-                <div className="flex items-center space-x-2">
-                  <CalendarDays className={`h-4 w-4 ${!isWeekView ? "text-primary" : "text-muted-foreground"}`} />
+                <div className="ml-2 flex items-center space-x-1">
                   <Switch
                     id="view-mode"
                     checked={isWeekView}
                     onCheckedChange={handleViewChange}
                   />
-                  <Label htmlFor="view-mode" className="flex items-center gap-1">
-                    <Clock className={`h-4 w-4 ${isWeekView ? "text-primary" : "text-muted-foreground"}`} />
-                    <span className="text-sm">Vista settimanale</span>
+                  <Label htmlFor="view-mode" className="text-xs">
+                    {isWeekView ? "Settimanale" : "Mensile"}
                   </Label>
                 </div>
               )}
             </div>
-          </div>
-        
-          {isAdmin() && (
-            <div className="w-full max-w-lg mx-auto px-4 sm:px-0 mt-4">
+            
+            {isAdmin() && (
               <Button
-                size="lg"
-                className="w-full h-12 text-base font-medium shadow-md hover:shadow-lg transition-all gap-2"
+                size="sm"
                 onClick={handleEmployeeClick}
+                className="gap-1"
               >
-                <Users className="h-5 w-5" />
-                Assegna turni
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Assegna turni</span>
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
       
