@@ -1,10 +1,10 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Shift, Employee, ShiftTemplate } from "@/lib/types";
 import { formatDate, formatEmployeeName, formatMonthYear, cn } from "@/lib/utils";
 import { Filter, User, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ShiftItem } from "./ShiftItem";
+import { FreeDayIndicator } from "./FreeDayIndicator";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -36,6 +36,7 @@ interface DayWithShifts {
   isToday: boolean;
   shifts: Shift[];
   isCurrentMonth: boolean;
+  isFreeDay?: boolean;
 }
 
 export function VerticalCalendar({
@@ -56,6 +57,15 @@ export function VerticalCalendar({
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const isMobile = useIsMobile();
   const listRef = useRef<HTMLDivElement>(null);
+  const [currentUserEmployee, setCurrentUserEmployee] = useState<Employee | null>(null);
+
+  // Find the current user's employee record
+  useEffect(() => {
+    if (user && employees.length > 0) {
+      const userEmployee = employees.find(emp => emp.userId === user.id);
+      setCurrentUserEmployee(userEmployee || null);
+    }
+  }, [user, employees]);
 
   useEffect(() => {
     const year = currentDate.getFullYear();
@@ -117,10 +127,16 @@ export function VerticalCalendar({
     if (showOnlyUserShifts && user) {
       const userEmployee = employees.find(emp => emp.userId === user.id);
       if (userEmployee) {
-        filtered = filtered.map(day => ({
-          ...day,
-          shifts: day.shifts.filter(shift => shift.employeeId === userEmployee.id)
-        })).filter(day => day.shifts.length > 0);
+        // Mark days as "free" when there are no shifts for the user
+        filtered = filtered.map(day => {
+          const userShifts = day.shifts.filter(shift => shift.employeeId === userEmployee.id);
+          return {
+            ...day,
+            shifts: userShifts,
+            isFreeDay: userShifts.length === 0 && day.isCurrentMonth
+          };
+        });
+        // We keep all days but mark free ones - not filtering them out anymore
       }
     }
     
@@ -163,6 +179,9 @@ export function VerticalCalendar({
   const clearFilters = () => {
     setSelectedTemplate("");
   };
+
+  // Filter days to only display current month
+  const currentMonthDays = filteredDays.filter(day => day.isCurrentMonth);
 
   return (
     <div className="space-y-4">
@@ -223,7 +242,7 @@ export function VerticalCalendar({
         <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
-      ) : filteredDays.length === 0 ? (
+      ) : currentMonthDays.length === 0 ? (
         <div className="bg-muted/20 p-6 rounded-md text-center">
           <p className="text-muted-foreground">
             {(showOnlyUserShifts || selectedTemplate) ? 
@@ -241,8 +260,8 @@ export function VerticalCalendar({
           )}
         </div>
       ) : (
-        <div className="space-y-3" ref={listRef}>
-          {filteredDays.map((day) => (
+        <div className="space-y-3 animate-in fade-in duration-300" ref={listRef}>
+          {currentMonthDays.map((day) => (
             <div 
               key={day.date.toISOString()} 
               data-today={day.isToday}
@@ -289,9 +308,14 @@ export function VerticalCalendar({
                         employee={employee}
                         onClick={() => onEditShift(shift)}
                         highlight={shouldHighlightShift(shift)}
+                        isFilterActive={showOnlyUserShifts}
                       />
                     );
                   })}
+                </div>
+              ) : day.isFreeDay ? (
+                <div className="px-1 animate-in slide-in-from-top-2 duration-300">
+                  <FreeDayIndicator date={day.date} />
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground pl-1 py-1">Nessun turno programmato</p>

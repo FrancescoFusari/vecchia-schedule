@@ -10,9 +10,10 @@ interface ShiftItemProps {
   employee: Employee;
   onClick?: () => void;
   highlight?: boolean;
+  isFilterActive?: boolean;
 }
 
-export function ShiftItem({ shift, employee, onClick, highlight = false }: ShiftItemProps) {
+export function ShiftItem({ shift, employee, onClick, highlight = false, isFilterActive = false }: ShiftItemProps) {
   const { isAdmin } = useAuth();
   const duration = shift.duration;
   
@@ -31,6 +32,11 @@ export function ShiftItem({ shift, employee, onClick, highlight = false }: Shift
   const formattedStartTime = formatTo12Hour(shift.startTime);
   const formattedEndTime = formatTo12Hour(shift.endTime);
   
+  // Add animation classes when filtering is active
+  const filterActiveClasses = isFilterActive ? 
+    "px-3 py-2 mb-2 text-sm transition-all animate-in fade-in duration-300 hover:scale-[1.03]" : 
+    "px-2 py-1 mb-1 text-xs";
+  
   if (isAdmin() && onClick) {
     return (
       <TooltipProvider>
@@ -39,18 +45,22 @@ export function ShiftItem({ shift, employee, onClick, highlight = false }: Shift
             <div
               onClick={onClick}
               className={cn(
-                "shift-item px-2 py-1 mb-1 rounded-md text-xs font-medium flex justify-between items-center",
+                "shift-item rounded-md font-medium flex justify-between items-center",
                 bgColor,
                 "hover:cursor-pointer hover:brightness-95 transition-all",
-                highlight ? "ring-1 ring-primary/30" : ""
+                highlight ? "ring-1 ring-primary/30" : "",
+                filterActiveClasses
               )}
               style={customStyle}
             >
               <div className="truncate">
                 {formatEmployeeName(employee.firstName, employee.lastName)}
               </div>
-              <div className="flex items-center gap-1 bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap ml-1">
-                <Clock className="h-2.5 w-2.5" />
+              <div className={cn(
+                "flex items-center gap-1 bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded-full font-semibold whitespace-nowrap ml-1",
+                isFilterActive ? "text-xs" : "text-[10px]"
+              )}>
+                <Clock className={isFilterActive ? "h-3 w-3" : "h-2.5 w-2.5"} />
                 <span>{formattedStartTime}-{formattedEndTime}</span>
               </div>
             </div>
@@ -66,18 +76,22 @@ export function ShiftItem({ shift, employee, onClick, highlight = false }: Shift
   return (
     <div
       className={cn(
-        "shift-item px-2 py-1 mb-1 rounded-md text-xs font-medium flex justify-between items-center",
+        "shift-item rounded-md font-medium flex justify-between items-center",
         bgColor,
         "cursor-default",
-        highlight ? "ring-1 ring-primary/30" : ""
+        highlight ? "ring-1 ring-primary/30" : "",
+        filterActiveClasses
       )}
       style={customStyle}
     >
       <div className="truncate">
         {formatEmployeeName(employee.firstName, employee.lastName)}
       </div>
-      <div className="flex items-center gap-1 bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap ml-1">
-        <Clock className="h-2.5 w-2.5" />
+      <div className={cn(
+        "flex items-center gap-1 bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded-full font-semibold whitespace-nowrap ml-1",
+        isFilterActive ? "text-xs" : "text-[10px]"
+      )}>
+        <Clock className={isFilterActive ? "h-3 w-3" : "h-2.5 w-2.5"} />
         <span>{formattedStartTime}-{formattedEndTime}</span>
       </div>
     </div>
