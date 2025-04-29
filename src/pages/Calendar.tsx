@@ -1,3 +1,4 @@
+
 import { MonthlyCalendar } from "@/components/Calendar/MonthlyCalendar";
 import { WeeklyCalendar } from "@/components/Calendar/WeeklyCalendar";
 import { VerticalCalendar } from "@/components/Calendar/VerticalCalendar";
@@ -201,23 +202,26 @@ const Calendar = () => {
   
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold">Calendario Turni</h1>
-        <p className="text-muted-foreground">Visualizza e gestisci i turni dei dipendenti</p>
-      </div>
-
-      {isAdmin() && (
-        <div className="w-full max-w-lg mx-auto px-4 sm:px-0">
-          <Button
-            size="lg"
-            className="w-full h-12 text-base font-medium shadow-md hover:shadow-lg transition-all gap-2"
-            onClick={handleEmployeeClick}
-          >
-            <Users className="h-5 w-5" />
-            Assegna turni
-          </Button>
+      {/* Calendar header section with glassmorphic effect on mobile */}
+      <div className={`${isMobile ? 'sticky top-0 z-10 -mx-4 px-4 pt-4 pb-3' : ''}`}>
+        <div className={`${isMobile ? 'glassmorphic rounded-lg p-4' : ''}`}>
+          <h1 className="text-2xl font-bold">Calendario Turni</h1>
+          <p className="text-muted-foreground">Visualizza e gestisci i turni dei dipendenti</p>
+        
+          {isAdmin() && (
+            <div className="w-full max-w-lg mx-auto px-4 sm:px-0 mt-4">
+              <Button
+                size="lg"
+                className="w-full h-12 text-base font-medium shadow-md hover:shadow-lg transition-all gap-2"
+                onClick={handleEmployeeClick}
+              >
+                <Users className="h-5 w-5" />
+                Assegna turni
+              </Button>
+            </div>
+          )}
         </div>
-      )}
+      </div>
       
       <div className="flex-grow">
         {isVerticalView ? (
