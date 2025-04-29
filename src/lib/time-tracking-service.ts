@@ -52,16 +52,28 @@ export const timeTrackingService = {
   },
 
   /**
-   * Record a check-in for an employee
+   * Record a check-in for an employee with the current time
    */
   checkIn: async (employeeId: string, notes?: string): Promise<TimeTrackingEntry> => {
     try {
       const now = new Date();
-      const today = format(now, "yyyy-MM-dd");
-      const checkInTime = now.toISOString();
+      return timeTrackingService.checkInWithTime(employeeId, now, notes);
+    } catch (error) {
+      console.error("Error in checkIn:", error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Record a check-in for an employee with a specific time
+   */
+  checkInWithTime: async (employeeId: string, checkInTime: Date, notes?: string): Promise<TimeTrackingEntry> => {
+    try {
+      const checkInTimeISO = checkInTime.toISOString();
+      const dateOnly = format(checkInTime, "yyyy-MM-dd");
 
-      // Check if there's already an entry for today
-      const existingEntry = await timeTrackingService.getTimeTrackingEntry(employeeId, today);
+      // Check if there's already an entry for this date
+      const existingEntry = await timeTrackingService.getTimeTrackingEntry(employeeId, dateOnly);
 
       if (existingEntry) {
         // If there's already an entry but no check-in time, update it
@@ -69,7 +81,7 @@ export const timeTrackingService = {
           const { data, error } = await supabase
             .from('time_tracking')
             .update({
-              check_in: checkInTime,
+              check_in: checkInTimeISO,
               notes: notes || existingEntry.notes
             })
             .eq('id', existingEntry.id)
@@ -99,8 +111,8 @@ export const timeTrackingService = {
           .from('time_tracking')
           .insert({
             employee_id: employeeId,
-            date: today,
-            check_in: checkInTime,
+            date: dateOnly,
+            check_in: checkInTimeISO,
             notes: notes || null
           })
           .select()
@@ -121,22 +133,34 @@ export const timeTrackingService = {
         };
       }
     } catch (error) {
-      console.error("Error in checkIn:", error);
+      console.error("Error in checkInWithTime:", error);
       throw error;
     }
   },
 
   /**
-   * Record a check-out for an employee
+   * Record a check-out for an employee with the current time
    */
   checkOut: async (employeeId: string, notes?: string): Promise<TimeTrackingEntry> => {
     try {
       const now = new Date();
-      const today = format(now, "yyyy-MM-dd");
-      const checkOutTime = now.toISOString();
+      return timeTrackingService.checkOutWithTime(employeeId, now, notes);
+    } catch (error) {
+      console.error("Error in checkOut:", error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Record a check-out for an employee with a specific time
+   */
+  checkOutWithTime: async (employeeId: string, checkOutTime: Date, notes?: string): Promise<TimeTrackingEntry> => {
+    try {
+      const checkOutTimeISO = checkOutTime.toISOString();
+      const dateOnly = format(checkOutTime, "yyyy-MM-dd");
 
-      // Check if there's an entry for today
-      const existingEntry = await timeTrackingService.getTimeTrackingEntry(employeeId, today);
+      // Check if there's an entry for this date
+      const existingEntry = await timeTrackingService.getTimeTrackingEntry(employeeId, dateOnly);
 
       if (!existingEntry) {
         // Create a new entry with only check-out time
@@ -144,8 +168,8 @@ export const timeTrackingService = {
           .from('time_tracking')
           .insert({
             employee_id: employeeId,
-            date: today,
-            check_out: checkOutTime,
+            date: dateOnly,
+            check_out: checkOutTimeISO,
             notes: notes || null
           })
           .select()
@@ -169,7 +193,7 @@ export const timeTrackingService = {
         let totalHours = null;
         if (existingEntry.checkIn) {
           const checkInDate = new Date(existingEntry.checkIn);
-          const checkOutDate = new Date(checkOutTime);
+          const checkOutDate = new Date(checkOutTimeISO);
           const diffMs = checkOutDate.getTime() - checkInDate.getTime();
           totalHours = parseFloat((diffMs / (1000 * 60 * 60)).toFixed(2)); // Convert ms to hours with 2 decimal places
         }
@@ -178,7 +202,7 @@ export const timeTrackingService = {
         const { data, error } = await supabase
           .from('time_tracking')
           .update({
-            check_out: checkOutTime,
+            check_out: checkOutTimeISO,
             total_hours: totalHours,
             notes: notes || existingEntry.notes
           })
@@ -201,7 +225,7 @@ export const timeTrackingService = {
         };
       }
     } catch (error) {
-      console.error("Error in checkOut:", error);
+      console.error("Error in checkOutWithTime:", error);
       throw error;
     }
   },
