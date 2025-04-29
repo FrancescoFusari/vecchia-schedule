@@ -1,4 +1,3 @@
-
 import { MonthlyCalendar } from "@/components/Calendar/MonthlyCalendar";
 import { WeeklyCalendar } from "@/components/Calendar/WeeklyCalendar";
 import { VerticalCalendar } from "@/components/Calendar/VerticalCalendar";
@@ -7,13 +6,11 @@ import { Employee, ShiftTemplate } from "@/lib/types";
 import { employeeService, templateService, shiftService } from "@/lib/supabase";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/hooks/useAuth";
-import { ChevronLeft, ChevronRight, CalendarDays, Clock, User, Eye, EyeOff } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, Clock, User, Eye, EyeOff, Users } from "lucide-react";
 import { ShiftAssignmentModal } from "@/components/Shifts/ShiftAssignmentModal";
 import { ShiftModal } from "@/components/Shifts/ShiftModal";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { EmployeeBottomSheet } from "@/components/Employees/EmployeeBottomSheet";
-import { Users } from "lucide-react";
 import { formatMonthYear } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -240,7 +237,7 @@ const Calendar = () => {
           <h1 className="text-2xl font-bold">Calendario Turni</h1>
           <p className="text-muted-foreground">Visualizza e gestisci i turni dei dipendenti</p>
           
-          {/* Month switching controls */}
+          {/* Month switching controls and buttons in the same line */}
           <div className="flex flex-wrap items-center justify-between mt-4 gap-2">
             <div className="flex items-center gap-2">
               <Button variant="outline" size="icon" onClick={handlePrevMonth}>
@@ -326,16 +323,12 @@ const Calendar = () => {
             onViewChange={handleViewChange} 
             key={`weekly-${refreshTrigger}`} 
             data-component="weekly-calendar"
-            showOnlyUserShifts={showOnlyUserShifts}
-            onToggleUserShifts={handleToggleUserShifts}
           />
         ) : (
           <MonthlyCalendar 
             onViewChange={handleViewChange} 
             key={`monthly-${refreshTrigger}`} 
             data-component="monthly-calendar"
-            showOnlyUserShifts={showOnlyUserShifts}
-            onToggleUserShifts={handleToggleUserShifts}
           />
         )}
       </div>
