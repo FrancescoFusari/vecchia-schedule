@@ -1,16 +1,19 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Employee, Shift } from "@/lib/types";
 import { shiftService, employeeService } from "@/lib/supabase";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { HoursSummary as HoursSummaryComponent } from "@/components/Reports/HoursSummary";
+import { CheckInCard } from "@/components/TimeTracking/CheckInCard";
+import { HoursComparison } from "@/components/TimeTracking/HoursComparison";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const HoursSummaryPage = () => {
   const { user } = useAuth();
@@ -18,8 +21,15 @@ const HoursSummaryPage = () => {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [activeTab, setActiveTab] = useState<string>("summary");
   const { toast } = useToast();
   const isMobile = useIsMobile();
+
+  // Handle refresh
+  const handleRefresh = useCallback(() => {
+    setRefreshKey(prevKey => prevKey + 1);
+  }, []);
 
   // Fetch employee data and shifts
   useEffect(() => {
@@ -58,14 +68,14 @@ const HoursSummaryPage = () => {
     };
     
     fetchEmployeeAndShifts();
-  }, [user]);
+  }, [user, refreshKey]);
   
   // Fetch shifts when date changes
   useEffect(() => {
     if (employee) {
       fetchShifts(employee.id);
     }
-  }, [currentDate, employee]);
+  }, [currentDate, employee, refreshKey]);
   
   const fetchShifts = async (employeeId: string) => {
     try {
@@ -128,6 +138,20 @@ const HoursSummaryPage = () => {
           </Button>
         </div>
       </div>
+
+      {/* Add tab navigation for mobile view */}
+      {isMobile && employee && (
+        <Tabs 
+          value={activeTab} 
+          onValueChange={setActiveTab} 
+          className="w-full"
+        >
+          <TabsList className="grid grid-cols-2 w-full">
+            <TabsTrigger value="summary">Riepilogo</TabsTrigger>
+            <TabsTrigger value="checkin">Check-in/out</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      )}
       
       {loading ? (
         <Card>
@@ -145,11 +169,33 @@ const HoursSummaryPage = () => {
           </CardContent>
         </Card>
       ) : employee ? (
-        <HoursSummaryComponent 
-          shifts={shifts} 
-          employees={employee ? [employee] : []} 
-          currentDate={currentDate} 
-        />
+        <>
+          {/* Check-in card for desktop or mobile when selected */}
+          {(!isMobile || (isMobile && activeTab === "checkin")) && (
+            <CheckInCard 
+              employeeId={employee.id}
+              onStatusChange={handleRefresh}
+            />
+          )}
+          
+          {/* Hours summary content shown for desktop or mobile when selected */}
+          {(!isMobile || (isMobile && activeTab === "summary")) && (
+            <>
+              <HoursSummaryComponent 
+                shifts={shifts} 
+                employees={employee ? [employee] : []} 
+                currentDate={currentDate} 
+              />
+              
+              <HoursComparison
+                employee={employee}
+                shifts={shifts}
+                currentDate={currentDate}
+                onRefresh={handleRefresh}
+              />
+            </>
+          )}
+        </>
       ) : (
         <Card>
           <CardContent className="py-8">
