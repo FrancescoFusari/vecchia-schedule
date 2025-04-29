@@ -228,6 +228,12 @@ const Calendar = () => {
   const handleToday = () => {
     setCurrentDate(new Date());
   };
+
+  // Function to get capitalized month name only
+  const getCapitalizedMonth = (date: Date): string => {
+    const month = date.toLocaleString('it', { month: 'long' });
+    return month.charAt(0).toUpperCase() + month.slice(1);
+  };
   
   return (
     <div className="flex flex-col gap-6">
@@ -243,8 +249,8 @@ const Calendar = () => {
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               
-              <div className="text-lg font-medium min-w-[140px] text-center">
-                {formatMonthYear(currentDate)}
+              <div className="text-lg font-medium min-w-[100px] text-center">
+                {getCapitalizedMonth(currentDate)}
               </div>
               
               <Button variant="outline" size="icon" onClick={handleNextMonth} aria-label="Mese successivo">

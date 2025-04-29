@@ -148,9 +148,11 @@ export function getWeekDates(date: Date): { start: Date; end: Date } {
   return { start: monday, end: sunday };
 }
 
-// Format month and year
+// Format month and year - updated to capitalize the month name
 export function formatMonthYear(date: Date): string {
-  return `${date.toLocaleString('it', { month: 'long' })} ${date.getFullYear()}`;
+  const month = date.toLocaleString('it', { month: 'long' });
+  const capitalizedMonth = month.charAt(0).toUpperCase() + month.slice(1);
+  return `${capitalizedMonth} ${date.getFullYear()}`;
 }
 
 // Format employee name

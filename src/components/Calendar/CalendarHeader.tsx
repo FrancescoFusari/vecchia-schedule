@@ -40,7 +40,7 @@ export function CalendarHeader({
   // Format title based on view type
   const title = isWeekView 
     ? `${getCapitalizedMonth(date)} - Week ${getWeekOfMonth(date)}` 
-    : formatMonthYear(date);
+    : getCapitalizedMonth(date);
   
   return (
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
