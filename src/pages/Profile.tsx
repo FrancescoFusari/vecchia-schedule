@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -112,7 +113,36 @@ const Profile = () => {
           </CardContent>
         </Card>
 
-        {/* Experimental Features Card - NEW SECTION */}
+        {/* Theme settings Card - Moved up in the hierarchy for better visibility */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">Impostazioni Tema</CardTitle>
+            <CardDescription>Personalizza l'aspetto dell'applicazione</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-medium">Tema</h3>
+                <p className="text-sm text-muted-foreground">Cambia tra tema chiaro e scuro</p>
+              </div>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={toggleTheme}
+                className="transition-all"
+              >
+                {theme === 'dark' ? (
+                  <Sun className="h-5 w-5" />
+                ) : (
+                  <Moon className="h-5 w-5" />
+                )}
+                <span className="sr-only">Cambia tema</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Experimental Features Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <div>
@@ -141,36 +171,6 @@ const Profile = () => {
             <p className="text-sm text-muted-foreground">
               Queste funzionalità sono in fase sperimentale e potrebbero subire modifiche.
             </p>
-          </CardContent>
-        </Card>
-
-        {/* App Settings Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl">Impostazioni</CardTitle>
-            <CardDescription>Personalizza l'esperienza dell'app</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-medium">Tema</h3>
-                <p className="text-sm text-muted-foreground">Cambia tra tema chiaro e scuro</p>
-              </div>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={toggleTheme}
-                className="transition-all"
-              >
-                {theme === 'dark' ? (
-                  <Sun className="h-5 w-5" />
-                ) : (
-                  <Moon className="h-5 w-5" />
-                )}
-                <span className="sr-only">Toggle theme</span>
-              </Button>
-            </div>
-            <Separator />
           </CardContent>
         </Card>
 

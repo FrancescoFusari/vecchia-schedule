@@ -4,8 +4,6 @@ import { Button } from "@/components/ui/button";
 import { CalendarDays, Users, User, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { useTheme } from "next-themes";
 import { HoursSummaryNavButton } from "@/components/Navbar/HoursSummaryNavButton";
 
 export function Navbar() {
@@ -16,10 +14,7 @@ export function Navbar() {
   } = useAuth();
   const location = useLocation();
   const isMobile = useIsMobile();
-  const {
-    theme
-  } = useTheme();
-  const isDarkTheme = theme === 'dark';
+  
   const isActive = (path: string) => {
     return location.pathname === path;
   };
@@ -27,20 +22,18 @@ export function Navbar() {
 
   // Only show dashboard for admin users
   const showDashboard = isAdmin();
-
-  // Show profile for regular users
-  const showProfile = !showDashboard;
+  
   const handleLogout = () => {
     signOut();
   };
   
   return (
-    <div className="z-50 fixed top-0 left-0 right-0 px-4 py-2">
+    <div className={`z-50 fixed ${isMobile ? 'bottom-0 left-0 right-0 px-4 pb-2 pt-1' : 'top-0 left-0 right-0 px-4 py-2'}`}>
       <nav className={`glassmorphic rounded-lg mx-auto max-w-screen-xl ${isMobile ? 'py-2 px-3' : 'py-3 px-4'} transition-all duration-300 shadow-lg`}>
         <div className="flex justify-between items-center">
           {!isMobile && <div className="flex space-x-1">
               <Link to="/" className="flex items-center text-lg font-semibold text-foreground">
-                <img src="/lovable-uploads/5cec7ef1-53d9-4fab-ba62-9a1137e84da9.png" alt="La Vecchia Signora" className={`h-8 mr-2 ${isDarkTheme ? 'invert' : ''}`} />
+                <img src="/lovable-uploads/5cec7ef1-53d9-4fab-ba62-9a1137e84da9.png" alt="La Vecchia Signora" className="h-8 mr-2 invert" />
                 <span>La Vecchia Signora</span>
               </Link>
             </div>}
@@ -98,9 +91,6 @@ export function Navbar() {
                 <User className="h-5 w-5" />
               </Button>
             </Link>
-            
-            {/* Theme toggle */}
-            <ThemeToggle className="rounded-full" />
             
             {/* Add logout button if not on mobile */}
             {!isMobile && (
