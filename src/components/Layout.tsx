@@ -25,11 +25,6 @@ export function Layout() {
       <main className={`flex-1 container mx-auto px-4 ${isMobile ? 'pt-6 pb-28' : 'pt-24 pb-6'} sm:px-6 md:px-8`}>
         <Outlet />
       </main>
-      <footer className={`border-t border-border bg-card py-4 ${isMobile ? 'pb-24' : ''} transition-colors duration-300`}>
-        <div className="container text-center text-sm text-muted-foreground">
-          © {new Date().getFullYear()} La Vecchia Signora - Pizzeria - Trattoria - Forno a Legna
-        </div>
-      </footer>
       <Toaster />
     </div>
   );
