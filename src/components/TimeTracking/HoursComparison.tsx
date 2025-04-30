@@ -15,13 +15,15 @@ import { TimeTrackingEntry, timeTrackingService } from "@/lib/time-tracking-serv
 import { Shift, Employee } from "@/lib/types";
 import { calculateTotalHours, formatDate } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { ClockIcon, AlertCircle } from "lucide-react";
+import { ClockIcon, AlertCircle, ArrowUpCircle, ArrowDownCircle, MinusCircle } from "lucide-react";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, Legend } from "recharts";
 
 interface DailyHourData {
   date: string; // ISO format
   scheduledHours: number;
   actualHours: number | null;
   difference: number | null;
+  displayDate?: string;
 }
 
 interface HoursComparisonProps {
@@ -116,7 +118,8 @@ export function HoursComparison({ employee, shifts, currentDate, onRefresh }: Ho
         date: dateStr,
         scheduledHours,
         actualHours,
-        difference
+        difference,
+        displayDate: format(parseISO(dateStr), "dd/MM")
       });
     });
     
@@ -143,6 +146,17 @@ export function HoursComparison({ employee, shifts, currentDate, onRefresh }: Ho
       difference
     };
   }, [dailyData]);
+
+  // Prepare chart data
+  const chartData = useMemo(() => {
+    return dailyData.map(day => ({
+      date: day.displayDate,
+      scheduled: day.scheduledHours,
+      actual: day.actualHours || 0,
+      // For data points with no actual hours, we still need to display the scheduled hours
+      noActualHours: day.actualHours === null
+    }));
+  }, [dailyData]);
   
   const formatHours = (hours: number | null) => {
     if (hours === null) return "—";
@@ -151,9 +165,9 @@ export function HoursComparison({ employee, shifts, currentDate, onRefresh }: Ho
   
   const getDifferenceClass = (difference: number | null) => {
     if (difference === null) return "";
-    if (difference > 0) return "text-green-600 dark:text-green-400";
-    if (difference < 0) return "text-red-600 dark:text-red-400";
-    return "";
+    if (difference > 0) return "data-positive";
+    if (difference < 0) return "data-negative";
+    return "data-neutral";
   };
   
   const formatDifference = (difference: number | null) => {
@@ -162,15 +176,18 @@ export function HoursComparison({ employee, shifts, currentDate, onRefresh }: Ho
     return `${sign}${difference.toFixed(2)}`;
   };
   
-  const formatDateDisplay = (dateString: string) => {
-    return format(parseISO(dateString), "dd/MM");
+  const getDifferenceIcon = (difference: number | null) => {
+    if (difference === null) return <MinusCircle className="h-4 w-4 text-muted-foreground" />;
+    if (difference > 0) return <ArrowUpCircle className="h-4 w-4 text-green-600 dark:text-green-400" />;
+    if (difference < 0) return <ArrowDownCircle className="h-4 w-4 text-red-600 dark:text-red-400" />;
+    return <MinusCircle className="h-4 w-4 text-amber-600 dark:text-amber-500" />;
   };
   
   return (
-    <Card className="shadow-md mt-6 transition-all duration-300">
+    <Card className="shadow-md mt-6 transition-all duration-300 card-gradient-subtle">
       <CardHeader className="pb-3">
         <CardTitle className="text-xl flex items-center">
-          <ClockIcon className="mr-2 h-5 w-5" />
+          <ClockIcon className="mr-2 h-5 w-5 text-purple-500" />
           Confronto Ore
         </CardTitle>
       </CardHeader>
@@ -186,8 +203,43 @@ export function HoursComparison({ employee, shifts, currentDate, onRefresh }: Ho
             </TabsList>
           </div>
           
+          <div className="px-4 pt-3 pb-2">
+            <div className="h-40 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <XAxis 
+                    dataKey="date" 
+                    tick={{ fill: 'var(--foreground)', fontSize: 10 }}
+                  />
+                  <YAxis
+                    tick={{ fill: 'var(--foreground)', fontSize: 10 }}
+                  />
+                  <Tooltip />
+                  <Legend iconType="circle" iconSize={8} />
+                  <Line 
+                    type="monotone" 
+                    dataKey="scheduled" 
+                    name="Programmate" 
+                    stroke="#8b5cf6" 
+                    dot={{ r: 3 }}
+                    strokeWidth={2}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="actual" 
+                    name="Effettive"
+                    stroke="#2dd4bf"
+                    dot={{ r: 3, strokeWidth: 2 }}
+                    strokeWidth={2}
+                    activeDot={{ r: 5 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          
           <TabsContent value="daily" className="m-0">
-            <Table>
+            <Table className="table-zebra">
               <TableHeader>
                 <TableRow>
                   <TableHead>Data</TableHead>
@@ -200,10 +252,11 @@ export function HoursComparison({ employee, shifts, currentDate, onRefresh }: Ho
                 {dailyData.length > 0 ? (
                   dailyData.map((day) => (
                     <TableRow key={day.date}>
-                      <TableCell>{formatDateDisplay(day.date)}</TableCell>
-                      <TableCell className="text-right">{formatHours(day.scheduledHours)}</TableCell>
-                      <TableCell className="text-right">{formatHours(day.actualHours)}</TableCell>
-                      <TableCell className={`text-right ${getDifferenceClass(day.difference)}`}>
+                      <TableCell>{day.displayDate}</TableCell>
+                      <TableCell className="text-right font-mono">{formatHours(day.scheduledHours)}</TableCell>
+                      <TableCell className="text-right font-mono">{formatHours(day.actualHours)}</TableCell>
+                      <TableCell className={`text-right font-mono flex items-center justify-end gap-1 ${getDifferenceClass(day.difference)}`}>
+                        {getDifferenceIcon(day.difference)}
                         {formatDifference(day.difference)}
                       </TableCell>
                     </TableRow>
@@ -233,15 +286,16 @@ export function HoursComparison({ employee, shifts, currentDate, onRefresh }: Ho
               <TableBody>
                 <TableRow>
                   <TableCell className="font-medium">Ore Programmate</TableCell>
-                  <TableCell className="text-right">{formatHours(monthlyTotals.scheduledHours)}</TableCell>
+                  <TableCell className="text-right font-mono font-medium">{formatHours(monthlyTotals.scheduledHours)}</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell className="font-medium">Ore Effettive</TableCell>
-                  <TableCell className="text-right">{formatHours(monthlyTotals.actualHours)}</TableCell>
+                  <TableCell className="text-right font-mono font-medium">{formatHours(monthlyTotals.actualHours)}</TableCell>
                 </TableRow>
-                <TableRow className="font-bold">
+                <TableRow className="font-bold border-t">
                   <TableCell>Differenza</TableCell>
-                  <TableCell className={`text-right ${getDifferenceClass(monthlyTotals.difference)}`}>
+                  <TableCell className={`text-right font-mono flex items-center justify-end gap-1 ${getDifferenceClass(monthlyTotals.difference)}`}>
+                    {getDifferenceIcon(monthlyTotals.difference)}
                     {formatDifference(monthlyTotals.difference)}
                   </TableCell>
                 </TableRow>

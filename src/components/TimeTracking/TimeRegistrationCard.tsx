@@ -187,11 +187,11 @@ export function TimeRegistrationCard({ employeeId, onStatusChange }: TimeRegistr
   const isDateRegistered = Boolean(currentEntry?.checkIn && currentEntry?.checkOut);
   
   return (
-    <Card className="shadow-md transition-all duration-300">
-      <CardHeader className="pb-3">
+    <Card className="shadow-md transition-all duration-300 bg-gradient-to-br from-purple-50 to-white dark:from-purple-900/30 dark:to-card">
+      <CardHeader className="pb-3 border-b">
         <CardTitle className="text-xl flex items-center justify-between">
           <div className="flex items-center">
-            <ClockIcon className="mr-2 h-5 w-5" />
+            <ClockIcon className="mr-2 h-5 w-5 text-purple-500" />
             Registra Ore
           </div>
           <div className="flex items-center space-x-1 text-base font-normal">
@@ -208,7 +208,7 @@ export function TimeRegistrationCard({ employeeId, onStatusChange }: TimeRegistr
                   )}
                 >
                   {format(selectedDate, "EEEE d MMMM", { locale: it })}
-                  <CalendarIcon className="ml-2 h-4 w-4" />
+                  <CalendarIcon className="ml-2 h-4 w-4 text-purple-500" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="center">
@@ -232,8 +232,8 @@ export function TimeRegistrationCard({ employeeId, onStatusChange }: TimeRegistr
         <div className={cn(
           "p-3 rounded-md",
           isDateRegistered 
-            ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900" 
-            : "bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900"
+            ? "bg-green-50/70 dark:bg-green-900/20 border border-green-200 dark:border-green-900" 
+            : "bg-amber-50/70 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900"
         )}>
           <div className="flex items-center">
             {isDateRegistered ? (
@@ -285,7 +285,7 @@ export function TimeRegistrationCard({ employeeId, onStatusChange }: TimeRegistr
                   <FormItem>
                     <FormLabel>Orario Entrata</FormLabel>
                     <FormControl>
-                      <Input type="time" {...field} />
+                      <Input type="time" {...field} className="border-purple-200 dark:border-purple-800/50 focus-visible:ring-purple-500" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -300,7 +300,7 @@ export function TimeRegistrationCard({ employeeId, onStatusChange }: TimeRegistr
                   <FormItem>
                     <FormLabel>Orario Uscita</FormLabel>
                     <FormControl>
-                      <Input type="time" {...field} />
+                      <Input type="time" {...field} className="border-purple-200 dark:border-purple-800/50 focus-visible:ring-purple-500" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -318,8 +318,8 @@ export function TimeRegistrationCard({ employeeId, onStatusChange }: TimeRegistr
                   <FormControl>
                     <Textarea
                       placeholder="Note sull'attività di lavoro..."
-                      className="resize-none"
-                      rows={3}
+                      className="resize-none border-purple-200 dark:border-purple-800/50 focus-visible:ring-purple-500"
+                      rows={2}
                       {...field}
                     />
                   </FormControl>
@@ -329,7 +329,7 @@ export function TimeRegistrationCard({ employeeId, onStatusChange }: TimeRegistr
             
             <Button
               type="submit"
-              className="w-full"
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white"
               disabled={loading || submitting}
               loading={submitting}
             >

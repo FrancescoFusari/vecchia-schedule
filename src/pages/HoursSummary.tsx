@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Employee, Shift } from "@/lib/types";
@@ -6,9 +7,9 @@ import { format, startOfMonth, endOfMonth } from "date-fns";
 import { HoursSummary as HoursSummaryComponent } from "@/components/Reports/HoursSummary";
 import { TimeRegistrationCard } from "@/components/TimeTracking/TimeRegistrationCard";
 import { HoursComparison } from "@/components/TimeTracking/HoursComparison";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -119,33 +120,52 @@ const HoursSummaryPage = () => {
   };
   
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className={`${isMobile ? 'flex flex-col space-y-4' : 'flex justify-between'} items-center`}>
-        <h1 className="text-2xl font-bold">Riepilogo Ore</h1>
-        
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size={isMobile ? "default" : "sm"} onClick={handlePrevMonth} className="h-9">
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            {!isMobile && "Mese Prec."}
+    <div className="space-y-4 animate-fade-in">
+      <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex justify-between'} items-center mb-2`}>
+        <h1 className="text-xl font-bold text-purple-600 dark:text-purple-400 flex items-center">
+          <span>Riepilogo Ore</span>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={handleRefresh} 
+            className="ml-2 h-8 w-8"
+            title="Aggiorna"
+          >
+            <RefreshCw className="h-4 w-4" />
           </Button>
-          <div className="font-medium px-2 min-w-24 text-center">
+        </h1>
+        
+        <div className="flex items-center bg-muted/50 rounded-md p-1">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handlePrevMonth} 
+            className="h-8 w-8 p-0 rounded-md"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="font-medium px-3 min-w-20 text-center">
             {format(currentDate, "MMMM yyyy")}
           </div>
-          <Button variant="outline" size={isMobile ? "default" : "sm"} onClick={handleNextMonth} className="h-9">
-            {!isMobile && "Mese Succ."}
-            <ChevronRight className="h-4 w-4 ml-1" />
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleNextMonth} 
+            className="h-8 w-8 p-0 rounded-md"
+          >
+            <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      {/* Add tab navigation for mobile view */}
-      {isMobile && employee && (
+      {/* Add tab navigation for all views for consistency */}
+      {employee && (
         <Tabs 
           value={activeTab} 
           onValueChange={setActiveTab} 
           className="w-full"
         >
-          <TabsList className="grid grid-cols-2 w-full">
+          <TabsList className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-2 w-[300px]'} w-full`}>
             <TabsTrigger value="summary">Riepilogo</TabsTrigger>
             <TabsTrigger value="checkin">Registra Ore</TabsTrigger>
           </TabsList>
@@ -154,14 +174,10 @@ const HoursSummaryPage = () => {
       
       {loading ? (
         <Card>
-          <CardHeader>
-            <CardTitle>
-              <Skeleton className="h-8 w-48" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="py-6">
             <div className="space-y-2">
-              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-40 w-full" />
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
             </div>
@@ -169,31 +185,39 @@ const HoursSummaryPage = () => {
         </Card>
       ) : employee ? (
         <>
-          {/* Time Registration card for desktop or mobile when selected */}
-          {(!isMobile || (isMobile && activeTab === "checkin")) && (
-            <TimeRegistrationCard
-              employeeId={employee.id}
-              onStatusChange={handleRefresh}
-            />
-          )}
-          
-          {/* Hours summary content shown for desktop or mobile when selected */}
-          {(!isMobile || (isMobile && activeTab === "summary")) && (
-            <>
-              <HoursSummaryComponent 
-                shifts={shifts} 
-                employees={employee ? [employee] : []} 
-                currentDate={currentDate} 
-              />
-              
-              <HoursComparison
-                employee={employee}
-                shifts={shifts}
-                currentDate={currentDate}
-                onRefresh={handleRefresh}
-              />
-            </>
-          )}
+          <div className="grid gap-4 md:grid-cols-2 md:gap-6">
+            {/* Time Registration card */}
+            {activeTab === "checkin" && (
+              <div className="md:col-span-2">
+                <TimeRegistrationCard
+                  employeeId={employee.id}
+                  onStatusChange={handleRefresh}
+                />
+              </div>
+            )}
+            
+            {/* Hours summary content */}
+            {activeTab === "summary" && (
+              <>
+                <div className={isMobile ? "" : "md:col-span-1"}>
+                  <HoursSummaryComponent 
+                    shifts={shifts} 
+                    employees={employee ? [employee] : []} 
+                    currentDate={currentDate} 
+                  />
+                </div>
+                
+                <div className={isMobile ? "" : "md:col-span-1"}>
+                  <HoursComparison
+                    employee={employee}
+                    shifts={shifts}
+                    currentDate={currentDate}
+                    onRefresh={handleRefresh}
+                  />
+                </div>
+              </>
+            )}
+          </div>
         </>
       ) : (
         <Card>
