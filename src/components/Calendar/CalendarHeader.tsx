@@ -1,6 +1,7 @@
+
 import { ChevronLeft, ChevronRight, CalendarDays, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { formatMonthYear } from "@/lib/utils";
+import { formatMonthYear, cn } from "@/lib/utils"; // Import cn from utils
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
@@ -11,6 +12,7 @@ interface CalendarHeaderProps {
   onToday: () => void;
   isWeekView?: boolean;
   onViewChange?: (isWeekView: boolean) => void;
+  className?: string; // Add className prop to interface
 }
 
 export function CalendarHeader({ 
@@ -19,7 +21,8 @@ export function CalendarHeader({
   onNextMonth, 
   onToday, 
   isWeekView = false,
-  onViewChange 
+  onViewChange,
+  className = '' // Add default empty string for className
 }: CalendarHeaderProps) {
   // Get the week number and format title
   const getWeekOfMonth = (date: Date): number => {
