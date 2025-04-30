@@ -10,7 +10,7 @@
   
   /* Page transition animation */
   .page-transition {
-    @apply animate-page-transition;
+    @apply animate-fadeIn;
   }
 }
 
@@ -71,19 +71,3 @@
   }
 }
 
-@keyframes fadeSlideUp {
-  0% {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@layer utilities {
-  .animate-page-transition {
-    animation: fadeSlideUp 0.3s ease-out forwards;
-  }
-}
