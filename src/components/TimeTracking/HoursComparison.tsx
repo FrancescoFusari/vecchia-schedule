@@ -16,7 +16,6 @@ import { Shift, Employee } from "@/lib/types";
 import { calculateTotalHours, formatDate } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ClockIcon, AlertCircle, ArrowUpCircle, ArrowDownCircle, MinusCircle } from "lucide-react";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, Legend } from "recharts";
 
 interface DailyHourData {
   date: string; // ISO format
@@ -147,17 +146,6 @@ export function HoursComparison({ employee, shifts, currentDate, onRefresh }: Ho
     };
   }, [dailyData]);
 
-  // Prepare chart data
-  const chartData = useMemo(() => {
-    return dailyData.map(day => ({
-      date: day.displayDate,
-      scheduled: day.scheduledHours,
-      actual: day.actualHours || 0,
-      // For data points with no actual hours, we still need to display the scheduled hours
-      noActualHours: day.actualHours === null
-    }));
-  }, [dailyData]);
-  
   const formatHours = (hours: number | null) => {
     if (hours === null) return "—";
     return hours.toFixed(2);
@@ -201,41 +189,6 @@ export function HoursComparison({ employee, shifts, currentDate, onRefresh }: Ho
               <TabsTrigger value="daily">Giorni</TabsTrigger>
               <TabsTrigger value="monthly">Riepilogo</TabsTrigger>
             </TabsList>
-          </div>
-          
-          <div className="px-4 pt-3 pb-2">
-            <div className="h-40 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <XAxis 
-                    dataKey="date" 
-                    tick={{ fill: 'var(--foreground)', fontSize: 10 }}
-                  />
-                  <YAxis
-                    tick={{ fill: 'var(--foreground)', fontSize: 10 }}
-                  />
-                  <Tooltip />
-                  <Legend iconType="circle" iconSize={8} />
-                  <Line 
-                    type="monotone" 
-                    dataKey="scheduled" 
-                    name="Programmate" 
-                    stroke="#8b5cf6" 
-                    dot={{ r: 3 }}
-                    strokeWidth={2}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="actual" 
-                    name="Effettive"
-                    stroke="#2dd4bf"
-                    dot={{ r: 3, strokeWidth: 2 }}
-                    strokeWidth={2}
-                    activeDot={{ r: 5 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
           </div>
           
           <TabsContent value="daily" className="m-0">

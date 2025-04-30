@@ -14,8 +14,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { calculateTotalHours, getWeekDates, formatDate } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { BarChart4, CalendarDays } from "lucide-react";
-import { ChartContainer } from "@/components/ui/chart";
-import { Bar, BarChart, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 interface HoursSummaryProps {
   shifts: Shift[];
@@ -27,30 +25,60 @@ export function HoursSummary({ shifts, employees, currentDate }: HoursSummaryPro
   const [activeTab, setActiveTab] = useState<"week" | "month">("week");
   const isMobile = useIsMobile();
   
-  // Calculate week summary
-  const weekSummary = useMemo(() => {
-    const { start: weekStart, end: weekEnd } = getWeekDates(currentDate);
-    const weekStartStr = formatDate(weekStart);
-    const weekEndStr = formatDate(weekEnd);
+  // Calculate all weeks in month summary
+  const weeksSummary = useMemo(() => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
     
-    const weekShifts = shifts.filter(shift => {
-      return shift.date >= weekStartStr && shift.date <= weekEndStr;
-    });
+    // Create array of weeks
+    const weeks = [];
+    let currentWeekStart = new Date(firstDay);
     
-    const summary: WeekSummary[] = employees.map(employee => {
-      const totalHours = calculateTotalHours(weekShifts, employee.id);
-      return {
-        employeeId: employee.id,
-        firstName: employee.firstName,
-        lastName: employee.lastName,
-        totalHours,
-        weekStart,
-        weekEnd
-      };
-    });
+    // Adjust to start from Monday if not already
+    const dayOfWeek = currentWeekStart.getDay();
+    if (dayOfWeek !== 1) { // If not Monday
+      currentWeekStart.setDate(currentWeekStart.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    }
     
-    // Sort by total hours (descending)
-    return summary.sort((a, b) => b.totalHours - a.totalHours);
+    // Generate all weeks that overlap with the month
+    while (currentWeekStart <= lastDay) {
+      const weekEnd = new Date(currentWeekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      
+      const weekStartStr = formatDate(currentWeekStart);
+      const weekEndStr = formatDate(weekEnd);
+      
+      const weekShifts = shifts.filter(shift => {
+        return shift.date >= weekStartStr && shift.date <= weekEndStr;
+      });
+      
+      const weekSummary = employees.map(employee => {
+        const totalHours = calculateTotalHours(weekShifts, employee.id);
+        return {
+          employeeId: employee.id,
+          firstName: employee.firstName,
+          lastName: employee.lastName,
+          totalHours,
+          weekStart: new Date(currentWeekStart),
+          weekEnd: new Date(weekEnd),
+          weekLabel: `${formatDate(currentWeekStart).slice(8,10)}/${formatDate(currentWeekStart).slice(5,7)} - ${formatDate(weekEnd).slice(8,10)}/${formatDate(weekEnd).slice(5,7)}`
+        };
+      });
+      
+      weeks.push({
+        start: new Date(currentWeekStart),
+        end: new Date(weekEnd),
+        summary: weekSummary.sort((a, b) => b.totalHours - a.totalHours)
+      });
+      
+      // Move to next week
+      currentWeekStart = new Date(weekEnd);
+      currentWeekStart.setDate(currentWeekStart.getDate() + 1);
+    }
+    
+    return weeks;
   }, [shifts, employees, currentDate]);
   
   // Calculate month summary
@@ -85,19 +113,13 @@ export function HoursSummary({ shifts, employees, currentDate }: HoursSummaryPro
   }, [shifts, employees, currentDate]);
   
   // Calculate total hours
-  const totalWeekHours = weekSummary.reduce((sum, item) => sum + item.totalHours, 0);
+  const totalWeekHours = activeTab === "week" ? 
+    weeksSummary.reduce((sum, week) => {
+      const weekTotal = week.summary.reduce((wSum, item) => wSum + item.totalHours, 0);
+      return sum + weekTotal;
+    }, 0) : 0;
+    
   const totalMonthHours = monthSummary.reduce((sum, item) => sum + item.totalHours, 0);
-
-  // Prepare chart data
-  const chartData = activeTab === "week" 
-    ? weekSummary.map(item => ({
-        name: `${item.firstName} ${item.lastName.charAt(0)}.`,
-        hours: item.totalHours
-      }))
-    : monthSummary.map(item => ({
-        name: `${item.firstName} ${item.lastName.charAt(0)}.`,
-        hours: item.totalHours
-      }));
   
   return (
     <Card className="overflow-hidden transition-colors duration-300 card-gradient-purple">
@@ -122,59 +144,58 @@ export function HoursSummary({ shifts, employees, currentDate }: HoursSummaryPro
             </TabsList>
           </div>
           
-          <div className="px-4 pt-3 pb-2">
-            <div className="h-32 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <XAxis 
-                    dataKey="name" 
-                    fontSize={10}
-                    tick={{ fill: 'var(--foreground)', fontSize: 10 }}
-                  />
-                  <YAxis 
-                    fontSize={10} 
-                    tick={{ fill: 'var(--foreground)', fontSize: 10 }}
-                  />
-                  <Tooltip />
-                  <Bar 
-                    dataKey="hours" 
-                    fill="var(--primary)" 
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-          
           <TabsContent value="week" className="m-0">
-            <Table className="table-zebra">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Dipendente</TableHead>
-                  <TableHead className="text-right">Ore</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {weekSummary.map((summary) => (
-                  <TableRow key={summary.employeeId}>
-                    <TableCell className="font-medium">
-                      {summary.firstName} {summary.lastName}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {summary.totalHours > 0 ? (
-                        <span className="font-mono font-medium text-purple-600 dark:text-purple-400">
-                          {summary.totalHours}
-                        </span>
-                      ) : "-"}
+            {weeksSummary.map((week, weekIndex) => (
+              <div key={`week-${weekIndex}`} className="mb-4 last:mb-0">
+                <div className="px-4 pt-3 pb-1 bg-muted/30 border-b">
+                  <h3 className="text-sm font-medium">{week.summary[0]?.weekLabel || 'Settimana'}</h3>
+                </div>
+                <Table className="table-zebra">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Dipendente</TableHead>
+                      <TableHead className="text-right">Ore</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {week.summary.map((summary) => (
+                      <TableRow key={`${weekIndex}-${summary.employeeId}`}>
+                        <TableCell className="font-medium">
+                          {summary.firstName} {summary.lastName}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {summary.totalHours > 0 ? (
+                            <span className="font-mono font-medium text-purple-600 dark:text-purple-400">
+                              {summary.totalHours}
+                            </span>
+                          ) : "-"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {week.summary.length > 0 && (
+                      <TableRow className="bg-muted/50 border-t">
+                        <TableCell className="font-medium">Totale settimana</TableCell>
+                        <TableCell className="text-right font-mono font-medium text-purple-600 dark:text-purple-400">
+                          {week.summary.reduce((sum, item) => sum + item.totalHours, 0)}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            ))}
+            {weeksSummary.length > 1 && (
+              <Table>
+                <TableBody>
+                  <TableRow className="bg-muted/50 border-t-2">
+                    <TableCell className="font-bold">Totale complessivo</TableCell>
+                    <TableCell className="text-right font-bold font-mono text-purple-600 dark:text-purple-400">
+                      {totalWeekHours}
                     </TableCell>
                   </TableRow>
-                ))}
-                <TableRow className="bg-muted/50 border-t-2">
-                  <TableCell className="font-bold">Totale</TableCell>
-                  <TableCell className="text-right font-bold font-mono text-purple-600 dark:text-purple-400">{totalWeekHours}</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
+                </TableBody>
+              </Table>
+            )}
           </TabsContent>
           
           <TabsContent value="month" className="m-0">
