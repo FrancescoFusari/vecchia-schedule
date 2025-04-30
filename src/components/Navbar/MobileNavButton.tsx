@@ -10,6 +10,7 @@ interface MobileNavButtonProps {
   label: string;
   isActive: boolean;
   onClick?: () => void;
+  showLabel?: boolean;
 }
 
 export function MobileNavButton({
@@ -18,12 +19,14 @@ export function MobileNavButton({
   label,
   isActive,
   onClick,
+  showLabel = false,
 }: MobileNavButtonProps) {
   return (
     <Link 
       to={to} 
       className="flex-1" 
       onClick={onClick}
+      aria-label={label}
     >
       <Button
         variant={isActive ? "default" : "ghost"}
@@ -33,9 +36,9 @@ export function MobileNavButton({
           isActive ? "bg-primary/20 text-primary hover:bg-primary/30" : "hover:bg-background/20"
         )}
       >
-        <div className="flex flex-col items-center space-y-1">
+        <div className="flex flex-col items-center">
           {icon}
-          <span className="text-[10px] font-medium">{label}</span>
+          {showLabel && <span className="text-[10px] font-medium mt-1">{label}</span>}
         </div>
       </Button>
     </Link>

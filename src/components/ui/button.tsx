@@ -27,7 +27,7 @@ const buttonVariants = cva(
         lg: "h-11 rounded-md px-8",
         icon: "h-9 w-9 p-0",
         // Updated mobile navbar button styling for better touch target
-        mobileNav: "h-16 w-full rounded-md px-2 py-2",
+        mobileNav: "h-14 w-full rounded-xl px-2 py-2",
       },
     },
     defaultVariants: {

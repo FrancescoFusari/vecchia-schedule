@@ -23,7 +23,7 @@ export function Layout() {
     <div className="min-h-screen flex flex-col bg-background text-foreground transition-colors duration-300">
       <OfflineIndicator />
       <Navbar />
-      <main className={`flex-1 container mx-auto px-4 ${isMobile ? 'pt-6 pb-32' : 'pt-24 pb-6'} sm:px-6 md:px-8`}>
+      <main className={`flex-1 container mx-auto px-4 ${isMobile ? 'pt-24 pb-6' : 'pt-20 pb-6'} sm:px-6 md:px-8`}>
         <div className="page-transition">
           <Outlet />
         </div>

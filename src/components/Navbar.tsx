@@ -28,8 +28,8 @@ export function Navbar() {
   };
   
   return (
-    <div className={`z-50 fixed ${isMobile ? 'bottom-0 left-0 right-0 px-4 pb-4 pt-2' : 'top-0 left-0 right-0 px-4 py-2'}`}>
-      <nav className={`glassmorphic rounded-lg mx-auto max-w-screen-xl ${isMobile ? 'py-3 px-2' : 'py-3 px-4'} transition-all duration-300 shadow-lg border border-border/40`}>
+    <div className={`z-50 fixed ${isMobile ? 'top-0 left-0 right-0 px-4 pt-4' : 'top-0 left-0 right-0 px-4 py-2'}`}>
+      <nav className={`glassmorphic rounded-2xl mx-auto max-w-screen-xl ${isMobile ? 'py-5 px-4' : 'py-3 px-4'} transition-all duration-300 shadow-lg border border-border/40`}>
         <div className="flex justify-between items-center">
           {!isMobile && <div className="flex space-x-1">
               <Link to="/" className="flex items-center text-lg font-semibold text-foreground">
@@ -42,32 +42,36 @@ export function Navbar() {
             <div className="flex w-full justify-between">
               <MobileNavButton
                 to="/"
-                icon={<CalendarDays className="h-5 w-5" />}
+                icon={<CalendarDays className="h-6 w-6" />}
                 label="Calendario"
                 isActive={isActive("/")}
+                showLabel={false}
               />
               
               <MobileNavButton
                 to="/hours-summary"
-                icon={<Clock className="h-5 w-5" />}
+                icon={<Clock className="h-6 w-6" />}
                 label="Ore"
                 isActive={isActive("/hours-summary")}
+                showLabel={false}
               />
               
               {showDashboard && (
                 <MobileNavButton
                   to="/dashboard"
-                  icon={<Users className="h-5 w-5" />}
+                  icon={<Users className="h-6 w-6" />}
                   label="Gestione"
                   isActive={isActive("/dashboard")}
+                  showLabel={false}
                 />
               )}
               
               <MobileNavButton
                 to="/profile"
-                icon={<User className="h-5 w-5" />}
+                icon={<User className="h-6 w-6" />}
                 label="Profilo"
                 isActive={isActive("/profile")}
+                showLabel={false}
               />
             </div>
           ) : (
@@ -76,11 +80,10 @@ export function Navbar() {
               <Link to="/">
                 <Button 
                   variant={isActive("/") ? "default" : "ghost"} 
-                  size="icon" 
-                  aria-label="Calendario"
-                  className={`${isActive("/") ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'hover:bg-background/20'} rounded-full transition-all`}
+                  className={`${isActive("/") ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'hover:bg-background/20'} rounded-xl transition-all px-4 py-2 h-auto`}
                 >
-                  <CalendarDays className="h-5 w-5" />
+                  <CalendarDays className="h-5 w-5 mr-2" />
+                  <span>Calendario</span>
                 </Button>
               </Link>
 
@@ -88,14 +91,10 @@ export function Navbar() {
               <Link to="/hours-summary">
                 <Button 
                   variant={isActive("/hours-summary") ? "default" : "ghost"} 
-                  size="icon"
-                  aria-label="Riepilogo Ore" 
-                  className={`${isActive("/hours-summary") ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'hover:bg-background/20'} rounded-full transition-all`}
+                  className={`${isActive("/hours-summary") ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'hover:bg-background/20'} rounded-xl transition-all px-4 py-2 h-auto`}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-                    <circle cx="12" cy="12" r="10" />
-                    <polyline points="12 6 12 12 16 14" />
-                  </svg>
+                  <Clock className="h-5 w-5 mr-2" />
+                  <span>Ore</span>
                 </Button>
               </Link>
               
@@ -104,11 +103,10 @@ export function Navbar() {
                 <Link to="/dashboard">
                   <Button 
                     variant={isActive("/dashboard") ? "default" : "ghost"} 
-                    size="icon"
-                    aria-label="Dashboard" 
-                    className={`${isActive("/dashboard") ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'hover:bg-background/20'} rounded-full transition-all`}
+                    className={`${isActive("/dashboard") ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'hover:bg-background/20'} rounded-xl transition-all px-4 py-2 h-auto`}
                   >
-                    <Users className="h-5 w-5" />
+                    <Users className="h-5 w-5 mr-2" />
+                    <span>Gestione</span>
                   </Button>
                 </Link>
               )}
@@ -117,22 +115,21 @@ export function Navbar() {
               <Link to="/profile">
                 <Button 
                   variant={isActive("/profile") ? "default" : "ghost"} 
-                  size="icon"
-                  aria-label="Profilo" 
-                  className={`${isActive("/profile") ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'hover:bg-background/20'} rounded-full transition-all`}
+                  className={`${isActive("/profile") ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'hover:bg-background/20'} rounded-xl transition-all px-4 py-2 h-auto`}
                 >
-                  <User className="h-5 w-5" />
+                  <User className="h-5 w-5 mr-2" />
+                  <span>Profilo</span>
                 </Button>
               </Link>
               
               <Button 
                 variant="ghost" 
-                size="icon" 
                 onClick={handleLogout} 
                 aria-label="Logout"
-                className="text-destructive hover:bg-destructive/10 hover:text-destructive rounded-full"
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive rounded-xl px-4 py-2 h-auto"
               >
-                <LogOut className="h-5 w-5" />
+                <LogOut className="h-5 w-5 mr-2" />
+                <span>Esci</span>
               </Button>
             </div>
           )}
