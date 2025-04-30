@@ -9,7 +9,7 @@ import { TimeRegistrationCard } from "@/components/TimeTracking/TimeRegistration
 import { HoursComparison } from "@/components/TimeTracking/HoursComparison";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -107,9 +107,21 @@ const HoursSummaryPage = () => {
     }
   };
   
+  const handlePrevMonth = () => {
+    const newDate = new Date(currentDate);
+    newDate.setMonth(newDate.getMonth() - 1);
+    setCurrentDate(newDate);
+  };
+  
+  const handleNextMonth = () => {
+    const newDate = new Date(currentDate);
+    newDate.setMonth(newDate.getMonth() + 1);
+    setCurrentDate(newDate);
+  };
+  
   return (
     <div className="space-y-4 animate-fade-in">
-      <div className="flex items-center mb-2">
+      <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex justify-between'} items-center mb-2`}>
         <h1 className="text-xl font-bold text-purple-600 dark:text-purple-400 flex items-center">
           <span>Riepilogo Ore</span>
           <Button 
@@ -122,6 +134,28 @@ const HoursSummaryPage = () => {
             <RefreshCw className="h-4 w-4" />
           </Button>
         </h1>
+        
+        <div className="flex items-center bg-muted/50 rounded-md p-1">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handlePrevMonth} 
+            className="h-8 w-8 p-0 rounded-md"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="font-medium px-3 min-w-20 text-center">
+            {format(currentDate, "MMMM yyyy")}
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleNextMonth} 
+            className="h-8 w-8 p-0 rounded-md"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Add tab navigation for all views for consistency */}
@@ -169,8 +203,7 @@ const HoursSummaryPage = () => {
                   <HoursSummaryComponent 
                     shifts={shifts} 
                     employees={employee ? [employee] : []} 
-                    currentDate={currentDate}
-                    onMonthChange={setCurrentDate}
+                    currentDate={currentDate} 
                   />
                 </div>
                 
