@@ -28,7 +28,7 @@ export function Navbar() {
   };
   
   return (
-    <div className={`z-50 ${isMobile ? 'fixed bottom-0 left-0 right-0 px-2 pb-6 pt-2' : 'fixed top-0 left-0 right-0 px-4 py-1 w-full'}`}>
+    <div className={`z-50 fixed top-0 left-0 right-0 px-4 py-1 w-full`}>
       <nav className={`glassmorphic rounded-[2rem] mx-auto max-w-screen-xl ${isMobile ? 'py-5 px-4' : 'py-2 px-4'} transition-all duration-300 shadow-md border border-border/30`}>
         <div className="flex justify-between items-center">
           {!isMobile && <div className="flex space-x-1">
