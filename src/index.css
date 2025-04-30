@@ -1,11 +1,10 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer components {
   .glassmorphic {
-    @apply backdrop-blur-lg bg-background/50 border border-border/30 shadow-lg;
+    @apply backdrop-blur-lg bg-background/50 border border-border/40 shadow-lg;
   }
 }
 

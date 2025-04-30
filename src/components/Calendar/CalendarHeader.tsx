@@ -1,4 +1,3 @@
-
 import { ChevronLeft, ChevronRight, CalendarDays, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatMonthYear } from "@/lib/utils";
@@ -43,7 +42,11 @@ export function CalendarHeader({
     : getCapitalizedMonth(date);
   
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+    <div className={cn(
+      "bg-background/80 backdrop-blur-lg sticky top-0 z-10 flex justify-between items-center gap-2 py-3 px-4 mb-3 w-full",
+      "border-b border-border/40", // Added border styling here
+      className
+    )}>
       <div className="flex items-center gap-2">
         <Button 
           variant="outline" 

@@ -29,7 +29,7 @@ export function Navbar() {
   
   return (
     <div className={`z-50 fixed ${isMobile ? 'bottom-0 left-0 right-0 px-4 pb-2 pt-1' : 'top-0 left-0 right-0 px-4 py-2'}`}>
-      <nav className={`glassmorphic rounded-lg mx-auto max-w-screen-xl ${isMobile ? 'py-2 px-3' : 'py-3 px-4'} transition-all duration-300 shadow-lg`}>
+      <nav className={`glassmorphic rounded-lg mx-auto max-w-screen-xl ${isMobile ? 'py-2 px-3' : 'py-3 px-4'} transition-all duration-300 shadow-lg border border-border/40`}>
         <div className="flex justify-between items-center">
           {!isMobile && <div className="flex space-x-1">
               <Link to="/" className="flex items-center text-lg font-semibold text-foreground">
