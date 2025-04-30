@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,6 +6,11 @@
 @layer components {
   .glassmorphic {
     @apply backdrop-blur-lg bg-background/50 border border-border/40 shadow-lg;
+  }
+  
+  /* Page transition animation */
+  .page-transition {
+    @apply animate-fadeIn;
   }
 }
 
@@ -64,3 +70,4 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
