@@ -7,13 +7,13 @@ import { format, startOfMonth, endOfMonth } from "date-fns";
 import { HoursSummary as HoursSummaryComponent } from "@/components/Reports/HoursSummary";
 import { TimeRegistrationCard } from "@/components/TimeTracking/TimeRegistrationCard";
 import { HoursComparison } from "@/components/TimeTracking/HoursComparison";
+import { MobileTabsNav } from "@/components/TimeTracking/MobileTabsNav";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, BarChart4, ClipboardCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const HoursSummaryPage = () => {
   const { user } = useAuth();
@@ -101,20 +101,41 @@ const HoursSummaryPage = () => {
     }
   };
 
+  // Mobile tab options
+  const tabOptions = [
+    { value: "summary", label: "Riepilogo", icon: <BarChart4 className="h-4 w-4" /> },
+    { value: "checkin", label: "Registra Ore", icon: <ClipboardCheck className="h-4 w-4" /> },
+  ];
+
   return (
     <div className="space-y-4 animate-fade-in">
-      {employee && (
-        <div className={`${isMobile ? 'fixed bottom-16 left-0 right-0 z-40 px-2 pb-1' : ''}`}>
-          <Tabs 
-            value={activeTab} 
-            onValueChange={setActiveTab} 
-            className={`w-full ${isMobile ? 'glassmorphic' : ''}`}
-          >
-            <TabsList className={`grid ${isMobile ? 'grid-cols-2 w-full rounded-xl border border-white/10 shadow-lg bg-background/40 backdrop-blur-xl' : 'grid-cols-2 w-[300px]'}`}>
-              <TabsTrigger value="summary" className="text-sm font-medium">Riepilogo</TabsTrigger>
-              <TabsTrigger value="checkin" className="text-sm font-medium">Registra Ore</TabsTrigger>
-            </TabsList>
-          </Tabs>
+      {employee && isMobile && (
+        <MobileTabsNav 
+          options={tabOptions}
+          value={activeTab}
+          onChange={setActiveTab}
+        />
+      )}
+
+      {!isMobile && employee && (
+        <div>
+          <div className="flex justify-start mb-4">
+            <div className="bg-background/30 backdrop-blur-md rounded-md p-1 border border-border/20 shadow-sm">
+              {tabOptions.map((option) => (
+                <Button 
+                  key={option.value}
+                  variant={activeTab === option.value ? "default" : "ghost"}
+                  className={`px-4 py-2`}
+                  onClick={() => setActiveTab(option.value)}
+                >
+                  <div className="flex items-center gap-2">
+                    {option.icon}
+                    <span>{option.label}</span>
+                  </div>
+                </Button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
       
@@ -130,7 +151,7 @@ const HoursSummaryPage = () => {
           </CardContent>
         </Card>
       ) : employee ? (
-        <div className={`grid gap-4 md:grid-cols-2 md:gap-6 ${isMobile ? 'pb-24' : ''}`}>
+        <div className={`grid gap-4 md:grid-cols-2 md:gap-6 ${isMobile ? 'pb-28' : ''}`}>
           {/* Time Registration card */}
           {activeTab === "checkin" && (
             <div className="md:col-span-2">
