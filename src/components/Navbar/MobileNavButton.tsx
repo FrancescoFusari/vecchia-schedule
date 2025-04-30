@@ -29,7 +29,7 @@ export function MobileNavButton({
         className={cn(
           "flex items-center justify-center w-full h-full transition-all duration-300",
           isActive 
-            ? "text-primary after:absolute after:bottom-0 after:left-1/4 after:w-1/2 after:h-0.5 after:bg-primary after:rounded-full after:transition-all after:duration-300"
+            ? "text-primary after:absolute after:bottom-1 after:left-1/3 after:w-1/3 after:h-1 after:bg-primary after:rounded-full after:transition-all after:duration-300"
             : "text-muted-foreground hover:text-foreground"
         )}
       >

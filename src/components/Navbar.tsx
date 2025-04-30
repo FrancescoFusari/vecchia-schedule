@@ -28,8 +28,8 @@ export function Navbar() {
   };
   
   return (
-    <div className={`z-50 fixed ${isMobile ? 'bottom-0 left-0 right-0 px-4 pb-6 pt-2' : 'top-0 left-0 right-0 px-4 py-2'}`}>
-      <nav className={`glassmorphic rounded-lg mx-auto max-w-screen-xl ${isMobile ? 'py-4 px-2' : 'py-3 px-4'} transition-all duration-300 shadow-md border border-border/30`}>
+    <div className={`z-50 fixed ${isMobile ? 'bottom-0 left-0 right-0 px-2 pb-6 pt-2' : 'top-0 left-0 right-0 px-4 py-2'}`}>
+      <nav className={`glassmorphic rounded-[2rem] mx-auto max-w-screen-xl ${isMobile ? 'py-5 px-4' : 'py-3 px-4'} transition-all duration-300 shadow-md border border-border/30`}>
         <div className="flex justify-between items-center">
           {!isMobile && <div className="flex space-x-1">
               <Link to="/" className="flex items-center text-lg font-semibold text-foreground">
@@ -42,27 +42,27 @@ export function Navbar() {
             <div className="flex w-full justify-between">
               <MobileNavButton
                 to="/"
-                icon={<CalendarDays className="h-5 w-5" />}
+                icon={<CalendarDays className="h-6 w-6" />}
                 isActive={isActive("/")}
               />
               
               <MobileNavButton
                 to="/hours-summary"
-                icon={<Clock className="h-5 w-5" />}
+                icon={<Clock className="h-6 w-6" />}
                 isActive={isActive("/hours-summary")}
               />
               
               {showDashboard && (
                 <MobileNavButton
                   to="/dashboard"
-                  icon={<Users className="h-5 w-5" />}
+                  icon={<Users className="h-6 w-6" />}
                   isActive={isActive("/dashboard")}
                 />
               )}
               
               <MobileNavButton
                 to="/profile"
-                icon={<User className="h-5 w-5" />}
+                icon={<User className="h-6 w-6" />}
                 isActive={isActive("/profile")}
               />
             </div>
