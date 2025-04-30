@@ -216,7 +216,7 @@ const Calendar = () => {
       {/* Calendar header section with glassmorphic effect on mobile */}
       <div className={`${isMobile ? 'sticky top-0 z-10 -mx-4 px-4 pt-1 pb-2' : ''}`}>
         <div className={`${isMobile ? 'glassmorphic rounded-lg p-3' : ''}`}>
-          <h1 className="text-2xl font-bold">Calendario Turni</h1>
+          <h1 className="text-2xl font-medium">Calendario Turni</h1>
           
           
           <div className="flex flex-wrap items-center justify-between mt-3">
