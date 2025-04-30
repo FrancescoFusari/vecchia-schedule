@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { format, parse, isValid, addDays, subDays } from "date-fns";
 import { it } from "date-fns/locale";
@@ -17,6 +16,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ClockIcon, CalendarIcon, CheckCircleIcon, XCircleIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface TimeRegistrationCardProps {
   employeeId: string;
@@ -49,6 +49,7 @@ export function TimeRegistrationCard({ employeeId, onStatusChange }: TimeRegistr
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const form = useForm<TimeRegistrationFormValues>({
     resolver: zodResolver(timeRegistrationSchema),
@@ -189,12 +190,19 @@ export function TimeRegistrationCard({ employeeId, onStatusChange }: TimeRegistr
   return (
     <Card className="shadow-md transition-all duration-300 bg-gradient-to-br from-purple-50 to-white dark:from-purple-900/30 dark:to-card">
       <CardHeader className="pb-3 border-b">
-        <CardTitle className="text-xl flex items-center justify-between">
-          <div className="flex items-center">
-            <ClockIcon className="mr-2 h-5 w-5 text-purple-500" />
-            Registra Ore
+        <CardTitle className="text-xl flex flex-col space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <ClockIcon className="mr-2 h-5 w-5 text-purple-500" />
+              Registra Ore
+            </div>
           </div>
-          <div className="flex items-center space-x-1 text-base font-normal">
+          
+          {/* Calendar controls on a new line */}
+          <div className={cn(
+            "flex items-center justify-center mt-1",
+            isMobile ? "w-full" : "justify-end"
+          )}>
             <Button variant="ghost" size="sm" onClick={handlePrevDay} className="h-8 w-8 p-0">
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -204,7 +212,8 @@ export function TimeRegistrationCard({ employeeId, onStatusChange }: TimeRegistr
                   variant="outline"
                   size="sm"
                   className={cn(
-                    "pl-3 pr-2 py-1 h-8 font-normal text-sm flex items-center justify-between"
+                    "pl-3 pr-2 py-1 h-8 font-normal text-sm flex items-center justify-between",
+                    isMobile ? "flex-1 max-w-[200px]" : ""
                   )}
                 >
                   {format(selectedDate, "EEEE d MMMM", { locale: it })}
