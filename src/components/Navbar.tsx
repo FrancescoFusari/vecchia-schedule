@@ -28,8 +28,8 @@ export function Navbar() {
   };
   
   return (
-    <div className={`z-50 fixed ${isMobile ? 'top-0 left-0 right-0 px-4 pt-4' : 'top-0 left-0 right-0 px-4 py-2'}`}>
-      <nav className={`glassmorphic rounded-2xl mx-auto max-w-screen-xl ${isMobile ? 'py-5 px-4' : 'py-3 px-4'} transition-all duration-300 shadow-lg border border-border/40`}>
+    <div className={`z-50 ${isMobile ? 'fixed bottom-0 left-0 right-0 px-4 pb-4' : 'fixed top-0 left-0 right-0 px-4 py-2'}`}>
+      <nav className={`glassmorphic rounded-2xl mx-auto max-w-screen-xl ${isMobile ? 'py-3 px-2' : 'py-3 px-4'} transition-all duration-300 shadow-lg border border-border/40`}>
         <div className="flex justify-between items-center">
           {!isMobile && <div className="flex space-x-1">
               <Link to="/" className="flex items-center text-lg font-semibold text-foreground">

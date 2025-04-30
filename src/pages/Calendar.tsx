@@ -236,14 +236,14 @@ const Calendar = () => {
   };
   
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-3">
       {/* Calendar header section with glassmorphic effect on mobile */}
-      <div className={`${isMobile ? 'sticky top-0 z-10 -mx-4 px-4 pt-4 pb-3' : ''}`}>
-        <div className={`${isMobile ? 'glassmorphic rounded-lg p-4' : ''}`}>
+      <div className={`${isMobile ? 'sticky top-0 z-10 -mx-4 px-4 pt-1 pb-2' : ''}`}>
+        <div className={`${isMobile ? 'glassmorphic rounded-lg p-3' : ''}`}>
           <h1 className="text-2xl font-bold">Calendario Turni</h1>
           <p className="text-muted-foreground">Visualizza e gestisci i turni dei dipendenti</p>
           
-          <div className="flex flex-wrap items-center justify-between mt-4">
+          <div className="flex flex-wrap items-center justify-between mt-3">
             <div className="flex items-center space-x-2">
               <Button variant="outline" size="icon" onClick={handlePrevMonth} aria-label="Mese precedente">
                 <ChevronLeft className="h-4 w-4" />
