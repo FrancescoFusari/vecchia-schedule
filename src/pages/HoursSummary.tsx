@@ -8,30 +8,32 @@ import { TimeRegistrationCard } from "@/components/TimeTracking/TimeRegistration
 import { HoursComparison } from "@/components/TimeTracking/HoursComparison";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 const HoursSummaryPage = () => {
-  const {
-    user
-  } = useAuth();
+  const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [activeTab, setActiveTab] = useState<string>("summary");
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const isMobile = useIsMobile();
 
   // Handle refresh
   const handleRefresh = useCallback(() => {
     setRefreshKey(prevKey => prevKey + 1);
   }, []);
+
+  // Handle month change
+  const handleMonthChange = (newDate: Date) => {
+    setCurrentDate(newDate);
+  };
 
   // Fetch employee data and shifts
   useEffect(() => {
@@ -75,6 +77,7 @@ const HoursSummaryPage = () => {
       fetchShifts(employee.id);
     }
   }, [currentDate, employee, refreshKey]);
+
   const fetchShifts = async (employeeId: string) => {
     try {
       setLoading(true);
@@ -96,34 +99,9 @@ const HoursSummaryPage = () => {
       setLoading(false);
     }
   };
-  const handlePrevMonth = () => {
-    const newDate = new Date(currentDate);
-    newDate.setMonth(newDate.getMonth() - 1);
-    setCurrentDate(newDate);
-  };
-  const handleNextMonth = () => {
-    const newDate = new Date(currentDate);
-    newDate.setMonth(newDate.getMonth() + 1);
-    setCurrentDate(newDate);
-  };
-  return <div className="space-y-4 animate-fade-in">
-      <div className={`${isMobile ? 'flex flex-col space-y-2' : 'flex justify-between'} items-center mb-2`}>
-        
-        
-        <div className="flex items-center bg-muted/50 rounded-md p-1">
-          <Button variant="ghost" size="sm" onClick={handlePrevMonth} className="h-8 w-8 p-0 rounded-md">
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <div className="font-medium px-3 min-w-20 text-center">
-            {format(currentDate, "MMMM yyyy")}
-          </div>
-          <Button variant="ghost" size="sm" onClick={handleNextMonth} className="h-8 w-8 p-0 rounded-md">
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
 
-      {/* Add tab navigation for all views for consistency */}
+  return (
+    <div className="space-y-4 animate-fade-in">
       {employee && <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-2 w-[300px]'} w-full`}>
             <TabsTrigger value="summary">Riepilogo</TabsTrigger>
@@ -150,7 +128,12 @@ const HoursSummaryPage = () => {
             {/* Hours summary content */}
             {activeTab === "summary" && <>
                 <div className={isMobile ? "" : "md:col-span-1"}>
-                  <HoursSummaryComponent shifts={shifts} employees={employee ? [employee] : []} currentDate={currentDate} />
+                  <HoursSummaryComponent 
+                    shifts={shifts} 
+                    employees={employee ? [employee] : []} 
+                    currentDate={currentDate}
+                    onMonthChange={handleMonthChange}
+                  />
                 </div>
                 
                 <div className={isMobile ? "" : "md:col-span-1"}>
@@ -165,6 +148,8 @@ const HoursSummaryPage = () => {
             </div>
           </CardContent>
         </Card>}
-    </div>;
+    </div>
+  );
 };
+
 export default HoursSummaryPage;
