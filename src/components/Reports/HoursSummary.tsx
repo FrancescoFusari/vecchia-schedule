@@ -11,19 +11,35 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { calculateTotalHours, getWeekDates, formatDate } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { BarChart4, CalendarDays } from "lucide-react";
+import { BarChart4, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { format } from "date-fns";
 
 interface HoursSummaryProps {
   shifts: Shift[];
   employees: Employee[];
   currentDate: Date;
+  onMonthChange: (date: Date) => void;
 }
 
-export function HoursSummary({ shifts, employees, currentDate }: HoursSummaryProps) {
+export function HoursSummary({ shifts, employees, currentDate, onMonthChange }: HoursSummaryProps) {
   const [activeTab, setActiveTab] = useState<"week" | "month">("week");
   const isMobile = useIsMobile();
+  
+  // Handle month navigation
+  const handlePrevMonth = () => {
+    const newDate = new Date(currentDate);
+    newDate.setMonth(newDate.getMonth() - 1);
+    onMonthChange(newDate);
+  };
+  
+  const handleNextMonth = () => {
+    const newDate = new Date(currentDate);
+    newDate.setMonth(newDate.getMonth() + 1);
+    onMonthChange(newDate);
+  };
   
   // Calculate all weeks in month summary
   const weeksSummary = useMemo(() => {
@@ -124,9 +140,34 @@ export function HoursSummary({ shifts, employees, currentDate }: HoursSummaryPro
   return (
     <Card className="overflow-hidden transition-colors duration-300 card-gradient-purple">
       <CardHeader className="border-b pb-3">
-        <CardTitle className="flex items-center gap-2 text-xl">
-          <BarChart4 className="h-5 w-5 text-purple-500" />
-          <span>Riepilogo Ore</span>
+        <CardTitle className="flex items-center justify-between text-xl">
+          <div className="flex items-center gap-2">
+            <BarChart4 className="h-5 w-5 text-purple-500" />
+            <span>Riepilogo Ore</span>
+          </div>
+          
+          {/* Month selector control */}
+          <div className="flex items-center bg-muted/50 rounded-md p-1">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handlePrevMonth} 
+              className="h-8 w-8 p-0 rounded-md"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="font-medium px-3 min-w-16 text-center">
+              {format(currentDate, "MMMM")}
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleNextMonth} 
+              className="h-8 w-8 p-0 rounded-md"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
