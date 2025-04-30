@@ -262,7 +262,12 @@ export function MonthlyCalendar({
       
       {expandedMonth && isAdmin() && (
         <div className="animate-in slide-in-from-top-5 duration-300">
-          <HoursSummary shifts={shifts} employees={employees} currentDate={currentDate} />
+          <HoursSummary 
+            shifts={shifts} 
+            employees={employees} 
+            currentDate={currentDate} 
+            onMonthChange={setCurrentDate}
+          />
         </div>
       )}
       
