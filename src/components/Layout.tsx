@@ -24,7 +24,7 @@ export function Layout() {
       <OfflineIndicator />
       <Navbar />
       <main className={`flex-1 container mx-auto px-4 ${isMobile ? 'pt-6 pb-32' : 'pt-24 pb-6'} sm:px-6 md:px-8`}>
-        <div className="page-transition">
+        <div key={location.pathname} className="page-transition">
           <Outlet />
         </div>
       </main>

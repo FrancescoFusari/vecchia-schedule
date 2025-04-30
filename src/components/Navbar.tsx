@@ -1,7 +1,7 @@
 
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, Users, User, LogOut, Clock } from "lucide-react";
+import { CalendarDays, Clock, User, LogOut, Users } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileNavButton } from "@/components/Navbar/MobileNavButton";
@@ -28,8 +28,8 @@ export function Navbar() {
   };
   
   return (
-    <div className={`z-50 fixed ${isMobile ? 'bottom-0 left-0 right-0 px-4 pb-4 pt-2' : 'top-0 left-0 right-0 px-4 py-2'}`}>
-      <nav className={`glassmorphic rounded-lg mx-auto max-w-screen-xl ${isMobile ? 'py-3 px-2' : 'py-3 px-4'} transition-all duration-300 shadow-lg border border-border/40`}>
+    <div className={`z-50 fixed ${isMobile ? 'bottom-0 left-0 right-0 px-4 pb-6 pt-2' : 'top-0 left-0 right-0 px-4 py-2'}`}>
+      <nav className={`glassmorphic rounded-lg mx-auto max-w-screen-xl ${isMobile ? 'py-4 px-2' : 'py-3 px-4'} transition-all duration-300 shadow-md border border-border/30`}>
         <div className="flex justify-between items-center">
           {!isMobile && <div className="flex space-x-1">
               <Link to="/" className="flex items-center text-lg font-semibold text-foreground">
@@ -43,14 +43,12 @@ export function Navbar() {
               <MobileNavButton
                 to="/"
                 icon={<CalendarDays className="h-5 w-5" />}
-                label="Calendario"
                 isActive={isActive("/")}
               />
               
               <MobileNavButton
                 to="/hours-summary"
                 icon={<Clock className="h-5 w-5" />}
-                label="Ore"
                 isActive={isActive("/hours-summary")}
               />
               
@@ -58,7 +56,6 @@ export function Navbar() {
                 <MobileNavButton
                   to="/dashboard"
                   icon={<Users className="h-5 w-5" />}
-                  label="Gestione"
                   isActive={isActive("/dashboard")}
                 />
               )}
@@ -66,7 +63,6 @@ export function Navbar() {
               <MobileNavButton
                 to="/profile"
                 icon={<User className="h-5 w-5" />}
-                label="Profilo"
                 isActive={isActive("/profile")}
               />
             </div>
@@ -75,10 +71,10 @@ export function Navbar() {
               {/* Main navigation links for desktop */}
               <Link to="/">
                 <Button 
-                  variant={isActive("/") ? "default" : "ghost"} 
+                  variant="ghost" 
                   size="icon" 
                   aria-label="Calendario"
-                  className={`${isActive("/") ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'hover:bg-background/20'} rounded-full transition-all`}
+                  className={`${isActive("/") ? 'text-primary' : 'text-muted-foreground hover:text-foreground'} rounded-full transition-all`}
                 >
                   <CalendarDays className="h-5 w-5" />
                 </Button>
@@ -87,15 +83,12 @@ export function Navbar() {
               {/* Hours Summary link for all users */}
               <Link to="/hours-summary">
                 <Button 
-                  variant={isActive("/hours-summary") ? "default" : "ghost"} 
+                  variant="ghost" 
                   size="icon"
                   aria-label="Riepilogo Ore" 
-                  className={`${isActive("/hours-summary") ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'hover:bg-background/20'} rounded-full transition-all`}
+                  className={`${isActive("/hours-summary") ? 'text-primary' : 'text-muted-foreground hover:text-foreground'} rounded-full transition-all`}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-                    <circle cx="12" cy="12" r="10" />
-                    <polyline points="12 6 12 12 16 14" />
-                  </svg>
+                  <Clock className="h-5 w-5" />
                 </Button>
               </Link>
               
@@ -103,10 +96,10 @@ export function Navbar() {
               {showDashboard && (
                 <Link to="/dashboard">
                   <Button 
-                    variant={isActive("/dashboard") ? "default" : "ghost"} 
+                    variant="ghost" 
                     size="icon"
                     aria-label="Dashboard" 
-                    className={`${isActive("/dashboard") ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'hover:bg-background/20'} rounded-full transition-all`}
+                    className={`${isActive("/dashboard") ? 'text-primary' : 'text-muted-foreground hover:text-foreground'} rounded-full transition-all`}
                   >
                     <Users className="h-5 w-5" />
                   </Button>
@@ -116,10 +109,10 @@ export function Navbar() {
               {/* Show profile link for regular users */}
               <Link to="/profile">
                 <Button 
-                  variant={isActive("/profile") ? "default" : "ghost"} 
+                  variant="ghost" 
                   size="icon"
                   aria-label="Profilo" 
-                  className={`${isActive("/profile") ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'hover:bg-background/20'} rounded-full transition-all`}
+                  className={`${isActive("/profile") ? 'text-primary' : 'text-muted-foreground hover:text-foreground'} rounded-full transition-all`}
                 >
                   <User className="h-5 w-5" />
                 </Button>
