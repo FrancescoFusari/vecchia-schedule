@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Employee, Shift } from "@/lib/types";
@@ -102,14 +103,23 @@ const HoursSummaryPage = () => {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      {employee && <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-2 w-[300px]'} w-full`}>
-            <TabsTrigger value="summary">Riepilogo</TabsTrigger>
-            <TabsTrigger value="checkin">Registra Ore</TabsTrigger>
-          </TabsList>
-        </Tabs>}
+      {employee && (
+        <div className={`${isMobile ? 'fixed bottom-16 left-0 right-0 z-40 px-4' : ''}`}>
+          <Tabs 
+            value={activeTab} 
+            onValueChange={setActiveTab} 
+            className={`w-full ${isMobile ? 'glassmorphic rounded-2xl shadow-lg' : ''}`}
+          >
+            <TabsList className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-2 w-[300px]'} w-full`}>
+              <TabsTrigger value="summary">Riepilogo</TabsTrigger>
+              <TabsTrigger value="checkin">Registra Ore</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+      )}
       
-      {loading ? <Card>
+      {loading ? (
+        <Card>
           <CardContent className="py-6">
             <div className="space-y-2">
               <Skeleton className="h-8 w-48" />
@@ -118,36 +128,43 @@ const HoursSummaryPage = () => {
               <Skeleton className="h-10 w-full" />
             </div>
           </CardContent>
-        </Card> : employee ? <>
-          <div className="grid gap-4 md:grid-cols-2 md:gap-6">
-            {/* Time Registration card */}
-            {activeTab === "checkin" && <div className="md:col-span-2">
-                <TimeRegistrationCard employeeId={employee.id} onStatusChange={handleRefresh} />
-              </div>}
+        </Card>
+      ) : employee ? (
+        <div className={`grid gap-4 md:grid-cols-2 md:gap-6 ${isMobile ? 'pb-20' : ''}`}>
+          {/* Time Registration card */}
+          {activeTab === "checkin" && (
+            <div className="md:col-span-2">
+              <TimeRegistrationCard employeeId={employee.id} onStatusChange={handleRefresh} />
+            </div>
+          )}
             
-            {/* Hours summary content */}
-            {activeTab === "summary" && <>
-                <div className={isMobile ? "" : "md:col-span-1"}>
-                  <HoursSummaryComponent 
-                    shifts={shifts} 
-                    employees={employee ? [employee] : []} 
-                    currentDate={currentDate}
-                    onMonthChange={handleMonthChange}
-                  />
-                </div>
+          {/* Hours summary content */}
+          {activeTab === "summary" && (
+            <>
+              <div className={isMobile ? "" : "md:col-span-1"}>
+                <HoursSummaryComponent 
+                  shifts={shifts} 
+                  employees={employee ? [employee] : []} 
+                  currentDate={currentDate}
+                  onMonthChange={handleMonthChange}
+                />
+              </div>
                 
-                <div className={isMobile ? "" : "md:col-span-1"}>
-                  <HoursComparison employee={employee} shifts={shifts} currentDate={currentDate} onRefresh={handleRefresh} />
-                </div>
-              </>}
-          </div>
-        </> : <Card>
+              <div className={isMobile ? "" : "md:col-span-1"}>
+                <HoursComparison employee={employee} shifts={shifts} currentDate={currentDate} onRefresh={handleRefresh} />
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
+        <Card>
           <CardContent className="py-8">
             <div className="text-center">
               <p>Nessun profilo dipendente trovato per questo account.</p>
             </div>
           </CardContent>
-        </Card>}
+        </Card>
+      )}
     </div>
   );
 };
