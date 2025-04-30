@@ -104,15 +104,15 @@ const HoursSummaryPage = () => {
   return (
     <div className="space-y-4 animate-fade-in">
       {employee && (
-        <div className={`${isMobile ? 'fixed bottom-16 left-0 right-0 z-40 px-4' : ''}`}>
+        <div className={`${isMobile ? 'fixed bottom-16 left-0 right-0 z-40 px-2 pb-1' : ''}`}>
           <Tabs 
             value={activeTab} 
             onValueChange={setActiveTab} 
-            className={`w-full ${isMobile ? 'glassmorphic rounded-2xl shadow-lg' : ''}`}
+            className={`w-full ${isMobile ? 'glassmorphic' : ''}`}
           >
-            <TabsList className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-2 w-[300px]'} w-full`}>
-              <TabsTrigger value="summary">Riepilogo</TabsTrigger>
-              <TabsTrigger value="checkin">Registra Ore</TabsTrigger>
+            <TabsList className={`grid ${isMobile ? 'grid-cols-2 w-full rounded-xl border border-white/10 shadow-lg bg-background/40 backdrop-blur-xl' : 'grid-cols-2 w-[300px]'}`}>
+              <TabsTrigger value="summary" className="text-sm font-medium">Riepilogo</TabsTrigger>
+              <TabsTrigger value="checkin" className="text-sm font-medium">Registra Ore</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -130,7 +130,7 @@ const HoursSummaryPage = () => {
           </CardContent>
         </Card>
       ) : employee ? (
-        <div className={`grid gap-4 md:grid-cols-2 md:gap-6 ${isMobile ? 'pb-20' : ''}`}>
+        <div className={`grid gap-4 md:grid-cols-2 md:gap-6 ${isMobile ? 'pb-24' : ''}`}>
           {/* Time Registration card */}
           {activeTab === "checkin" && (
             <div className="md:col-span-2">
