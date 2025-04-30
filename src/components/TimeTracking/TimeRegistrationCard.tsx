@@ -202,7 +202,7 @@ export function TimeRegistrationCard({
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent className="pb-4 space-y-4 px-[12px]">
+      <CardContent className="pb-4 space-y-4 px-[12px] py-[12px]">
         {/* Status indicator */}
         <div className={cn("p-3 rounded-md", isDateRegistered ? "bg-green-50/70 dark:bg-green-900/20 border border-green-200 dark:border-green-900" : "bg-amber-50/70 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900")}>
           <div className="flex items-center">
