@@ -28,7 +28,7 @@ export function ShiftItem({ shift, employee, onClick, highlight = false, isFilte
     borderColor: highlight ? `${employeeColor}70` : `${employeeColor}30`, // 70% opacity when highlighted
   };
   
-  // Format times to show only hours
+  // Format times to include minutes
   const formattedStartTime = formatTo12Hour(shift.startTime);
   const formattedEndTime = formatTo12Hour(shift.endTime);
   

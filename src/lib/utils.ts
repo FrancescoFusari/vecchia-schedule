@@ -32,12 +32,16 @@ export function formatTime(time: string): string {
   return time;
 }
 
-// Format time to show only hour part
+// Updated function to show hour with minutes instead of only hour part
 export function formatTo12Hour(time: string): string {
   if (!time) return '';
   
-  const [hourStr] = time.split(':');
-  return `${hourStr}`;
+  const parts = time.split(':');
+  if (parts.length >= 2) {
+    // Return hour:minutes format
+    return `${parts[0]}:${parts[1]}`;
+  }
+  return time;
 }
 
 // Calculate shift duration in hours
