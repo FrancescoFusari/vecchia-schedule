@@ -406,6 +406,7 @@ export const shiftService = {
         endTime: shift.end_time,
         duration: shift.duration,
         notes: shift.notes || '',
+        status: (shift.status as 'draft' | 'published') || 'published',
         createdAt: shift.created_at,
         updatedAt: shift.updated_at
       }));
@@ -440,7 +441,8 @@ export const shiftService = {
         start_time: shift.startTime,
         end_time: shift.endTime,
         duration: shift.duration,
-        notes: shift.notes || null
+        notes: shift.notes || null,
+        status: shift.status || 'published'
       };
       
       console.log("Creating shift with data:", shiftData);
@@ -481,6 +483,7 @@ export const shiftService = {
           endTime: data.end_time,
           duration: data.duration,
           notes: data.notes || '',
+          status: (data.status as 'draft' | 'published') || 'published',
           createdAt: data.created_at,
           updatedAt: data.updated_at
         };
@@ -514,6 +517,7 @@ export const shiftService = {
           endTime: data.end_time,
           duration: data.duration,
           notes: data.notes || '',
+          status: (data.status as 'draft' | 'published') || 'published',
           createdAt: data.created_at,
           updatedAt: data.updated_at
         };
@@ -545,7 +549,8 @@ export const shiftService = {
         start_time: shift.startTime,
         end_time: shift.endTime,
         duration: shift.duration,
-        notes: shift.notes || null
+        notes: shift.notes || null,
+        status: shift.status || 'published'
       };
       
       // When using the service role key, we need to explicitly set the headers to include it
@@ -654,6 +659,7 @@ export const shiftService = {
         end_time: shift.endTime,
         duration: shift.duration,
         notes: shift.notes,
+        status: (shift.status as 'draft' | 'published') || 'published',
       }));
       
       const { error } = await supabase
@@ -686,6 +692,7 @@ export const shiftService = {
         endTime: shift.end_time,
         duration: shift.duration,
         notes: shift.notes,
+        status: (shift.status as 'draft' | 'published') || 'published',
         createdAt: shift.created_at,
         updatedAt: shift.updated_at
       }));
@@ -996,20 +1003,20 @@ export const mockData = {
   
   shifts: [
     // Feb 1 (Saturday)
-    { id: "s1", employeeId: "1", date: "2024-02-01", startTime: "17:00", endTime: "23:30", duration: 6.5, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
-    { id: "s2", employeeId: "2", date: "2024-02-01", startTime: "12:00", endTime: "23:30", duration: 11.5, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
-    { id: "s3", employeeId: "3", date: "2024-02-01", startTime: "16:00", endTime: "23:30", duration: 7.5, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
-    { id: "s4", employeeId: "4", date: "2024-02-01", startTime: "12:00", endTime: "23:30", duration: 11.5, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
+    { id: "s1", employeeId: "1", date: "2024-02-01", startTime: "17:00", endTime: "23:30", duration: 6.5, status: "published" as const, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
+    { id: "s2", employeeId: "2", date: "2024-02-01", startTime: "12:00", endTime: "23:30", duration: 11.5, status: "published" as const, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
+    { id: "s3", employeeId: "3", date: "2024-02-01", startTime: "16:00", endTime: "23:30", duration: 7.5, status: "published" as const, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
+    { id: "s4", employeeId: "4", date: "2024-02-01", startTime: "12:00", endTime: "23:30", duration: 11.5, status: "published" as const, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
     
     // Feb 2 (Sunday)
-    { id: "s5", employeeId: "2", date: "2024-02-02", startTime: "17:00", endTime: "23:00", duration: 6, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
-    { id: "s6", employeeId: "3", date: "2024-02-02", startTime: "12:00", endTime: "23:00", duration: 11, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
-    { id: "s7", employeeId: "6", date: "2024-02-02", startTime: "12:00", endTime: "20:00", duration: 8, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
+    { id: "s5", employeeId: "2", date: "2024-02-02", startTime: "17:00", endTime: "23:00", duration: 6, status: "published" as const, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
+    { id: "s6", employeeId: "3", date: "2024-02-02", startTime: "12:00", endTime: "23:00", duration: 11, status: "published" as const, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
+    { id: "s7", employeeId: "6", date: "2024-02-02", startTime: "12:00", endTime: "20:00", duration: 8, status: "published" as const, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
     
     // More shifts for week 1
-    { id: "s8", employeeId: "1", date: "2024-02-03", startTime: "17:00", endTime: "23:00", duration: 6, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
-    { id: "s9", employeeId: "2", date: "2024-02-03", startTime: "17:00", endTime: "23:00", duration: 6, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
-    { id: "s10", employeeId: "3", date: "2024-02-03", startTime: "12:00", endTime: "23:00", duration: 11, createdAt: "2024-01-15", updatedAt: "2024-01-15" }
+    { id: "s8", employeeId: "1", date: "2024-02-03", startTime: "17:00", endTime: "23:00", duration: 6, status: "published" as const, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
+    { id: "s9", employeeId: "2", date: "2024-02-03", startTime: "17:00", endTime: "23:00", duration: 6, status: "published" as const, createdAt: "2024-01-15", updatedAt: "2024-01-15" },
+    { id: "s10", employeeId: "3", date: "2024-02-03", startTime: "12:00", endTime: "23:00", duration: 11, status: "published" as const, createdAt: "2024-01-15", updatedAt: "2024-01-15" }
   ],
   
   templates: DEFAULT_SHIFT_TEMPLATES

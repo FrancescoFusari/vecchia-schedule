@@ -30,6 +30,7 @@ export interface Shift {
   endTime: string; // HH:MM format
   duration: number; // in hours
   notes?: string;
+  status: 'draft' | 'published';
   createdAt: string;
   updatedAt: string;
 }

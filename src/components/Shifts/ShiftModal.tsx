@@ -39,6 +39,7 @@ export function ShiftModal({
   const [notes, setNotes] = useState(shift?.notes || "");
   const [duration, setDuration] = useState(shift?.duration || 0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDraft, setIsDraft] = useState(shift?.status === 'draft');
   
   const [templates, setTemplates] = useState<ShiftTemplate[]>(DEFAULT_SHIFT_TEMPLATES);
   const [allTemplates, setAllTemplates] = useState<ShiftTemplate[]>([]);
@@ -150,13 +151,13 @@ export function ShiftModal({
     return true;
   };
   
-  const handleSubmit = async () => {
+  const handleSubmit = async (saveAsDraft = false) => {
     if (!validateForm()) return;
     
     try {
       setIsSubmitting(true);
       
-      console.log(`Saving shift with date: ${shiftDate}`);
+      console.log(`Saving shift with date: ${shiftDate}, as draft: ${saveAsDraft}`);
       
       const updatedShift: Shift = {
         id: shift?.id || generateId(),
@@ -166,12 +167,18 @@ export function ShiftModal({
         endTime,
         duration,
         notes,
+        status: saveAsDraft ? 'draft' : 'published',
         createdAt: shift?.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
       
       await onSave(updatedShift);
       onClose();
+      
+      toast({
+        title: saveAsDraft ? "Turno salvato come bozza" : "Turno pubblicato",
+        description: `Il turno è stato ${saveAsDraft ? 'salvato come bozza' : 'pubblicato'} con successo.`,
+      });
     } catch (error) {
       console.error("Error saving shift:", error);
       toast({
@@ -377,18 +384,25 @@ export function ShiftModal({
             </AlertDialog>
           )}
           
-          <div>
+          <div className="flex gap-2">
             <Button variant="outline" onClick={onClose} className="mr-2" disabled={isSubmitting}>
               Annulla
             </Button>
-            <Button onClick={handleSubmit} disabled={isSubmitting}>
+            <Button 
+              variant="secondary" 
+              onClick={() => handleSubmit(true)} 
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Salvando..." : "Salva come bozza"}
+            </Button>
+            <Button onClick={() => handleSubmit(false)} disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
-                  <span className="mr-2">Salvataggio...</span>
+                  <span className="mr-2">Pubblicando...</span>
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                 </>
               ) : (
-                "Salva"
+                "Pubblica"
               )}
             </Button>
           </div>

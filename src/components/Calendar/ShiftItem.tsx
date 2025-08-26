@@ -49,13 +49,15 @@ export function ShiftItem({ shift, employee, onClick, highlight = false, isFilte
                 bgColor,
                 "hover:cursor-pointer hover:brightness-95 transition-all",
                 highlight ? "ring-1 ring-primary/30" : "",
+                shift.status === 'draft' ? "opacity-60 border-dashed border-2" : "",
                 filterActiveClasses
               )}
               style={customStyle}
             >
-              <div className="truncate">
-                {formatEmployeeName(employee.firstName, employee.lastName)}
-              </div>
+               <div className="truncate flex items-center gap-1">
+                 {formatEmployeeName(employee.firstName, employee.lastName)}
+                 {shift.status === 'draft' && <span className="text-[9px] opacity-70">(BOZZA)</span>}
+               </div>
               <div className={cn(
                 "flex items-center gap-1 bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded-full font-semibold whitespace-nowrap ml-1",
                 isFilterActive ? "text-xs" : "text-[10px]"
@@ -80,12 +82,14 @@ export function ShiftItem({ shift, employee, onClick, highlight = false, isFilte
         bgColor,
         "cursor-default",
         highlight ? "ring-1 ring-primary/30" : "",
+        shift.status === 'draft' ? "opacity-60 border-dashed border-2" : "",
         filterActiveClasses
       )}
       style={customStyle}
     >
-      <div className="truncate">
+      <div className="truncate flex items-center gap-1">
         {formatEmployeeName(employee.firstName, employee.lastName)}
+        {shift.status === 'draft' && <span className="text-[9px] opacity-70">(BOZZA)</span>}
       </div>
       <div className={cn(
         "flex items-center gap-1 bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded-full font-semibold whitespace-nowrap ml-1",

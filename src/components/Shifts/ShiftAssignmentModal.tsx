@@ -179,8 +179,8 @@ export const ShiftAssignmentModal = ({
     setIsConfirmationOpen(true);
   };
   
-  const handleConfirmSave = async () => {
-    console.log("Starting handleConfirmSave with shiftsToAdd:", shiftsToAdd);
+  const handleConfirmSave = async (isDraft = false) => {
+    console.log("Starting handleConfirmSave with shiftsToAdd:", shiftsToAdd, "isDraft:", isDraft);
     
     if (!isAdmin()) {
       console.log("User is not admin, redirecting to login");
@@ -211,7 +211,8 @@ export const ShiftAssignmentModal = ({
           date: format(date, "yyyy-MM-dd"),
           startTime: template.startTime,
           endTime: template.endTime,
-          duration: template.duration
+          duration: template.duration,
+          status: isDraft ? 'draft' : 'published'
         });
         console.log("Shift created:", shift);
         newShifts.push(shift);
@@ -220,8 +221,8 @@ export const ShiftAssignmentModal = ({
       if (newShifts.length > 0) {
         console.log(`Successfully created ${newShifts.length} shifts`);
         toast({
-          title: "Turni assegnati",
-          description: `${newShifts.length} turni sono stati assegnati con successo.`,
+          title: isDraft ? "Turni salvati come bozza" : "Turni assegnati",
+          description: `${newShifts.length} turni sono stati ${isDraft ? 'salvati come bozza' : 'assegnati'} con successo.`,
         });
         
         setIsConfirmationOpen(false);

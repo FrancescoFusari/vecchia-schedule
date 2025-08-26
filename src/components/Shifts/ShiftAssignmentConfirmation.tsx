@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 interface ShiftAssignmentConfirmationProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (isDraft?: boolean) => void;
   employee: Employee | null;
   template?: ShiftTemplate;
   selectedDays?: Date[];
@@ -59,11 +59,11 @@ export function ShiftAssignmentConfirmation({
     }
   }, [weekdays, selectedDays, weekdayMonth, shifts]);
 
-  const handleConfirmClick = () => {
+  const handleConfirmClick = (isDraft = false) => {
     // Make sure onConfirm is called when the button is clicked
     if (onConfirm) {
-      console.log("Confirmation dialog: Calling onConfirm callback");
-      onConfirm();
+      console.log("Confirmation dialog: Calling onConfirm callback", { isDraft });
+      onConfirm(isDraft);
     }
   };
 
@@ -169,17 +169,26 @@ export function ShiftAssignmentConfirmation({
           </div>
         </ScrollArea>
 
-        <AlertDialogFooter className="gap-2 sm:gap-0">
+        <AlertDialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
           <Button variant="outline" onClick={handleCancelClick} disabled={isSubmitting}>
             Annulla
           </Button>
-          <Button 
-            onClick={handleConfirmClick}
-            disabled={isSubmitting}
-            autoFocus
-          >
-            {isSubmitting ? "Assegnazione..." : "Conferma"}
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="secondary"
+              onClick={() => handleConfirmClick(true)}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Salvando..." : "Salva come bozza"}
+            </Button>
+            <Button 
+              onClick={() => handleConfirmClick(false)}
+              disabled={isSubmitting}
+              autoFocus
+            >
+              {isSubmitting ? "Pubblicando..." : "Pubblica"}
+            </Button>
+          </div>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
