@@ -11,7 +11,7 @@ import { ShiftAssignmentModal } from "@/components/Shifts/ShiftAssignmentModal";
 import { ShiftModal } from "@/components/Shifts/ShiftModal";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { formatMonthYear } from "@/lib/utils";
+import { formatMonthYear, formatDate } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Toggle } from "@/components/ui/toggle";
@@ -100,8 +100,8 @@ const Calendar = () => {
       const endDate = new Date(lastDay);
       const daysToAdd = 7 - endDate.getDay();
       endDate.setDate(endDate.getDate() + (daysToAdd === 7 ? 0 : daysToAdd));
-      const formattedStartDate = startDate.toISOString().split('T')[0];
-      const formattedEndDate = endDate.toISOString().split('T')[0];
+      const formattedStartDate = formatDate(startDate);
+      const formattedEndDate = formatDate(endDate);
       console.log(`Fetching shifts for vertical calendar: ${formattedStartDate} to ${formattedEndDate}`);
       const shiftsData = await shiftService.getShifts(formattedStartDate, formattedEndDate);
       setShifts(shiftsData);
@@ -219,36 +219,38 @@ const Calendar = () => {
           <h1 className="text-2xl font-medium">Calendario Turni</h1>
           
           
-          <div className="flex flex-wrap items-center justify-between mt-3">
-            <div className="flex items-center space-x-2">
-              <Button variant="outline" size="icon" onClick={handlePrevMonth} aria-label="Mese precedente">
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              
-              <div className="text-lg font-medium min-w-[100px] text-center">
-                {getCapitalizedMonth(currentDate)}
+          <div className={`flex flex-wrap items-center ${isVerticalView ? 'justify-between' : 'justify-end'} mt-3`}>
+            {isVerticalView && (
+              <div className="flex items-center space-x-2">
+                <Button variant="outline" size="icon" onClick={handlePrevMonth} aria-label="Mese precedente">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                
+                <div className="text-lg font-medium min-w-[100px] text-center">
+                  {getCapitalizedMonth(currentDate)}
+                </div>
+                
+                <Button variant="outline" size="icon" onClick={handleNextMonth} aria-label="Mese successivo">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                
+                <Button variant="outline" size="sm" onClick={handleToday}>
+                  Oggi
+                </Button>
+                
+                {currentUserEmployee && <Toggle pressed={showOnlyUserShifts} onPressedChange={handleToggleUserShifts} className="relative gap-1 bg-primary/5 border-primary/20 hover:bg-primary/10 ml-2" aria-label="Mostra solo i miei turni">
+                    <User className="h-4 w-4" />
+                    {showOnlyUserShifts ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Toggle>}
+                
+                {!isVerticalView && <div className="ml-2 flex items-center space-x-1">
+                    <Switch id="view-mode" checked={isWeekView} onCheckedChange={handleViewChange} />
+                    <Label htmlFor="view-mode" className="text-xs">
+                      {isWeekView ? "Settimanale" : "Mensile"}
+                    </Label>
+                  </div>}
               </div>
-              
-              <Button variant="outline" size="icon" onClick={handleNextMonth} aria-label="Mese successivo">
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              
-              <Button variant="outline" size="sm" onClick={handleToday}>
-                Oggi
-              </Button>
-              
-              {currentUserEmployee && <Toggle pressed={showOnlyUserShifts} onPressedChange={handleToggleUserShifts} className="relative gap-1 bg-primary/5 border-primary/20 hover:bg-primary/10 ml-2" aria-label="Mostra solo i miei turni">
-                  <User className="h-4 w-4" />
-                  {showOnlyUserShifts ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Toggle>}
-              
-              {!isVerticalView && <div className="ml-2 flex items-center space-x-1">
-                  <Switch id="view-mode" checked={isWeekView} onCheckedChange={handleViewChange} />
-                  <Label htmlFor="view-mode" className="text-xs">
-                    {isWeekView ? "Settimanale" : "Mensile"}
-                  </Label>
-                </div>}
-            </div>
+            )}
             
             {isAdmin() && <Button size="sm" onClick={handleEmployeeClick} className="gap-1">
                 <Users className="h-4 w-4" />
